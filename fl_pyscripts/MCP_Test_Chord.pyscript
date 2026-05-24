@@ -1,0 +1,46 @@
+# Script.Name = "MCP Test Chord"
+# Script.Author = "rosasynthesiz"
+# Script.Category = "MCP"
+#
+# Phase 2 -- Slice 1. Riskiest-first proof that FL 25.2.5 can run a piano-roll
+# .pyscript and author notes. Writes a hardcoded C major chord (C E G =
+# MIDI 60/64/67) as a block chord at the start, one bar long. No file I/O --
+# pure flpianoroll API (file I/O is blocked in this sandbox; that's slice 2's
+# problem, solved a different way).
+
+import flpianoroll as flp
+
+
+def _write_chord():
+    score = flp.score
+    bar = score.PPQ * 4                 # PPQ (ticks per quarter) * 4 = one 4/4 bar
+    # FL 25.2.5's clearNotes takes a POSITIONAL arg (no keyword) -- clear all
+    # so re-runs don't stack. Fall back to no-arg if even that differs.
+    try:
+        score.clearNotes(True)
+    except TypeError:
+        score.clearNotes()
+    for pitch in (62, 65, 69):          # D F A  -- D MINOR (FL: D5/F5/A5)
+        n = flp.Note()
+        n.number = pitch
+        n.time = 0                       # block chord: all 3 start at tick 0
+        n.length = bar                   # one bar long
+        n.velocity = 100 / 127.0         # flpianoroll velocity is 0.0-1.0 (~0.787)
+        score.addNote(n)
+
+
+def _run():
+    # Wrap in an undo section if this FL build exposes it (atomic write + a
+    # single Ctrl+Z). clearNotes() makes a fallback re-run idempotent.
+    undo = getattr(flp.score, "undoSection", None)
+    if callable(undo):
+        try:
+            with undo():
+                _write_chord()
+            return
+        except Exception:
+            pass                         # undoSection unsupported here -> plain write
+    _write_chord()
+
+
+_run()

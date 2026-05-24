@@ -1,0 +1,62 @@
+# Script.Name = "MCP Read Probe"
+# Script.Author = "rosasynthesiz"
+# Script.Category = "MCP"
+#
+# Phase 2 -- Slice 2. The decisive test: pyscript file WRITE is blocked, but
+# can a pyscript READ a file? If yes, the bridge is: daemon writes a job JSON
+# (normal process, writes fine) -> pyscript reads it -> addNote. If read is
+# also blocked, the job-file bridge is dead and we need a different transport.
+#
+# Reports its result by WRITING NOTES (the only output channel we have):
+#   READ OK   -> ONE note at the pitch read from ~/.flstudio-mcp/probe.json
+#   READ FAIL -> a chromatic marker C/C#/D (60/61/62) so it's visually obvious
+
+import json
+import os
+
+import flpianoroll as flp
+
+
+def _clear(score):
+    try:
+        score.clearNotes(True)          # FL 25.2.5: positional, no keyword
+    except TypeError:
+        score.clearNotes()
+
+
+def _add(score, pitch, time, length, vel=100 / 127.0):
+    n = flp.Note()
+    n.number = pitch
+    n.time = time
+    n.length = length
+    n.velocity = vel
+    score.addNote(n)
+
+
+def _run():
+    score = flp.score
+    bar = score.PPQ * 4
+    path = os.path.expanduser("~/.flstudio-mcp/probe.json")
+
+    pitch = None
+    read_ok = False
+    try:
+        with open(path, "r") as f:
+            data = json.load(f)
+        pitch = int(data["pitch"])
+        read_ok = True
+    except Exception:
+        read_ok = False
+
+    _clear(score)
+    if read_ok:
+        # READ WORKED -> single 1-bar note at the pitch we read from disk
+        _add(score, pitch, 0, bar)
+    else:
+        # READ FAILED -> chromatic marker (C5/C#5/D5), staggered quarter notes
+        q = bar // 4
+        for k, p in enumerate((60, 61, 62)):
+            _add(score, p, k * q, q)
+
+
+_run()
