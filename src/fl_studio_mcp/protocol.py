@@ -123,6 +123,15 @@ CMD_PLUGIN_LIST_PARAMS = "plugin_list_params"
 CMD_PLUGIN_GET_PARAM = "plugin_get_param"
 CMD_PLUGIN_SET_PARAM = "plugin_set_param"
 
+# Routing / grouping / cleanup (read surface -- Slice 1)
+CMD_MIXER_GET_ROUTING = "mixer_get_routing"            # one track's send destinations
+CMD_MIXER_GET_ROUTING_ALL = "mixer_get_routing_all"    # paginated routing matrix
+CMD_CHANNEL_ROUTING_SUMMARY = "channel_routing_summary"  # channel -> mixer links
+CMD_DETECT_CLEANUP = "detect_cleanup_candidates"       # empty channels / unused tracks
+
+# Routing writes (Slice 2)
+CMD_MIXER_SET_ROUTE = "mixer_set_route"                # setRouteTo + afterRoutingChanged
+
 
 # ---------------------------------------------------------------------------
 # SysEx wire format

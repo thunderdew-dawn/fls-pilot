@@ -20,6 +20,7 @@ from .protocol import (
     CMD_MIXER_LIST_TRACKS,
     CMD_CHANNEL_LIST,
     CMD_PLUGIN_GET_PARAM,
+    CMD_MIXER_GET_ROUTING,
 )
 
 
@@ -106,6 +107,11 @@ def take_snapshot(bridge, scope):
         track, slot, idx = (int(x) for x in arg.split(":"))
         return bridge.call(CMD_PLUGIN_GET_PARAM,
                            {"track": track, "slot": slot, "param": idx})
+    if kind == "route":
+        src, dst = (int(x) for x in arg.split(":"))
+        info = bridge.call(CMD_MIXER_GET_ROUTING, {"track": src})
+        enabled = any(d.get("dst") == dst for d in info.get("routes_to", []))
+        return {"src": src, "dst": dst, "enabled": enabled}
     if kind == "mixer_all":
         from .connection import fetch_all_pages
         return fetch_all_pages(bridge, CMD_MIXER_LIST_TRACKS, "tracks")
@@ -157,10 +163,49 @@ def safe_write(bridge, *, tool, scope, command, params, build_restore, verify=No
     return {"ok": True, "before": before, "after": after}
 
 
+def safe_write_group(bridge, *, tool, scope, writes):
+    """Apply several param writes as ONE rollback unit.
+
+    ``writes`` is a list of dicts, each:
+        {"snap_scope": "plugin_param:T:S:I",   # what to snapshot for restore
+         "command": CMD, "params": {...},      # the write to execute
+         "restore": callable(before)->{"command","params"}}  # how to undo it
+
+    Snapshots ALL writes first (so we capture originals before any change),
+    then executes them, and logs ONE changelog entry whose ``restores`` is a
+    LIST -- so :func:`rollback_last_change` reverts the whole group atomically.
+    Honors dry-run. Returns {"ok", "before":[...], "after":[...]}.
+    """
+    if _dry_run:
+        return {
+            "ok": True, "dry_run": True,
+            "planned": {"tool": tool, "scope": scope,
+                        "writes": [{"command": w["command"], "params": w["params"]}
+                                   for w in writes]},
+        }
+    befores, restores = [], []
+    for w in writes:                       # snapshot all first
+        before = take_snapshot(bridge, w["snap_scope"])
+        befores.append(before)
+        restores.append(w["restore"](before))
+    afters = [bridge.call(w["command"], w["params"]) for w in writes]
+    _log.append({
+        "tool": tool, "scope": scope, "group": True,
+        "befores": befores, "afters": afters, "restores": restores,
+        "ts": time.time(),
+    })
+    return {"ok": True, "before": befores, "after": afters}
+
+
 def rollback_last_change(bridge):
     entry = _log.pop_last()
     if entry is None:
         return {"ok": False, "error": "changelog is empty"}
+    if entry.get("group"):                 # grouped write -> replay every restore
+        restored = [bridge.call(r["command"], r.get("params") or {})
+                    for r in (entry.get("restores") or [])]
+        return {"ok": True, "rolled_back": entry.get("tool"),
+                "scope": entry.get("scope"), "restored": restored}
     restore = entry.get("restore")
     if not restore:
         return {"ok": False, "error": "entry has no restore action",

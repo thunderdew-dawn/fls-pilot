@@ -25,9 +25,11 @@ from fastmcp import FastMCP
 from . import __version__
 from .connection import list_ports
 from .protocol import port_from_fl_name, port_to_fl_name
+from .tools import mixing as mixing_tools
 from .tools import phase1 as phase1_tools
 from .tools import pianoroll as pianoroll_tools
 from .tools import plugin as plugin_tools
+from .tools import routing as routing_tools
 from .tools import transport as transport_tools
 
 
@@ -76,6 +78,8 @@ def build_server() -> FastMCP:
     phase1_tools.register(mcp)      # project/mixer/channel read+write + safety
     pianoroll_tools.register(mcp)   # Phase 2: write notes into the piano roll
     plugin_tools.register(mcp)      # Phase 1B: plugin param read/write (name or index)
+    mixing_tools.register(mcp)      # Slice B: high-level EQ mixing intents
+    routing_tools.register(mcp)     # Routing/cleanup Slice 1: read-only
     # Later tool packs register here as they ship:
     #   pattern_tools.register(mcp)
     return mcp
