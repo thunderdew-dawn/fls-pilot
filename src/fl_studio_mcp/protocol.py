@@ -146,6 +146,9 @@ CMD_ARRANGE_NEW_PATTERN = "arrange_new_pattern"        # find empty + jumpTo + n
 CMD_ARRANGE_CLONE_PATTERN = "arrange_clone_pattern"    # clonePattern + rename
 CMD_ARRANGE_ADD_MARKER = "arrange_add_marker"          # addAutoTimeMarker at a bar
 
+# Note-bridge hardening -- ensure the Piano roll is open before a note-write
+CMD_ENSURE_PIANO_ROLL = "ensure_piano_roll"            # ui.showWindow(widPianoRoll)
+
 
 # ---------------------------------------------------------------------------
 # SysEx wire format

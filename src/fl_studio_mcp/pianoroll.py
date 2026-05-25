@@ -37,10 +37,16 @@ def apply_notes(notes, mode="replace", trigger=True):
         trig = trigger_run_last_script()
         result["triggered"] = True
         result["focused"] = trig.get("focused", False)
+        # The trigger can't confirm the script actually ran. The Piano roll is
+        # auto-opened by the caller, but Ctrl+Alt+Y only fires OUR script if
+        # MCP_Apply was run once this FL session (no API to arm it). So if notes
+        # don't appear, that one-time arm is the cause.
+        result["setup"] = ("If notes did not appear: run 'MCP Apply' ONCE from the "
+                           "Piano roll Scripting menu this FL session (the only "
+                           "manual step -- arms Ctrl+Alt+Y; no FL API to automate it).")
         if not trig.get("focused"):
-            result["hint"] = ("Could not focus FL automatically -- if the notes "
-                              "didn't appear, click the FL Piano roll and press "
-                              "Ctrl+Alt+Y.")
+            result["hint"] = ("Could not focus FL automatically -- click the FL "
+                              "Piano roll and press Ctrl+Alt+Y.")
     except Exception as e:
         # Script is written regardless; trigger is best-effort.
         result["triggered"] = False

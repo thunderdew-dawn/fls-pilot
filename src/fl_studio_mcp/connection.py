@@ -253,9 +253,19 @@ class FLBridge:
 
     def apply_notes(self, notes, mode="replace", trigger=True):
         """Author piano-roll notes locally (direct mode: this process writes
-        the generated .pyscript and triggers FL itself)."""
+        the generated .pyscript and triggers FL itself). Auto-opens the Piano
+        roll first so the trigger has a target."""
         from .pianoroll import apply_notes as _apply
-        return _apply(notes, mode, trigger=trigger)
+        ensured = None
+        if trigger:
+            try:
+                ensured = self.call(protocol.CMD_ENSURE_PIANO_ROLL, {}, timeout=5.0)
+            except Exception as e:
+                ensured = {"ok": False, "error": "%s: %s" % (type(e).__name__, e)}
+        res = _apply(notes, mode, trigger=trigger)
+        if isinstance(res, dict) and ensured is not None:
+            res["piano_roll_ensured"] = ensured
+        return res
 
     # -- inbound MIDI callback -----------------------------------------------
 

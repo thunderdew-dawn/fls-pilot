@@ -283,7 +283,7 @@ def _h_ping(params):
     return {
         "fl_version": _fl_version,
         "protocol_version": PROTOCOL_VERSION,
-        "build": "slice-chan-v11",   # reload marker -- bump to verify reloads take
+        "build": "harden-v12",   # reload marker -- bump to verify reloads take
         "ts": time.time(),
     }
 
@@ -906,7 +906,7 @@ def _h_api_probe(p):
     op = p.get("op", "dir")
     if op == "dir":
         mods = {"playlist": playlist, "arrangement": arrangement, "patterns": patterns,
-                "general": general, "transport": transport}
+                "general": general, "transport": transport, "ui": ui, "midi": midi}
         mod = mods.get(p.get("module", "playlist"))
         if mod is None:
             return {"module": p.get("module"), "error": "module not available"}
@@ -997,6 +997,31 @@ def _h_arrange_clone_pattern(p):
             "count_before": before, "count_after": after}
 
 
+def _h_ensure_piano_roll(p):
+    """Open/focus the Piano roll from the controller (ui.showWindow), so the
+    Ctrl+Alt+Y note-bridge trigger has a piano roll to act on -- no manual open.
+    Defensive: reports the widget constant + visibility so we can confirm."""
+    wid = getattr(midi, "widPianoRoll", None)
+    out = {"wid_pianoroll": wid}
+    try:
+        if wid is not None and hasattr(ui, "getVisible"):
+            out["visible_before"] = bool(ui.getVisible(wid))
+    except Exception:
+        out["visible_before"] = None
+    if wid is None or not hasattr(ui, "showWindow"):
+        out["ok"] = False
+        out["error"] = "ui.showWindow / midi.widPianoRoll unavailable"
+        return out
+    try:
+        ui.showWindow(wid)
+        out["ok"] = True
+        out["method"] = "ui.showWindow(widPianoRoll)"
+    except Exception as e:
+        out["ok"] = False
+        out["error"] = "showWindow: %s" % e
+    return out
+
+
 def _h_channel_select(p):
     """Make one channel the active selection. The Piano roll follows the
     selected channel, so this retargets the note bridge to write into it."""
@@ -1073,4 +1098,5 @@ _HANDLERS = {
     "arrange_clone_pattern": _h_arrange_clone_pattern,
     "arrange_add_marker": _h_arrange_add_marker,
     "channel_select": _h_channel_select,
+    "ensure_piano_roll": _h_ensure_piano_roll,
 }
