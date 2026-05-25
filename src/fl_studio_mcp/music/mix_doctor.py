@@ -487,6 +487,68 @@ def plan_fixes(snapshot, target_peak_db=DEFAULT_TARGET_PEAK_DB):
     return {"plans": plans, "notes": notes, "summary": res["summary"]}
 
 
+def gain_stage_plan(snapshot, target_db=-9.0, band=(-12.0, -6.0),
+                    master_target=-4.5, master_floor=-3.0, min_trim=1.5):
+    """PURE: propose per-track fader trims so each track's peak lands in a healthy
+    band (default -12..-6 dB, aim -9) + Master headroom (-3..-6). Tracks already
+    in-band are left alone. Trims are trim_volume plans -> apply via fl_apply_mix_fix.
+
+    NOTE: FL's fader is POST-chain, so this sets a track's OUTPUT level, not a true
+    pre-plugin input trim. Master is offered as an ALTERNATIVE (don't pull it AND
+    the sources -- trimming sources already lowers the Master)."""
+    from .. import protocol
+    tracks = snapshot.get("tracks", [])
+    lo, hi = band
+    plans, notes = [], []
+    pid = 0
+
+    def _plan(t, new_fader, pk, fader, sev, human, reason, alt=False):
+        nonlocal pid
+        pid += 1
+        plans.append({
+            "id": pid, "kind": "trim_volume", "severity": sev, "actionable": True,
+            "alternative": alt, "track": t["index"], "track_name": t["name"],
+            "tool": "mixer_set_volume", "scope": "mixer_track:%d" % t["index"],
+            "command": protocol.CMD_MIXER_SET_VOLUME,
+            "params": {"track": t["index"], "value": new_fader, "unit": "db"},
+            "restore_field": "vol_norm", "target_fader_db": new_fader,
+            "current_fader_db": fader, "current_peak_db": pk, "target_peak_db": target_db,
+            "human": human, "reason": reason})
+
+    for t in tracks:
+        if t.get("index") == 0 or t.get("mute") or not _is_used(t):
+            continue
+        pk, fader = t.get("peak_db"), t.get("vol_db")
+        if pk is None or fader is None or lo <= pk <= hi:
+            continue
+        trim = round(pk - target_db, 1)              # +ve = bring down, -ve = bring up
+        if abs(trim) < min_trim:
+            continue
+        new_fader = round(fader - trim, 1)
+        _plan(t, new_fader, pk, fader, "medium" if trim > 0 else "low",
+              "%s: fader %.1f -> %.1f dB (%s %.1f dB) so its peak %.1f -> ~%.1f dBFS (band %g..%g)"
+              % (t["name"], fader, new_fader, "down" if trim > 0 else "up", abs(trim),
+                 pk, target_db, lo, hi),
+              "%s peaks at %.1f dBFS, outside the healthy %g..%g dB band."
+              % (t["name"], pk, lo, hi))
+
+    master = next((t for t in tracks if t.get("index") == 0), None)
+    if master and master.get("peak_db") is not None and master.get("vol_db") is not None:
+        mpk = master["peak_db"]
+        if mpk > master_floor:
+            mtrim = round(mpk - master_target, 1)
+            _plan(master, round(master["vol_db"] - mtrim, 1), mpk, master["vol_db"], "low",
+                  "Master: fader %.1f -> %.1f dB so its peak %.1f -> ~%.1f dBFS (-3..-6 headroom)"
+                  % (master["vol_db"], round(master["vol_db"] - mtrim, 1), mpk, master_target),
+                  "ALTERNATIVE: pull the Master bus for headroom. Don't do this AND the source "
+                  "trims -- trimming sources already lowers the Master.", alt=True)
+            notes.append("Master peak %.1f dBFS -- low headroom. Best: trim the hot SOURCES "
+                         "(that lowers Master too); the Master trim is an alternative." % mpk)
+        else:
+            notes.append("Master peak %.1f dBFS -- healthy headroom already." % mpk)
+    return {"plans": plans, "notes": notes, "target_db": target_db, "band": list(band)}
+
+
 # --------------------------------------------------------------------------
 # Full-song peak WATCH (peak-hold). A background thread polls every track's
 # peak at an interval and keeps a RUNNING MAX -- so a drop/chorus that happens
@@ -503,6 +565,7 @@ class PeakWatcher:
         self._stop = threading.Event()
         self._lock = threading.Lock()
         self._max = {}
+        self._last_max = {}
         self._reads = 0
         self._started = None
         self._indices = []
@@ -549,7 +612,13 @@ class PeakWatcher:
             self._thread.join(timeout=5.0)
         with self._lock:
             elapsed = (_time.time() - self._started) if self._started else 0.0
+            self._last_max = dict(self._max)     # retain for later tools (gain-stage, ref-match)
             return dict(self._max), self._reads, elapsed
+
+    def last_max(self):
+        """Running-max {index: peak_lin} from the most recent completed watch (or {})."""
+        with self._lock:
+            return dict(self._last_max)
 
     def status(self):
         with self._lock:

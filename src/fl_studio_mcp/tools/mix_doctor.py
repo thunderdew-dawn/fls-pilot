@@ -164,3 +164,38 @@ def register(mcp: FastMCP) -> None:
                 "watch": {"reads": reads, "elapsed_s": round(elapsed, 1)},
                 "guidance": "Levels are full-song maxima -- trustworthy for clipping/headroom.",
                 **_result(snap)}
+
+    @mcp.tool(annotations={"title": "Gain staging assistant (Mix Doctor)", **_RO})
+    def fl_gain_stage() -> dict:
+        """Propose per-track fader trims so each track's peak sits in a healthy
+        band (~-12..-6 dBFS, aim -9) and the Master keeps -3..-6 dB headroom.
+        READ-ONLY proposals -- apply approved ones via fl_apply_mix_fix (rollback).
+
+        Uses FULL-SONG peaks from a recent watch (fl_mix_watch_start -> play ->
+        fl_mix_watch_stop) when available; else a ~1.2s snapshot (prefer watch).
+        FL's fader is POST-chain, so this sets a track's OUTPUT level, not a true
+        pre-plugin input trim."""
+        try:
+            bridge = get_bridge()
+            wmax = md.get_watcher().last_max()
+            snap = md.gather_snapshot(bridge, peaks_override=wmax or None)
+            if not (wmax or snap.get("levels_valid")):
+                return {"ok": True, "needs_levels": True,
+                        "guidance": "No level data -- press PLAY (or run watch mode: "
+                                    "fl_mix_watch_start -> play -> fl_mix_watch_stop) then call again."}
+            plan = md.gain_stage_plan(snap)
+        except Exception as e:
+            return {"ok": False, "error": "%s: %s" % (type(e).__name__, e)}
+        proposals = [{"id": p["id"], "kind": p["kind"], "severity": p["severity"],
+                      "track": p["track"], "track_name": p["track_name"],
+                      "target_db": p["target_fader_db"], "actionable": True,
+                      "alternative": p.get("alternative", False),
+                      "human": p["human"], "reason": p["reason"]} for p in plan["plans"]]
+        return {"ok": True,
+                "peak_source": "watch (full-song)" if wmax else snap.get("peak_window", {}).get("source"),
+                "aim_db": plan["target_db"], "healthy_band_db": plan["band"],
+                "proposals": proposals, "notes": plan["notes"],
+                "guidance": "Apply approved trims: fl_apply_mix_fix(kind='trim_volume', track, "
+                            "target_db=<proposal.target_db>). One at a time; undo via "
+                            "fl_rollback_last_change. Skip the 'alternative' Master trim if you "
+                            "already applied the source trims."}

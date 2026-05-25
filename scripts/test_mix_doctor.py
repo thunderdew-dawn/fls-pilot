@@ -183,6 +183,23 @@ def main() -> int:
           abs(mx.get(5, 0.0) - 0.9) <= 0.001 and reads >= 3,
           "max=%s reads=%s" % (mx.get(5), reads))
 
+    # 10) gain_stage_plan: out-of-band tracks trimmed toward -9; in-band left.
+    snap = {"playing": True, "levels_valid": True, "tracks": [
+        trk(0, "Master", vol_db=0.0, peak_max=db_lin(-1.0)),
+        trk(1, "Hot", vol_db=0.0, peak_max=db_lin(-2.0)),       # too hot -> down
+        trk(2, "OK", vol_db=0.0, peak_max=db_lin(-9.0)),        # in band -> leave
+        trk(3, "Quiet", vol_db=0.0, peak_max=db_lin(-20.0)),    # too quiet -> up
+    ]}
+    gp = md.gain_stage_plan(snap)
+    by = {p["track_name"]: p for p in gp["plans"]}
+    check("gain-stage trims the too-hot track DOWN",
+          "Hot" in by and by["Hot"]["target_fader_db"] < 0, str(by.get("Hot", {}).get("target_fader_db")))
+    check("gain-stage LEAVES the in-band track", "OK" not in by)
+    check("gain-stage boosts the too-quiet track UP",
+          "Quiet" in by and by["Quiet"]["target_fader_db"] > 0)
+    check("gain-stage flags Master headroom as ALTERNATIVE",
+          "Master" in by and by["Master"].get("alternative") is True)
+
     print("\n%d passed, %d failed" % (_P, _F))
     return 0 if _F == 0 else 1
 
