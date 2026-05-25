@@ -9,6 +9,7 @@ Proves the rules are transparent + correct before we trust them live.
 from __future__ import annotations
 
 import sys
+import time
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
@@ -41,6 +42,18 @@ def rules_hit(res):
 
 def db_lin(db):
     return 10 ** (db / 20.0)        # dBFS -> linear peak, for synthetic peaks
+
+
+class FakeBridge:
+    """Returns a scripted peak sequence -- for the PeakWatcher max-hold test."""
+
+    def __init__(self, seq):
+        self.seq, self.n = seq, 0
+
+    def call(self, cmd, params=None, timeout=None):
+        v = self.seq[min(self.n, len(self.seq) - 1)]
+        self.n += 1
+        return {"peak_max": v}
 
 
 def main() -> int:
@@ -148,6 +161,27 @@ def main() -> int:
     check("Master clipping -> source-trim NOTE, no Master plan",
           any("trim the hot SOURCES" in n for n in plan["notes"])
           and all(p.get("track") != 0 for p in plan["plans"]))
+
+    # 8) levels_valid=True fires level rules even when transport is STOPPED
+    #    (the WATCH path: stopped now, but full-song peaks were held).
+    snap = {"playing": False, "levels_valid": True, "tracks": [
+        trk(0, "Master", peak_max=db_lin(0.0)),
+        trk(1, "Lead", peak_max=db_lin(0.2)),
+    ]}
+    check("levels_valid fires level rules despite stopped transport",
+          "clipping" in rules_hit(md.diagnose(snap)))
+    snap2 = {"playing": False, "tracks": [trk(1, "Lead", peak_max=db_lin(0.2))]}
+    check("stopped + no levels_valid skips clipping",
+          "clipping" not in rules_hit(md.diagnose(snap2)))
+
+    # 9) PeakWatcher holds the running MAX across polls (peak-hold).
+    w = md.PeakWatcher()
+    w.start(FakeBridge([0.3, 0.9, 0.2, 0.2]), [5], interval_ms=20, max_seconds=5)
+    time.sleep(0.3)
+    mx, reads, _elapsed = w.stop()
+    check("watcher holds running max (0.9 peak, not the last 0.2)",
+          abs(mx.get(5, 0.0) - 0.9) <= 0.001 and reads >= 3,
+          "max=%s reads=%s" % (mx.get(5), reads))
 
     print("\n%d passed, %d failed" % (_P, _F))
     return 0 if _F == 0 else 1

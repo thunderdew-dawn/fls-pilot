@@ -96,13 +96,13 @@ def _fetch_params_bounded(bridge, protocol, track, slot, cap):
 
 
 def gather_snapshot(bridge, *, with_params=True, max_tracks=64, param_cap=120,
-                    peak_samples=15, peak_interval_ms=80):
+                    peak_samples=15, peak_interval_ms=80, peaks_override=None):
     """Build a normalised whole-mix snapshot via cheap bridge reads.
 
-    When the project is PLAYING, peaks are SUSTAINED maxima sampled over one
-    shared window (round-robin via levels.measure_many) -- not a single
-    instant -- so a transient or a quiet moment can't mislead the level rules.
-    When stopped, peaks are skipped (level rules degrade gracefully).
+    Peak source priority: ``peaks_override`` (a {track_index: peak_lin} map from
+    a full-song WATCH) > a SUSTAINED window while playing (levels.measure_many)
+    > none (stopped). ``levels_valid`` in the result gates the level rules, so a
+    watch capture keeps them valid even if the transport is now stopped.
 
     Returns ``{"playing", "track_count", "peak_window", "tracks": [...],
     "gather_errors": [...]}``. Each track: index, name, vol_db, vol_norm, pan,
@@ -132,18 +132,29 @@ def gather_snapshot(bridge, *, with_params=True, max_tracks=64, param_cap=120,
 
     indices = [t.get("i", t.get("index")) for t in tracks_raw[:max_tracks]]
 
-    # SUSTAINED peaks: one shared round-robin window for all tracks (not a
-    # single instant, and not samples*interval PER track). Only while playing.
+    # Peak source: override (full-song WATCH max) > sustained window (playing) >
+    # none (stopped). levels_valid gates the level rules.
     peaks = {}
-    if playing:
+    if peaks_override is not None:
+        levels_valid, peak_source = True, "watch"
+    elif playing:
         from .levels import measure_many
         peaks = _safe(lambda: measure_many(bridge, indices, peak_samples, peak_interval_ms),
                       "measure_many", {}) or {}
+        levels_valid, peak_source = True, "sustained_%dms" % (peak_samples * peak_interval_ms)
+    else:
+        levels_valid, peak_source = False, "none"
 
     tracks = []
     for t in tracks_raw[:max_tracks]:
         i = t.get("i", t.get("index"))
-        samp = peaks.get(i, {})
+        if peaks_override is not None:
+            pl_lin = peaks_override.get(i)
+            peak_max, peak_db, peak_avg, n_reads = pl_lin, lin_to_db(pl_lin), None, None
+        else:
+            samp = peaks.get(i, {})
+            peak_max, peak_db = samp.get("peak_lin"), samp.get("peak_db")
+            peak_avg, n_reads = samp.get("avg_db"), samp.get("n_reads")
         pl = _safe(lambda i=i: bridge.call(protocol.CMD_PLUGIN_LIST, {"track": i}),
                    "plugin_list[%s]" % i, {}) or {}
         plugins = []
@@ -159,13 +170,13 @@ def gather_snapshot(bridge, *, with_params=True, max_tracks=64, param_cap=120,
             "index": i, "name": t.get("name"),
             "vol_db": t.get("vol_db"), "vol_norm": t.get("vol_norm"),
             "pan": t.get("pan"), "mute": bool(t.get("mute")), "solo": bool(t.get("solo")),
-            "peak_max": samp.get("peak_lin"), "peak_db": samp.get("peak_db"),
-            "peak_avg_db": samp.get("avg_db"), "peak_reads": samp.get("n_reads"),
+            "peak_max": peak_max, "peak_db": peak_db,
+            "peak_avg_db": peak_avg, "peak_reads": n_reads,
             "plugins": plugins, "routes_to": route_by.get(i, []),
         })
-    return {"playing": playing, "track_count": len(tracks_raw),
+    return {"playing": playing, "levels_valid": levels_valid, "track_count": len(tracks_raw),
             "peak_window": {"samples": peak_samples, "interval_ms": peak_interval_ms,
-                            "sustained": bool(playing)},
+                            "source": peak_source},
             "tracks": tracks, "gather_errors": errors}
 
 
@@ -378,15 +389,17 @@ def diagnose(snapshot):
     notes (e.g. 'play the project for level data'). PURE -- no writes."""
     tracks = snapshot.get("tracks", [])
     playing = snapshot.get("playing")
+    levels_valid = snapshot.get("levels_valid", playing)   # watch capture also counts
     findings, notes = [], []
 
-    if playing:
+    if levels_valid:
         findings += rule_clipping(tracks)
         findings += rule_headroom(tracks)
         findings += _imbalance(tracks, "peak_db", "peak", IMBALANCE_DB)
     else:
         notes.append("Project STOPPED -- level rules (clipping, headroom, peak "
-                     "imbalance) skipped. Press play and re-run for level diagnosis.")
+                     "imbalance) skipped. Press play and re-run, or use watch mode "
+                     "(fl_mix_watch_start -> play the full song -> fl_mix_watch_stop).")
         findings += _imbalance(tracks, "vol_db", "fader", FADER_IMBALANCE_DB, floor=0.0)
 
     findings += rule_missing_hpf(tracks)
@@ -472,3 +485,81 @@ def plan_fixes(snapshot, target_peak_db=DEFAULT_TARGET_PEAK_DB):
                      % ", ".join(hpf))
 
     return {"plans": plans, "notes": notes, "summary": res["summary"]}
+
+
+# --------------------------------------------------------------------------
+# Full-song peak WATCH (peak-hold). A background thread polls every track's
+# peak at an interval and keeps a RUNNING MAX -- so a drop/chorus that happens
+# later in the song is captured, unlike the ~1.2s snapshot window. Thin
+# controller (each poll is one cheap getTrackPeaks); the max is held server-side.
+# --------------------------------------------------------------------------
+import threading  # noqa: E402
+import time as _time  # noqa: E402
+
+
+class PeakWatcher:
+    def __init__(self):
+        self._thread = None
+        self._stop = threading.Event()
+        self._lock = threading.Lock()
+        self._max = {}
+        self._reads = 0
+        self._started = None
+        self._indices = []
+
+    def is_running(self):
+        return self._thread is not None and self._thread.is_alive()
+
+    def start(self, bridge, indices, interval_ms=150, max_seconds=900):
+        if self.is_running():
+            return {"ok": False, "error": "a watch is already running"}
+        self._stop.clear()
+        with self._lock:
+            self._max = {i: 0.0 for i in indices}
+            self._reads = 0
+        self._indices = list(indices)
+        self._started = _time.time()
+        self._thread = threading.Thread(
+            target=self._run, args=(bridge, interval_ms / 1000.0, max_seconds), daemon=True)
+        self._thread.start()
+        return {"ok": True, "watching": len(indices), "interval_ms": interval_ms}
+
+    def _run(self, bridge, interval_s, max_seconds):
+        from .. import protocol
+        deadline = _time.time() + max_seconds
+        while not self._stop.is_set() and _time.time() < deadline:
+            for i in self._indices:
+                if self._stop.is_set():
+                    break
+                try:
+                    v = bridge.call(protocol.CMD_MIXER_GET_PEAKS, {"track": i}).get("peak_max")
+                except Exception:
+                    v = None
+                if v is not None and v > 0:
+                    with self._lock:
+                        if v > self._max.get(i, 0.0):
+                            self._max[i] = v
+            with self._lock:
+                self._reads += 1
+            self._stop.wait(interval_s)
+
+    def stop(self):
+        if self.is_running():
+            self._stop.set()
+            self._thread.join(timeout=5.0)
+        with self._lock:
+            elapsed = (_time.time() - self._started) if self._started else 0.0
+            return dict(self._max), self._reads, elapsed
+
+    def status(self):
+        with self._lock:
+            return {"running": self.is_running(), "reads": self._reads,
+                    "elapsed_s": round((_time.time() - self._started), 1) if self._started else 0.0,
+                    "tracks": len(self._max)}
+
+
+_watcher = PeakWatcher()
+
+
+def get_watcher() -> PeakWatcher:
+    return _watcher

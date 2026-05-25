@@ -16,7 +16,7 @@ from fastmcp import FastMCP
 from pydantic import Field
 
 from .. import protocol, safety
-from ..connection import get_bridge
+from ..connection import fetch_all_pages, get_bridge
 from ..music import mix_doctor as md
 
 
@@ -25,30 +25,10 @@ def register(mcp: FastMCP) -> None:
     _WR = {"readOnlyHint": False, "destructiveHint": False,
            "idempotentHint": False, "openWorldHint": True}
 
-    @mcp.tool(annotations={"title": "Diagnose the mix (Mix Doctor)", **_RO})
-    def fl_diagnose_mix() -> dict:
-        """Scan the WHOLE mix and report problems + proposed fixes. READ-ONLY.
-
-        Gathers a thin, paginated snapshot (all-track levels/plugins/routing),
-        then runs transparent threshold rules: clipping, headroom, level
-        imbalance, missing high-pass (heuristic), ungrouped related tracks, and
-        EQ-band clashes. Each finding has a severity + the exact evidence; each
-        proposal is a concrete, approvable change.
-
-        Level rules (clipping/headroom/imbalance) need PLAYBACK: if the project
-        is STOPPED, `needs_playback` is true -- ask the user to press play and
-        call this again. Applies NOTHING. To apply a proposal, get the user's
-        ok, then call fl_apply_mix_fix (volume) / fl_group_tracks (grouping) /
-        fl_apply_eq_intent (EQ).
-        """
-        try:
-            bridge = get_bridge()
-            snap = md.gather_snapshot(bridge)            # sustained peaks while playing
-            diag = md.diagnose(snap)
-            plan = md.plan_fixes(snap)
-        except Exception as e:
-            return {"ok": False, "error": "%s: %s" % (type(e).__name__, e)}
-
+    def _result(snap):
+        """Diagnose + plan a gathered snapshot -> the common tool payload."""
+        diag = md.diagnose(snap)
+        plan = md.plan_fixes(snap)
         proposals = []
         for p in plan["plans"]:
             prop = {"id": p["id"], "kind": p["kind"], "severity": p["severity"],
@@ -60,22 +40,43 @@ def register(mcp: FastMCP) -> None:
             elif p["kind"] == "group":
                 prop["tracks"] = p.get("args")
             proposals.append(prop)
-
         return {
-            "ok": True,
-            "playing": snap["playing"],
-            "needs_playback": not snap["playing"],
             "track_count": snap["track_count"],
+            "levels_valid": snap.get("levels_valid"),
             "summary": plan["summary"],
-            "guidance": ("Project is STOPPED -- press PLAY in FL and call fl_diagnose_mix "
-                         "again for level diagnosis (clipping/headroom/imbalance)."
-                         if not snap["playing"] else
-                         "Levels sampled over a sustained window; findings are trustworthy."),
             "findings": [{k: f[k] for k in ("rule", "severity", "track", "evidence", "message")}
                          for f in diag["findings"]],
             "proposals": proposals,
             "notes": plan["notes"],
         }
+
+    @mcp.tool(annotations={"title": "Diagnose the mix (Mix Doctor)", **_RO})
+    def fl_diagnose_mix() -> dict:
+        """Scan the WHOLE mix and report problems + proposed fixes. READ-ONLY.
+
+        Transparent threshold rules (clipping, headroom, level imbalance, missing
+        high-pass, ungrouped tracks, EQ clashes) on a thin paginated snapshot;
+        returns findings (severity + exact evidence) + concrete proposals.
+
+        IMPORTANT: this samples peaks over only ~1.2s -- one MOMENT of the song,
+        so it can MISS clipping in a drop/chorus that isn't playing right now. For
+        full-song-accurate levels use WATCH mode: fl_mix_watch_start -> play the
+        whole song -> fl_mix_watch_stop. If stopped, level rules are skipped
+        (needs_playback). Applies nothing.
+        """
+        try:
+            snap = md.gather_snapshot(get_bridge())
+        except Exception as e:
+            return {"ok": False, "error": "%s: %s" % (type(e).__name__, e)}
+        playing = snap["playing"]
+        guidance = ("Project STOPPED -- press PLAY and call again, or use watch mode "
+                    "(fl_mix_watch_start -> play full song -> fl_mix_watch_stop)."
+                    if not playing else
+                    "NOTE: ~1.2s sample (one moment). For full-song peaks (catch the "
+                    "drop/chorus) use fl_mix_watch_start -> play -> fl_mix_watch_stop.")
+        return {"ok": True, "playing": playing, "needs_playback": not playing,
+                "peak_source": snap.get("peak_window", {}).get("source"),
+                "guidance": guidance, **_result(snap)}
 
     @mcp.tool(annotations={"title": "Apply a Mix Doctor fix (gated)", **_WR})
     def fl_apply_mix_fix(
@@ -117,3 +118,49 @@ def register(mcp: FastMCP) -> None:
                     "undo": "call fl_rollback_last_change to revert this"}
         except Exception as e:
             return {"ok": False, "error": "%s: %s" % (type(e).__name__, e)}
+
+    @mcp.tool(annotations={"title": "Start full-song peak watch (Mix Doctor)", **_RO})
+    def fl_mix_watch_start(
+        interval_ms: Annotated[int, Field(ge=50, le=1000,
+                     description="Poll interval per round in ms (default 150).")] = 150,
+    ) -> dict:
+        """Begin a peak-HOLD watch: continuously sample every mixer track's peak,
+        keeping a RUNNING MAX per track, until fl_mix_watch_stop. Tell the user to
+        PLAY the whole song (or at least the loudest section / the drop) while this
+        runs -- then stop for full-song-accurate level diagnosis. Read-only."""
+        try:
+            bridge = get_bridge()
+            tracks = fetch_all_pages(bridge, protocol.CMD_MIXER_LIST_TRACKS, "tracks").get("tracks", [])
+            indices = [t.get("i", t.get("index")) for t in tracks]
+            r = md.get_watcher().start(bridge, indices, interval_ms=interval_ms)
+            if not r.get("ok"):
+                return {"ok": False, "error": r.get("error"),
+                        "hint": "a watch is already running -- call fl_mix_watch_stop to finish it"}
+            return {"ok": True, "watching_tracks": r["watching"], "interval_ms": r["interval_ms"],
+                    "message": "Watching peaks (running max). PLAY the full song / the drop, "
+                               "then call fl_mix_watch_stop for full-song diagnosis."}
+        except Exception as e:
+            return {"ok": False, "error": "%s: %s" % (type(e).__name__, e)}
+
+    @mcp.tool(annotations={"title": "Peak watch status (Mix Doctor)", **_RO})
+    def fl_mix_watch_status() -> dict:
+        """Is a peak watch running, and for how long / how many polls so far?"""
+        return {"ok": True, **md.get_watcher().status()}
+
+    @mcp.tool(annotations={"title": "Stop peak watch + diagnose (Mix Doctor)", **_RO})
+    def fl_mix_watch_stop() -> dict:
+        """Stop the peak watch and diagnose on the FULL-SONG running-max peaks
+        captured across the whole watch (accurate clipping/headroom/imbalance vs
+        the ~1.2s snapshot). Read-only -- proposes fixes, applies nothing."""
+        try:
+            peaks_lin, reads, elapsed = md.get_watcher().stop()
+            if not peaks_lin or reads == 0 or max(peaks_lin.values(), default=0.0) <= 0.0:
+                return {"ok": False, "reads": reads, "elapsed_s": round(elapsed, 1),
+                        "error": "no peaks captured -- was the song playing during the watch?"}
+            snap = md.gather_snapshot(get_bridge(), peaks_override=peaks_lin)
+        except Exception as e:
+            return {"ok": False, "error": "%s: %s" % (type(e).__name__, e)}
+        return {"ok": True, "peak_source": "watch (full-song running max)",
+                "watch": {"reads": reads, "elapsed_s": round(elapsed, 1)},
+                "guidance": "Levels are full-song maxima -- trustworthy for clipping/headroom.",
+                **_result(snap)}
