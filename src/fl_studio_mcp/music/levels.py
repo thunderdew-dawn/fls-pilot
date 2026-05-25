@@ -44,3 +44,38 @@ def measure_track_level(bridge, track, samples=20, interval_ms=100):
             "avg_db": round(peak_to_db(avg), 2),
             "peak_db": round(peak_to_db(max(usable)), 2),
             "n_reads": len(vals)}
+
+
+def measure_many(bridge, tracks, samples=15, interval_ms=100):
+    """Sustained peak sampling for MANY tracks over ONE shared window.
+
+    Round-robins reads (all tracks per tick, then sleep) so the whole window is
+    shared -- N tracks cost ~one window, NOT samples*interval_ms per track.
+    Reuses peak_to_db + the SILENCE guard. Per-read errors are swallowed (a
+    track that errors just gets fewer reads). Returns::
+
+        {track: {track, playing, avg_db, peak_db, peak_lin, n_reads}}
+    """
+    acc = {t: [] for t in tracks}
+    for _ in range(max(1, int(samples))):
+        for t in tracks:
+            try:
+                v = bridge.call(protocol.CMD_MIXER_GET_PEAKS, {"track": t}).get("peak_max")
+            except Exception:
+                v = None
+            if v is not None:
+                acc[t].append(v)
+        time.sleep(max(0.0, interval_ms / 1000.0))
+
+    out = {}
+    for t, vals in acc.items():
+        usable = [v for v in vals if v >= SILENCE]
+        if usable:
+            out[t] = {"track": t, "playing": True,
+                      "avg_db": round(peak_to_db(sum(usable) / len(usable)), 2),
+                      "peak_db": round(peak_to_db(max(usable)), 2),
+                      "peak_lin": max(usable), "n_reads": len(vals)}
+        else:
+            out[t] = {"track": t, "playing": False, "avg_db": None,
+                      "peak_db": None, "peak_lin": None, "n_reads": len(vals)}
+    return out

@@ -46,6 +46,9 @@ def main() -> int:
     max_tracks = 64
     if "--max-tracks" in sys.argv:
         max_tracks = int(sys.argv[sys.argv.index("--max-tracks") + 1])
+    peak_samples = 15
+    if "--peak-samples" in sys.argv:
+        peak_samples = int(sys.argv[sys.argv.index("--peak-samples") + 1])
 
     print("connecting to FL bridge...")
     bridge, transport = connect()
@@ -56,7 +59,8 @@ def main() -> int:
     print("connected via %s.\n" % transport)
 
     t0 = time.time()
-    snap = md.gather_snapshot(bridge, with_params=with_params, max_tracks=max_tracks)
+    snap = md.gather_snapshot(bridge, with_params=with_params, max_tracks=max_tracks,
+                              peak_samples=peak_samples)
     gather_s = time.time() - t0
     size_kb = len(json.dumps(snap, default=str).encode("utf-8")) / 1024.0
     res = md.diagnose(snap)
@@ -65,6 +69,13 @@ def main() -> int:
     print("transport   :", transport)
     print("tracks       : %d   playing: %s" % (snap["track_count"], snap["playing"]))
     print("gathered in  : %.2fs   snapshot %.1f KB   params=%s" % (gather_s, size_kb, with_params))
+    pw = snap.get("peak_window", {})
+    if snap["playing"]:
+        win_s = pw.get("samples", 0) * pw.get("interval_ms", 0) / 1000.0
+        print("peak sampling: SUSTAINED max -- %d reads/track over ~%.1fs window"
+              % (pw.get("samples", 0), win_s))
+    else:
+        print("peak sampling: skipped (project stopped)")
     if snap.get("gather_errors"):
         print("gather errors: %d  (e.g. %s)" % (len(snap["gather_errors"]), snap["gather_errors"][0]))
     s = res["summary"]

@@ -95,12 +95,19 @@ def _fetch_params_bounded(bridge, protocol, track, slot, cap):
     return params
 
 
-def gather_snapshot(bridge, *, with_params=True, max_tracks=64, param_cap=120):
+def gather_snapshot(bridge, *, with_params=True, max_tracks=64, param_cap=120,
+                    peak_samples=15, peak_interval_ms=80):
     """Build a normalised whole-mix snapshot via cheap bridge reads.
 
-    Returns ``{"playing", "track_count", "tracks": [...], "gather_errors": [...]}``.
-    Each track: index, name, vol_db, vol_norm, pan, mute, solo, peak_max,
-    peak_db, plugins[{slot,name,params?}], routes_to.
+    When the project is PLAYING, peaks are SUSTAINED maxima sampled over one
+    shared window (round-robin via levels.measure_many) -- not a single
+    instant -- so a transient or a quiet moment can't mislead the level rules.
+    When stopped, peaks are skipped (level rules degrade gracefully).
+
+    Returns ``{"playing", "track_count", "peak_window", "tracks": [...],
+    "gather_errors": [...]}``. Each track: index, name, vol_db, vol_norm, pan,
+    mute, solo, peak_max, peak_db, peak_avg_db, plugins[{slot,name,params?}],
+    routes_to.
     """
     from .. import protocol
     from ..connection import fetch_all_pages
@@ -123,11 +130,20 @@ def gather_snapshot(bridge, *, with_params=True, max_tracks=64, param_cap=120):
                          "mixer_get_routing_all", {"routing": []}) or {}).get("routing", [])
     route_by = {r.get("i", r.get("index")): (r.get("routes_to") or []) for r in routing_raw}
 
+    indices = [t.get("i", t.get("index")) for t in tracks_raw[:max_tracks]]
+
+    # SUSTAINED peaks: one shared round-robin window for all tracks (not a
+    # single instant, and not samples*interval PER track). Only while playing.
+    peaks = {}
+    if playing:
+        from .levels import measure_many
+        peaks = _safe(lambda: measure_many(bridge, indices, peak_samples, peak_interval_ms),
+                      "measure_many", {}) or {}
+
     tracks = []
     for t in tracks_raw[:max_tracks]:
         i = t.get("i", t.get("index"))
-        peak = (_safe(lambda i=i: bridge.call(protocol.CMD_MIXER_GET_PEAKS, {"track": i}),
-                      "peaks[%s]" % i, {}) or {}).get("peak_max")
+        samp = peaks.get(i, {})
         pl = _safe(lambda i=i: bridge.call(protocol.CMD_PLUGIN_LIST, {"track": i}),
                    "plugin_list[%s]" % i, {}) or {}
         plugins = []
@@ -143,10 +159,13 @@ def gather_snapshot(bridge, *, with_params=True, max_tracks=64, param_cap=120):
             "index": i, "name": t.get("name"),
             "vol_db": t.get("vol_db"), "vol_norm": t.get("vol_norm"),
             "pan": t.get("pan"), "mute": bool(t.get("mute")), "solo": bool(t.get("solo")),
-            "peak_max": peak, "peak_db": lin_to_db(peak),
+            "peak_max": samp.get("peak_lin"), "peak_db": samp.get("peak_db"),
+            "peak_avg_db": samp.get("avg_db"), "peak_reads": samp.get("n_reads"),
             "plugins": plugins, "routes_to": route_by.get(i, []),
         })
     return {"playing": playing, "track_count": len(tracks_raw),
+            "peak_window": {"samples": peak_samples, "interval_ms": peak_interval_ms,
+                            "sustained": bool(playing)},
             "tracks": tracks, "gather_errors": errors}
 
 
