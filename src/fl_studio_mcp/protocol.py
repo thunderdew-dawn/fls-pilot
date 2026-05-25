@@ -135,6 +135,9 @@ CMD_MIXER_SET_ROUTE = "mixer_set_route"                # setRouteTo + afterRouti
 # Level awareness (read) -- meter peaks, meaningful only during playback
 CMD_MIXER_GET_PEAKS = "mixer_get_peaks"                # getTrackPeaks L/R/max
 
+# Plugin presets (navigate/read) -- op: info | next | prev
+CMD_PLUGIN_PRESET = "plugin_preset"                    # getPresetCount/next/prev/getName
+
 
 # ---------------------------------------------------------------------------
 # SysEx wire format

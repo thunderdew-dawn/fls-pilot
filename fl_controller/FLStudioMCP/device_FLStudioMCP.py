@@ -276,7 +276,7 @@ def _h_ping(params):
     return {
         "fl_version": _fl_version,
         "protocol_version": PROTOCOL_VERSION,
-        "build": "slice-peaks-v6",   # reload marker -- bump to verify reloads take
+        "build": "slice-preset-v7",   # reload marker -- bump to verify reloads take
         "ts": time.time(),
     }
 
@@ -847,6 +847,45 @@ def _h_mixer_get_peaks(p):
     return out
 
 
+# -- Plugin preset navigate/read (op: info | next | prev) --------------------
+
+def _h_plugin_preset(p):
+    """Navigate/read a plugin's presets. For a channel generator pass slot=-1.
+    op 'next'/'prev' step the preset first, then everything reports the CURRENT
+    state: preset_count + candidate current-preset names (getName flags 3/6 +
+    getPluginName). Wrapped defensively -- a walled-off plugin just yields
+    count 0/1 and unchanging names."""
+    track = int(p["track"])
+    slot = int(p.get("slot", -1))
+    op = p.get("op", "info")
+    out = {"track": track, "slot": slot, "op": op}
+    if op == "next":
+        try:
+            plugins.nextPreset(track, slot)
+        except Exception as e:
+            out["nav_error"] = "nextPreset: %s" % e
+    elif op == "prev":
+        try:
+            plugins.prevPreset(track, slot)
+        except Exception as e:
+            out["nav_error"] = "prevPreset: %s" % e
+    try:
+        out["preset_count"] = plugins.getPresetCount(track, slot)
+    except Exception as e:
+        out["preset_count"] = None
+        out["count_error"] = str(e)
+    try:
+        out["plugin_name"] = plugins.getPluginName(track, slot)
+    except Exception:
+        out["plugin_name"] = None
+    for flag, key in ((3, "name_f3"), (6, "name_f6")):
+        try:
+            out[key] = plugins.getName(track, slot, flag, 0)
+        except Exception:
+            out[key] = None
+    return out
+
+
 _HANDLERS = {
     "ping": _h_ping,
     "get_tempo": _h_get_tempo,
@@ -882,4 +921,5 @@ _HANDLERS = {
     "detect_cleanup_candidates": _h_detect_cleanup,
     "mixer_set_route": _h_mixer_set_route,
     "mixer_get_peaks": _h_mixer_get_peaks,
+    "plugin_preset": _h_plugin_preset,
 }
