@@ -283,7 +283,7 @@ def _h_ping(params):
     return {
         "fl_version": _fl_version,
         "protocol_version": PROTOCOL_VERSION,
-        "build": "harden-v12",   # reload marker -- bump to verify reloads take
+        "build": "resources-v13",   # reload marker -- bump to verify reloads take
         "ts": time.time(),
     }
 
@@ -953,6 +953,18 @@ def _h_api_probe(p):
 
 # -- Arrangement primitives (Slice 1): pattern create/clone + markers --------
 
+def _h_pattern_list(p):
+    """Budget-paginated pattern list: {pattern (1-based), name}. Thin read."""
+    def entry(i):
+        pn = i + 1                       # FL patterns are 1-based
+        name, cut = _truncate_name(patterns.getPatternName(pn))
+        e = {"pattern": pn, "name": name}
+        if cut:
+            e["trunc"] = True
+        return e
+    return _paginate(patterns.patternCount(), p.get("start", 0), entry, "patterns")
+
+
 def _h_arrange_new_pattern(p):
     """Find the next empty pattern (or count+1), select it, name it. Selecting
     it is what lets the note bridge write INTO this pattern next."""
@@ -1099,4 +1111,5 @@ _HANDLERS = {
     "arrange_add_marker": _h_arrange_add_marker,
     "channel_select": _h_channel_select,
     "ensure_piano_roll": _h_ensure_piano_roll,
+    "pattern_list": _h_pattern_list,
 }

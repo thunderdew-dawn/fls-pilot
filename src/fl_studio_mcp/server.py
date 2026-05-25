@@ -30,6 +30,7 @@ from .tools import mixing as mixing_tools
 from .tools import phase1 as phase1_tools
 from .tools import pianoroll as pianoroll_tools
 from .tools import plugin as plugin_tools
+from .tools import resources as resource_defs
 from .tools import routing as routing_tools
 from .tools import transport as transport_tools
 
@@ -82,6 +83,7 @@ def build_server() -> FastMCP:
     mixing_tools.register(mcp)      # Slice B: high-level EQ mixing intents
     routing_tools.register(mcp)     # Routing/cleanup Slice 1: read-only
     arrange_tools.register(mcp)     # Arrangement Slice 1: pattern create/clone + markers
+    resource_defs.register(mcp)     # MCP resources: fl://status, fl://project, ...
     # Later tool packs register here as they ship:
     #   pattern_tools.register(mcp)
     return mcp
