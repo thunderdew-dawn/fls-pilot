@@ -27,6 +27,7 @@ from .connection import list_ports
 from .protocol import port_from_fl_name, port_to_fl_name
 from .tools import arrange as arrange_tools
 from .tools import audio as audio_tools
+from .tools import compose as compose_tools
 from .tools import mix_doctor as mix_doctor_tools
 from .tools import mixing as mixing_tools
 from .tools import phase1 as phase1_tools
@@ -87,6 +88,7 @@ def build_server() -> FastMCP:
     arrange_tools.register(mcp)     # Arrangement Slice 1: pattern create/clone + markers
     resource_defs.register(mcp)     # MCP resources: fl://status, fl://project, ...
     audio_tools.register(mcp)       # Integration 2/3: audio analysis (tempo/key)
+    compose_tools.register(mcp)     # Raga/scale composer: write Claude notes via the bridge
     mix_doctor_tools.register(mcp)  # Mix Doctor: diagnose whole mix + gated apply-fixes
     # Later tool packs register here as they ship:
     #   pattern_tools.register(mcp)
