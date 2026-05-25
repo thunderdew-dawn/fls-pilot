@@ -4,17 +4,17 @@ build-backend = "hatchling.build"
 
 [project]
 name = "fl-studio-mcp"
-version = "0.3.0"
-description = "MCP server that controls FL Studio via a MIDI SysEx bridge to FL's Python scripting API"
+version = "1.0.0"
+description = "AI-powered FL Studio control via MCP - mixing, composition, plugin control, and mix diagnosis through natural language"
 readme = "README.md"
 license = { text = "MIT" }
 authors = [
-    { name = "Paper Kasu Productions", email = "" },
+    { name = "rosasynthesiz" },
 ]
 requires-python = ">=3.10"
 keywords = ["mcp", "fl-studio", "music-production", "ai", "claude", "fruityloops"]
 classifiers = [
-    "Development Status :: 3 - Alpha",
+    "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
     "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3",
@@ -59,8 +59,9 @@ fl-studio-mcp = "fl_studio_mcp.server:main"
 fl-studio-mcp-daemon = "fl_studio_mcp.daemon:main"
 
 [project.urls]
-Homepage = "https://github.com/paper-kasu/flstudio-mcp"
-Issues = "https://github.com/paper-kasu/flstudio-mcp/issues"
+Homepage = "https://github.com/rosasynthesiz/flstudio-mcp"
+Repository = "https://github.com/rosasynthesiz/flstudio-mcp"
+Issues = "https://github.com/rosasynthesiz/flstudio-mcp/issues"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/fl_studio_mcp"]

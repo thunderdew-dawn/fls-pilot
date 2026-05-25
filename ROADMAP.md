@@ -129,7 +129,7 @@ so they ship inside the wheel.
       content in `references/`. Under 500 lines.
 - [ ] `evals/evals.json` — 10 questions exercising the full tool surface.
 - [ ] `.claude-plugin/marketplace.json` so this can live in
-      `paper-kasu-skills` as an installable plugin.
+      `rosasynthesiz-skills` as an installable plugin.
 - [ ] `AGENTS.md` describing the agentic workflow for future Claude sessions
       working on this codebase.
 - [ ] Demo video and screenshots in `docs/`.

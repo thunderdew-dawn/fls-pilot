@@ -102,4 +102,4 @@ Applied to the canonical repo **and** the deployed Hardware copy (kept in sync).
 ## 7. Outstanding / Optional
 
 - Empty folder `C:\Users\<you>\Code\flstudio-mcp` remains and can be removed.
-- The two controller fixes (`OnSysEx`, `set_tempo`) are genuine upstream bugs worth contributing back to `paper-kasu/flstudio-mcp`.
+- The two controller fixes (`OnSysEx`, `set_tempo`) are genuine FL controller-script bugs, fixed here in `rosasynthesiz/flstudio-mcp`.
