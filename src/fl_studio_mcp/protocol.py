@@ -132,6 +132,9 @@ CMD_DETECT_CLEANUP = "detect_cleanup_candidates"       # empty channels / unused
 # Routing writes (Slice 2)
 CMD_MIXER_SET_ROUTE = "mixer_set_route"                # setRouteTo + afterRoutingChanged
 
+# Level awareness (read) -- meter peaks, meaningful only during playback
+CMD_MIXER_GET_PEAKS = "mixer_get_peaks"                # getTrackPeaks L/R/max
+
 
 # ---------------------------------------------------------------------------
 # SysEx wire format

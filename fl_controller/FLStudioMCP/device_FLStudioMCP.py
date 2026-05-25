@@ -276,7 +276,7 @@ def _h_ping(params):
     return {
         "fl_version": _fl_version,
         "protocol_version": PROTOCOL_VERSION,
-        "build": "slice2-route-v5",   # reload marker -- bump to verify reloads take
+        "build": "slice-peaks-v6",   # reload marker -- bump to verify reloads take
         "ts": time.time(),
     }
 
@@ -832,6 +832,21 @@ def _h_mixer_set_route(p):
             "enabled": bool(mixer.getRouteSendActive(src, dst))}
 
 
+# -- Level awareness READ surface (peaks; meaningful only while playing) -----
+
+def _h_mixer_get_peaks(p):
+    """Meter peaks for a mixer track. mode 0=L, 1=R, 2=max(LR). Linear values
+    (1.0 ~ 0 dBFS, can exceed 1). Near-zero when transport is stopped."""
+    track = int(p["track"])
+    out = {"track": track}
+    for mode, key in ((0, "peak_l"), (1, "peak_r"), (2, "peak_max")):
+        try:
+            out[key] = round(float(mixer.getTrackPeaks(track, mode)), 6)
+        except Exception:
+            out[key] = None
+    return out
+
+
 _HANDLERS = {
     "ping": _h_ping,
     "get_tempo": _h_get_tempo,
@@ -866,4 +881,5 @@ _HANDLERS = {
     "channel_routing_summary": _h_channel_routing_summary,
     "detect_cleanup_candidates": _h_detect_cleanup,
     "mixer_set_route": _h_mixer_set_route,
+    "mixer_get_peaks": _h_mixer_get_peaks,
 }
