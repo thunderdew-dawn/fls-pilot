@@ -283,7 +283,7 @@ def _h_ping(params):
     return {
         "fl_version": _fl_version,
         "protocol_version": PROTOCOL_VERSION,
-        "build": "slice-arrange-v10",   # reload marker -- bump to verify reloads take
+        "build": "slice-chan-v11",   # reload marker -- bump to verify reloads take
         "ts": time.time(),
     }
 
@@ -997,6 +997,18 @@ def _h_arrange_clone_pattern(p):
             "count_before": before, "count_after": after}
 
 
+def _h_channel_select(p):
+    """Make one channel the active selection. The Piano roll follows the
+    selected channel, so this retargets the note bridge to write into it."""
+    idx = int(p["channel"])
+    try:
+        channels.selectOneChannel(idx)
+    except Exception as e:
+        return {"ok": False, "error": "selectOneChannel: %s" % e}
+    return {"ok": True, "channel": idx, "name": channels.getChannelName(idx),
+            "selected": channels.channelNumber()}
+
+
 def _h_arrange_add_marker(p):
     if arrangement is None:
         return {"ok": False, "error": "arrangement module not available"}
@@ -1060,4 +1072,5 @@ _HANDLERS = {
     "arrange_new_pattern": _h_arrange_new_pattern,
     "arrange_clone_pattern": _h_arrange_clone_pattern,
     "arrange_add_marker": _h_arrange_add_marker,
+    "channel_select": _h_channel_select,
 }

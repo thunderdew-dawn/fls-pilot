@@ -31,6 +31,15 @@ def register(mcp: FastMCP) -> None:
         bridge (fl_write_piano_roll_notes) writes INTO this pattern."""
         return get_bridge().call(protocol.CMD_ARRANGE_NEW_PATTERN, {"name": name})
 
+    @mcp.tool(annotations={"title": "Select channel (note-bridge target)", **_WR})
+    def fl_arrange_select_channel(
+        channel: Annotated[int, Field(ge=0, description="Channel-rack channel index.")],
+    ) -> dict:
+        """Make a channel the active selection so the note bridge
+        (fl_write_piano_roll_notes) writes INTO it. Use before writing each
+        instrument's notes in a section (drums -> ch X, bass -> ch Y, ...)."""
+        return get_bridge().call(protocol.CMD_CHANNEL_SELECT, {"channel": channel})
+
     @mcp.tool(annotations={"title": "Clone a pattern (copies notes)", **_WR})
     def fl_arrange_clone_pattern(
         src: Annotated[int, Field(ge=1, description="Source pattern index.")],
