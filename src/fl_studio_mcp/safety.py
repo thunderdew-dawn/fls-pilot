@@ -154,11 +154,20 @@ def safe_write(bridge, *, tool, scope, command, params, build_restore, verify=No
         }
     before = take_snapshot(bridge, scope)
     restore = build_restore(before)
-    after = bridge.call(command, params)
-    after = _verify_retry(bridge, command, params, after, verify)
+    echo = bridge.call(command, params)
+    echo = _verify_retry(bridge, command, params, echo, verify)
+    # FL commits some writes (notably mixer fader volume/pan) on a LATER
+    # script-tick, so the handler's SAME-tick readback (echo) can report the
+    # stale pre-write value. Re-read the scope on a FRESH tick for the TRUE
+    # post-write state. Fall back to the echo if the scope can't be re-read.
+    try:
+        after = take_snapshot(bridge, scope)
+    except Exception:
+        after = echo
     _log.append({
         "tool": tool, "scope": scope, "command": command, "params": params,
-        "before": before, "after": after, "restore": restore, "ts": time.time(),
+        "before": before, "after": after, "echo": echo, "restore": restore,
+        "ts": time.time(),
     })
     return {"ok": True, "before": before, "after": after}
 
