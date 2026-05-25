@@ -735,96 +735,6 @@ def _h_channel_routing_summary(p):
     return _paginate(channels.channelCount(), p.get("start", 0), _channel_route_entry, "channels")
 
 
-def _is_default_mixer_name(i, name):
-    name = name or ""
-    if i == 0:
-        return name in ("", "Master")
-    return name in ("", "Insert %d" % i)
-
-
-def _looks_default_channel_name(name):
-    if not name:
-        return True
-    return name.split(" ")[0] in ("Channel", "Sampler", "Insert")
-
-
-def _h_detect_cleanup(p):
-    # INSTRUMENTED + HARD-CAPPED diagnostic build. Records ntr/nch, per-stage
-    # timing and call counts, and caps total heavy API calls so it can NEVER
-    # hang. Used to localize why the earlier version timed out.
-    t0 = time.time()
-    trace = {"calls": {"target": 0, "name": 0, "route": 0, "valid": 0}}
-    nch = channels.channelCount()
-    ntr = mixer.trackCount()
-    trace["nch"] = nch
-    trace["ntr"] = ntr
-
-    targeted = set()
-    for c in range(min(nch, 500)):
-        try:
-            targeted.add(channels.getTargetFxTrack(c))
-            trace["calls"]["target"] += 1
-        except Exception:
-            pass
-    trace["targeted"] = sorted(x for x in targeted if isinstance(x, int))[:40]
-    trace["t_after_channels"] = round(time.time() - t0, 3)
-
-    HARD = 800                 # global heavy-call cap -> cannot hang
-    heavy = 0
-    capped = False
-    unused = []
-    for t in range(1, min(ntr, 500)):
-        if t in targeted:
-            continue
-        nm = mixer.getTrackName(t)
-        trace["calls"]["name"] += 1
-        if not _is_default_mixer_name(t, nm):
-            continue
-        routed_in = False
-        for src in range(min(ntr, 500)):
-            if heavy >= HARD:
-                capped = True
-                break
-            if src != t:
-                try:
-                    heavy += 1
-                    trace["calls"]["route"] += 1
-                    if mixer.getRouteSendActive(src, t):
-                        routed_in = True
-                        break
-                except Exception:
-                    pass
-        if capped:
-            break
-        if routed_in:
-            continue
-        has_plugin = False
-        for s in range(10):
-            if heavy >= HARD:
-                capped = True
-                break
-            try:
-                heavy += 1
-                trace["calls"]["valid"] += 1
-                if plugins.isValid(t, s):
-                    has_plugin = True
-                    break
-            except Exception:
-                pass
-        if capped:
-            break
-        if has_plugin:
-            continue
-        unused.append({"track": t, "name": nm})
-
-    trace["heavy_calls"] = heavy
-    trace["capped"] = capped
-    trace["t_total"] = round(time.time() - t0, 3)
-    trace["unused_count"] = len(unused)
-    trace["unused"] = unused[:30]
-    return trace
-
-
 # -- Routing WRITE surface (Slice 2) -----------------------------------------
 
 def _h_mixer_set_route(p):
@@ -1101,7 +1011,6 @@ _HANDLERS = {
     "mixer_get_routing": _h_mixer_get_routing,
     "mixer_get_routing_all": _h_mixer_get_routing_all,
     "channel_routing_summary": _h_channel_routing_summary,
-    "detect_cleanup_candidates": _h_detect_cleanup,
     "mixer_set_route": _h_mixer_set_route,
     "mixer_get_peaks": _h_mixer_get_peaks,
     "plugin_preset": _h_plugin_preset,
