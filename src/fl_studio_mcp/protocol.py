@@ -138,6 +138,14 @@ CMD_MIXER_GET_PEAKS = "mixer_get_peaks"                # getTrackPeaks L/R/max
 # Plugin presets (navigate/read) -- op: info | next | prev
 CMD_PLUGIN_PRESET = "plugin_preset"                    # getPresetCount/next/prev/getName
 
+# API introspection / arrangement probe -- op: dir | ppq | marker_add | undo
+CMD_API_PROBE = "api_probe"
+
+# Arrangement primitives (Slice 1) -- pattern create/clone + section markers
+CMD_ARRANGE_NEW_PATTERN = "arrange_new_pattern"        # find empty + jumpTo + name
+CMD_ARRANGE_CLONE_PATTERN = "arrange_clone_pattern"    # clonePattern + rename
+CMD_ARRANGE_ADD_MARKER = "arrange_add_marker"          # addAutoTimeMarker at a bar
+
 
 # ---------------------------------------------------------------------------
 # SysEx wire format

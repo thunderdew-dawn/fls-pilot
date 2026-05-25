@@ -48,6 +48,13 @@ import plugins
 import transport
 import ui
 
+# Arrangement module exists on FL 20.99+/21+. Import defensively so the script
+# still loads on builds that lack it.
+try:
+    import arrangement
+except Exception:
+    arrangement = None
+
 
 # ---------------------------------------------------------------------------
 # Protocol constants -- MUST stay in sync with src/fl_studio_mcp/protocol.py
@@ -276,7 +283,7 @@ def _h_ping(params):
     return {
         "fl_version": _fl_version,
         "protocol_version": PROTOCOL_VERSION,
-        "build": "slice-preset-v7",   # reload marker -- bump to verify reloads take
+        "build": "slice-arrange-v10",   # reload marker -- bump to verify reloads take
         "ts": time.time(),
     }
 
@@ -886,6 +893,133 @@ def _h_plugin_preset(p):
     return out
 
 
+# -- API introspection / arrangement probe -----------------------------------
+
+def _h_api_probe(p):
+    """op:
+      dir    -> {module, names}: public names of one FL module (per-module to
+                stay under the SysEx size limit).
+      ppq    -> {ppq, pattern_count, pattern_number}
+      marker_add -> arrangement.addAutoTimeMarker(time, name)
+      undo   -> general.undoUp() (best-effort, to remove a test marker)
+    """
+    op = p.get("op", "dir")
+    if op == "dir":
+        mods = {"playlist": playlist, "arrangement": arrangement, "patterns": patterns,
+                "general": general, "transport": transport}
+        mod = mods.get(p.get("module", "playlist"))
+        if mod is None:
+            return {"module": p.get("module"), "error": "module not available"}
+        names = [n for n in dir(mod) if not n.startswith("_")]
+        start = max(0, int(p.get("start", 0)))      # budget-paginate (dir is large)
+        out, i = [], start
+        while i < len(names):
+            out.append(names[i])
+            i += 1
+            if len(json.dumps(out, separators=(",", ":"))) > 600 and len(out) > 1:
+                out.pop()
+                i -= 1
+                break
+        return {"module": p.get("module", "playlist"), "total": len(names),
+                "start": start, "next_start": (i if i < len(names) else None), "names": out}
+    if op == "ppq":
+        out = {}
+        for key, fn in (("ppq", lambda: general.getRecPPQ()),
+                        ("pattern_count", lambda: patterns.patternCount()),
+                        ("pattern_number", lambda: patterns.patternNumber())):
+            try:
+                out[key] = fn()
+            except Exception as e:
+                out[key + "_error"] = str(e)
+        return out
+    if op == "marker_add":
+        if arrangement is None:
+            return {"ok": False, "error": "arrangement module not available"}
+        t = int(p["time"])
+        name = p.get("name", "TEST")
+        try:
+            arrangement.addAutoTimeMarker(t, name)
+            return {"ok": True, "added": name, "time": t}
+        except Exception as e:
+            return {"ok": False, "error": "addAutoTimeMarker: %s" % e}
+    if op == "undo":
+        try:
+            general.undoUp()
+            return {"ok": True, "undid": True}
+        except Exception as e:
+            return {"ok": False, "error": "undoUp: %s" % e}
+    return {"error": "unknown op: %s" % op}
+
+
+# -- Arrangement primitives (Slice 1): pattern create/clone + markers --------
+
+def _h_arrange_new_pattern(p):
+    """Find the next empty pattern (or count+1), select it, name it. Selecting
+    it is what lets the note bridge write INTO this pattern next."""
+    name = p.get("name", "PATTERN")
+    try:
+        idx = patterns.findFirstNextEmptyPat()
+    except Exception:
+        idx = -1
+    if not isinstance(idx, int) or idx < 1:
+        idx = patterns.patternCount() + 1
+    patterns.jumpToPattern(idx)
+    try:
+        patterns.setPatternName(idx, name)
+    except Exception as e:
+        return {"ok": False, "error": "setPatternName: %s" % e, "index": idx}
+    return {"ok": True, "index": idx, "name": patterns.getPatternName(idx),
+            "count": patterns.patternCount(), "selected": patterns.patternNumber()}
+
+
+def _h_arrange_clone_pattern(p):
+    """Clone a pattern (copies its notes) and rename the clone. Reports
+    count before/after + the clone's selected index so we can see what FL did."""
+    src = int(p["src"])
+    new_name = p.get("new_name", "CLONE")
+    patterns.jumpToPattern(src)
+    before = patterns.patternCount()
+    try:
+        patterns.clonePattern(src)
+    except Exception:
+        try:
+            patterns.clonePattern()
+        except Exception as e:
+            return {"ok": False, "error": "clonePattern: %s" % e}
+    new_idx = patterns.patternNumber()
+    after = patterns.patternCount()
+    try:
+        patterns.setPatternName(new_idx, new_name)
+    except Exception as e:
+        return {"ok": False, "error": "setPatternName: %s" % e, "new_index": new_idx}
+    return {"ok": True, "src": src, "new_index": new_idx,
+            "new_name": patterns.getPatternName(new_idx),
+            "count_before": before, "count_after": after}
+
+
+def _h_arrange_add_marker(p):
+    if arrangement is None:
+        return {"ok": False, "error": "arrangement module not available"}
+    bar = int(p["bar"])
+    name = p.get("name", "MARK")
+    ppb = None
+    try:
+        ppb = general.getRecPPB()
+    except Exception:
+        ppb = None
+    if not isinstance(ppb, (int, float)) or ppb <= 0:
+        try:
+            ppb = 4 * general.getRecPPQ()
+        except Exception:
+            ppb = 384
+    t = int((bar - 1) * ppb)            # bar 1 -> tick 0
+    try:
+        arrangement.addAutoTimeMarker(t, name)
+        return {"ok": True, "bar": bar, "name": name, "time": t, "ppb": ppb}
+    except Exception as e:
+        return {"ok": False, "error": "addAutoTimeMarker: %s" % e}
+
+
 _HANDLERS = {
     "ping": _h_ping,
     "get_tempo": _h_get_tempo,
@@ -922,4 +1056,8 @@ _HANDLERS = {
     "mixer_set_route": _h_mixer_set_route,
     "mixer_get_peaks": _h_mixer_get_peaks,
     "plugin_preset": _h_plugin_preset,
+    "api_probe": _h_api_probe,
+    "arrange_new_pattern": _h_arrange_new_pattern,
+    "arrange_clone_pattern": _h_arrange_clone_pattern,
+    "arrange_add_marker": _h_arrange_add_marker,
 }
