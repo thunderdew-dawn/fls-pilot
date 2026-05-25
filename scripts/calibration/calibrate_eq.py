@@ -21,7 +21,7 @@ import re
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
 from fl_studio_mcp import protocol, safety              # noqa: E402
 from fl_studio_mcp.connection import get_bridge          # noqa: E402
