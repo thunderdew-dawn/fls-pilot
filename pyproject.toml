@@ -45,6 +45,14 @@ audio = [
     "numpy>=1.24",
     "scipy>=1.10",
 ]
+# Higher-accuracy melody/pitch via CREPE (torchcrepe). HEAVY: pulls torch
+# (~500MB on disk, slower on CPU). Install ALONGSIDE [audio], e.g.
+#   pip install -e .[audio,audio-accurate]
+# Without it, fl_extract_melody falls back to the lighter pyin engine.
+audio-accurate = [
+    "torch>=2.0",
+    "torchcrepe>=0.0.23",
+]
 
 [project.scripts]
 fl-studio-mcp = "fl_studio_mcp.server:main"
