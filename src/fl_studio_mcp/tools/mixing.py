@@ -18,6 +18,7 @@ from pydantic import Field
 
 from .. import protocol, safety
 from ..connection import fetch_all_pages, get_bridge
+from ..music import limiter_curves as lc
 from ..music import reverb_delay_curves as rd
 from ..music.eq_curves import (
     TYPE_NORMS,
@@ -287,3 +288,54 @@ def register(mcp: FastMCP) -> None:
         return _finish(res, plugin=pname, intent=intent, intensity=intensity,
                        setp=setp, warning=warning, tool="apply_delay_intent",
                        scope="plugin_delay:%d:%d" % (track, slot))
+
+    @mcp.tool(annotations={"title": "Apply a compression intent", **_WR})
+    def fl_apply_compression_intent(
+        track: Annotated[int, Field(ge=0)],
+        slot: Annotated[int, Field(ge=0, le=9, description="Slot of a Fruity Limiter.")],
+        intent: Annotated[
+            Literal["heavy_vocal_compression", "gentle_compression", "glue_drums", "punch"],
+            Field(description="Which compression move."),
+        ],
+        intensity: Annotated[float, Field(ge=0.0, le=1.0)] = 0.5,
+    ) -> dict:
+        """Compress via the Fruity Limiter COMP section. ALWAYS sets ratio (>1:1,
+        downward) AND threshold together -- never one alone (FL's silent-fail
+        trap) -- plus attack/release and makeup gain, as ONE rollback unit.
+        Returns readback strings. Revert with fl_rollback_last_change."""
+        bridge = get_bridge()
+        pname = _plugin_name_at(bridge, track, slot)
+        if not pname or "limiter" not in pname.lower():
+            return {"ok": False, "error": "track %d slot %d is %r, not a Fruity Limiter."
+                    % (track, slot, pname)}
+        intensity = max(0.0, min(1.0, float(intensity)))
+
+        # (ratio X:1, threshold dB, attack ms, release ms, makeup dB)
+        if intent == "heavy_vocal_compression":
+            ratio, thr, atk, rel, mk = _lerp(4, 8, intensity), _lerp(-6, -14, intensity), 5.0, 80.0, _lerp(3, 6, intensity)
+        elif intent == "gentle_compression":
+            ratio, thr, atk, rel, mk = _lerp(1.5, 2.5, intensity), _lerp(-4, -8, intensity), 20.0, 150.0, _lerp(1, 2, intensity)
+        elif intent == "glue_drums":
+            ratio, thr, atk, rel, mk = _lerp(2.5, 3.5, intensity), _lerp(-6, -10, intensity), 30.0, 120.0, _lerp(1, 3, intensity)
+        else:  # punch -- slow attack lets the transient through, fast release
+            ratio, thr, atk, rel, mk = _lerp(3, 5, intensity), _lerp(-6, -10, intensity), 30.0, 40.0, _lerp(1, 3, intensity)
+
+        P = _named_params(bridge, track, slot)
+
+        def add(name, target_norm):
+            writes.append(_param_write(track, slot, P[name]["i"], target_norm))
+
+        writes = []
+        add("Comp ratio", lc.ratio_to_norm(ratio))          # norm > 0.5 (downward)
+        add("Comp threshold", lc.threshold_to_norm(thr))    # set TOGETHER with ratio
+        add("Comp attack time", lc.attack_ms_to_norm(atk))
+        add("Comp release time", lc.release_ms_to_norm(rel))
+        add("Gain", lc.makeup_db_to_norm(mk))               # makeup = global Gain
+
+        res = safety.safe_write_group(bridge, tool="apply_compression_intent",
+                                      scope="plugin_comp:%d:%d" % (track, slot), writes=writes)
+        return _finish(res, plugin=pname, intent=intent, intensity=intensity,
+                       setp={"ratio": "%.1f:1" % ratio, "threshold_db": round(thr, 1),
+                             "attack_ms": atk, "release_ms": rel, "makeup_db": round(mk, 1)},
+                       warning=None, tool="apply_compression_intent",
+                       scope="plugin_comp:%d:%d" % (track, slot))
