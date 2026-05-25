@@ -18,7 +18,9 @@ from pydantic import Field
 
 from .. import protocol, safety
 from ..connection import fetch_all_pages, get_bridge
+from ..music import levels
 from ..music import limiter_curves as lc
+from ..music import proc3_curves as pc
 from ..music import reverb_delay_curves as rd
 from ..music.eq_curves import (
     TYPE_NORMS,
@@ -69,11 +71,49 @@ def _plugin_name_at(bridge, track, slot):
     return next((s["name"] for s in listing.get("slots", []) if s["slot"] == slot), None)
 
 
-def _named_params(bridge, track, slot):
-    """{name: {i, name, v, s}} for every named param of a plugin slot."""
-    dump = fetch_all_pages(bridge, protocol.CMD_PLUGIN_GET_PARAMS, "params",
-                           {"track": track, "slot": slot})
-    return {p["name"]: p for p in dump.get("params", [])}
+def _named_params(bridge, track, slot, max_index=None):
+    """{name: {i, name, v, s}} for a plugin slot's named params.
+
+    max_index caps the scan (VST wrappers report ~4240 slots but the real
+    params sit at low indices) so we don't page the whole 4240 every call.
+    """
+    if max_index is None:
+        params = fetch_all_pages(bridge, protocol.CMD_PLUGIN_GET_PARAMS, "params",
+                                 {"track": track, "slot": slot}).get("params", [])
+    else:
+        params, start = [], 0
+        while start < max_index:
+            page = bridge.call(protocol.CMD_PLUGIN_GET_PARAMS,
+                               {"track": track, "slot": slot, "start": start})
+            params.extend(page.get("params", []))
+            nxt = page.get("next_start")
+            if nxt is None or nxt <= start:
+                break
+            start = nxt
+    return {p["name"]: p for p in params}
+
+
+# Abstract compression-intent targets (plugin-agnostic). level_offset = how far
+# below the measured PEAK to put the threshold when level-aware; blind_thr =
+# the preset threshold used as fallback when transport is stopped.
+def _comp_target(intent, intensity):
+    L = _lerp
+    if intent == "heavy_vocal_compression":
+        return {"ratio": L(4, 8, intensity), "attack": 5.0, "release": 80.0,
+                "makeup": L(3, 6, intensity), "style": "Vocal",
+                "level_offset": 12.0, "blind_thr": L(-6, -14, intensity)}
+    if intent == "gentle_compression":
+        return {"ratio": L(1.5, 2.5, intensity), "attack": 20.0, "release": 150.0,
+                "makeup": L(1, 2, intensity), "style": "Smooth",
+                "level_offset": 4.0, "blind_thr": L(-4, -8, intensity)}
+    if intent == "glue_drums":
+        return {"ratio": L(2.5, 3.5, intensity), "attack": 30.0, "release": 120.0,
+                "makeup": L(1, 3, intensity), "style": "Bus",
+                "level_offset": 8.0, "blind_thr": L(-6, -10, intensity)}
+    # punch -- slow attack lets the transient through, fast release
+    return {"ratio": L(3, 5, intensity), "attack": 30.0, "release": 40.0,
+            "makeup": L(1, 3, intensity), "style": "Punch",
+            "level_offset": 6.0, "blind_thr": L(-6, -10, intensity)}
 
 
 def _param_write(track, slot, idx, value):
@@ -92,6 +132,7 @@ def _param_write(track, slot, idx, value):
 
 
 def register(mcp: FastMCP) -> None:
+    _RO = {"readOnlyHint": True, "idempotentHint": True, "openWorldHint": True}
     _WR = {"readOnlyHint": False, "destructiveHint": False,
            "idempotentHint": False, "openWorldHint": True}
 
@@ -289,53 +330,97 @@ def register(mcp: FastMCP) -> None:
                        setp=setp, warning=warning, tool="apply_delay_intent",
                        scope="plugin_delay:%d:%d" % (track, slot))
 
+    @mcp.tool(annotations={"title": "Get track level (dB)", **_RO})
+    def fl_get_track_level(
+        track: Annotated[int, Field(ge=0)],
+        samples: Annotated[int, Field(ge=1, le=100, description="Reads over ~samples*100ms.")] = 20,
+    ) -> dict:
+        """Measure a mixer track's level by sampling meter peaks over a short
+        window. Requires PLAYBACK -- returns playing=False (avg/peak null) when
+        stopped/silent. {track, playing, avg_db, peak_db}."""
+        return levels.measure_track_level(get_bridge(), track, samples=samples)
+
     @mcp.tool(annotations={"title": "Apply a compression intent", **_WR})
     def fl_apply_compression_intent(
         track: Annotated[int, Field(ge=0)],
-        slot: Annotated[int, Field(ge=0, le=9, description="Slot of a Fruity Limiter.")],
+        slot: Annotated[int, Field(ge=0, le=9, description="Slot of a Fruity Limiter OR FabFilter Pro-C.")],
         intent: Annotated[
             Literal["heavy_vocal_compression", "gentle_compression", "glue_drums", "punch"],
             Field(description="Which compression move."),
         ],
         intensity: Annotated[float, Field(ge=0.0, le=1.0)] = 0.5,
+        level_aware: Annotated[bool, Field(
+            description="Measure track level (during playback) and set threshold relative to "
+                        "it; falls back to the preset threshold if stopped/silent.")] = True,
     ) -> dict:
-        """Compress via the Fruity Limiter COMP section. ALWAYS sets ratio (>1:1,
-        downward) AND threshold together -- never one alone (FL's silent-fail
-        trap) -- plus attack/release and makeup gain, as ONE rollback unit.
-        Returns readback strings. Revert with fl_rollback_last_change."""
+        """Compress via Fruity Limiter (COMP section) or FabFilter Pro-C. ALWAYS
+        sets ratio AND threshold together; ratio/attack/release/makeup (+ Pro-C
+        Style) per intent, as ONE rollback unit. When level_aware and the track
+        is playing, threshold is set relative to the MEASURED peak (a smart
+        starting point, not exact gain-reduction); stopped -> preset fallback +
+        a note. Returns readback + the measured level / chosen threshold."""
         bridge = get_bridge()
         pname = _plugin_name_at(bridge, track, slot)
-        if not pname or "limiter" not in pname.lower():
-            return {"ok": False, "error": "track %d slot %d is %r, not a Fruity Limiter."
-                    % (track, slot, pname)}
+        low = (pname or "").lower()
+        is_proc = ("pro-c" in low) or ("pro c" in low)
+        is_limiter = "limiter" in low
+        if not (is_proc or is_limiter):
+            return {"ok": False, "error": "track %d slot %d is %r, not a supported compressor "
+                    "(Fruity Limiter or FabFilter Pro-C)." % (track, slot, pname)}
         intensity = max(0.0, min(1.0, float(intensity)))
+        T = _comp_target(intent, intensity)
 
-        # (ratio X:1, threshold dB, attack ms, release ms, makeup dB)
-        if intent == "heavy_vocal_compression":
-            ratio, thr, atk, rel, mk = _lerp(4, 8, intensity), _lerp(-6, -14, intensity), 5.0, 80.0, _lerp(3, 6, intensity)
-        elif intent == "gentle_compression":
-            ratio, thr, atk, rel, mk = _lerp(1.5, 2.5, intensity), _lerp(-4, -8, intensity), 20.0, 150.0, _lerp(1, 2, intensity)
-        elif intent == "glue_drums":
-            ratio, thr, atk, rel, mk = _lerp(2.5, 3.5, intensity), _lerp(-6, -10, intensity), 30.0, 120.0, _lerp(1, 3, intensity)
-        else:  # punch -- slow attack lets the transient through, fast release
-            ratio, thr, atk, rel, mk = _lerp(3, 5, intensity), _lerp(-6, -10, intensity), 30.0, 40.0, _lerp(1, 3, intensity)
+        # threshold: level-aware (peak - offset) when playing, else preset.
+        measured, note, matched = None, None, False
+        threshold_db = T["blind_thr"]
+        if level_aware:
+            measured = levels.measure_track_level(bridge, track)
+            if measured["playing"]:
+                threshold_db = max(-60.0, min(0.0, measured["peak_db"] - T["level_offset"]))
+                matched = True
+            else:
+                note = ("transport stopped/silent -- used preset threshold; "
+                        "play + re-run for level-matched")
 
-        P = _named_params(bridge, track, slot)
+        # plugin adapter: abstract targets -> (param name, norm) for THIS plugin
+        if is_proc:
+            pairs = [("Ratio", pc.ratio_to_norm(T["ratio"])),
+                     ("Threshold", pc.threshold_to_norm(threshold_db)),
+                     ("Attack", pc.attack_ms_to_norm(T["attack"])),
+                     ("Release", pc.release_ms_to_norm(T["release"])),
+                     ("Output Level", pc.makeup_db_to_norm(T["makeup"])),
+                     ("Style", pc.style_to_norm(T["style"])),
+                     ("Auto Gain", 0.0)]          # off so manual makeup (Output Level) applies
+        else:
+            pairs = [("Comp ratio", lc.ratio_to_norm(T["ratio"])),
+                     ("Comp threshold", lc.threshold_to_norm(threshold_db)),
+                     ("Comp attack time", lc.attack_ms_to_norm(T["attack"])),
+                     ("Comp release time", lc.release_ms_to_norm(T["release"])),
+                     ("Gain", lc.makeup_db_to_norm(T["makeup"]))]
 
-        def add(name, target_norm):
-            writes.append(_param_write(track, slot, P[name]["i"], target_norm))
-
-        writes = []
-        add("Comp ratio", lc.ratio_to_norm(ratio))          # norm > 0.5 (downward)
-        add("Comp threshold", lc.threshold_to_norm(thr))    # set TOGETHER with ratio
-        add("Comp attack time", lc.attack_ms_to_norm(atk))
-        add("Comp release time", lc.release_ms_to_norm(rel))
-        add("Gain", lc.makeup_db_to_norm(mk))               # makeup = global Gain
+        P = _named_params(bridge, track, slot, max_index=256)
+        missing = [nm for nm, _ in pairs if nm not in P]
+        if missing:
+            return {"ok": False, "error": "params not found on %r: %s" % (pname, missing)}
+        writes = [_param_write(track, slot, P[nm]["i"], norm) for nm, norm in pairs]
 
         res = safety.safe_write_group(bridge, tool="apply_compression_intent",
                                       scope="plugin_comp:%d:%d" % (track, slot), writes=writes)
-        return _finish(res, plugin=pname, intent=intent, intensity=intensity,
-                       setp={"ratio": "%.1f:1" % ratio, "threshold_db": round(thr, 1),
-                             "attack_ms": atk, "release_ms": rel, "makeup_db": round(mk, 1)},
-                       warning=None, tool="apply_compression_intent",
-                       scope="plugin_comp:%d:%d" % (track, slot))
+        setp = {"ratio": "%.1f:1" % T["ratio"], "threshold_db": round(threshold_db, 1),
+                "attack_ms": T["attack"], "release_ms": T["release"],
+                "makeup_db": round(T["makeup"], 1)}
+        if is_proc:
+            setp["style"] = T["style"]
+        out = _finish(res, plugin=pname, intent=intent, intensity=intensity, setp=setp,
+                      warning=None, tool="apply_compression_intent",
+                      scope="plugin_comp:%d:%d" % (track, slot))
+        if isinstance(out, dict) and out.get("ok"):
+            out["level"] = {
+                "aware": level_aware, "matched": matched, "measured": measured,
+                "chosen_threshold_db": round(threshold_db, 1),
+                "mode": ("level-matched (smart starting point, not exact GR)"
+                         if matched else ("preset-fallback" if level_aware else "preset")),
+            }
+            if note:
+                out["note"] = note
+        return out
