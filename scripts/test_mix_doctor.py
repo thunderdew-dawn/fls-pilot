@@ -39,6 +39,10 @@ def rules_hit(res):
     return {f["rule"] for f in res["findings"]}
 
 
+def db_lin(db):
+    return 10 ** (db / 20.0)        # dBFS -> linear peak, for synthetic peaks
+
+
 def main() -> int:
     # 1) clipping + headroom (playing): Master at 0 dBFS, a track over 0.
     snap = {"playing": True, "tracks": [
@@ -123,6 +127,27 @@ def main() -> int:
     r = md.diagnose(snap)
     check("clean mix yields no findings", len(r["findings"]) == 0,
           "got %s" % [f["rule"] for f in r["findings"]])
+
+    # 7) plan_fixes: clip-risk source -> EXACT trim plan; safe track -> none.
+    snap = {"playing": True, "tracks": [
+        trk(0, "Master", peak_max=db_lin(0.0)),
+        trk(1, "VOX", vol_db=0.0, peak_max=db_lin(-0.8)),
+        trk(2, "Pad", vol_db=0.0, peak_max=db_lin(-12.0)),
+    ]}
+    plan = md.plan_fixes(snap)
+    vox = next((p for p in plan["plans"] if p.get("track_name") == "VOX"), None)
+    check("plan_fixes makes a trim plan for clip-risk VOX", vox is not None)
+    check("trim target ~ -2.2 dB fader (-0.8 peak -> -3.0)",
+          bool(vox) and abs(vox["params"]["value"] - (-2.2)) <= 0.2,
+          str(vox and vox["params"]))
+    check("trim plan actionable + unit db + correct track",
+          bool(vox) and vox["actionable"] and vox["params"]["unit"] == "db"
+          and vox["params"]["track"] == 1)
+    check("safe Pad (-12 dB) gets no trim plan",
+          all(p.get("track_name") != "Pad" for p in plan["plans"]))
+    check("Master clipping -> source-trim NOTE, no Master plan",
+          any("trim the hot SOURCES" in n for n in plan["notes"])
+          and all(p.get("track") != 0 for p in plan["plans"]))
 
     print("\n%d passed, %d failed" % (_P, _F))
     return 0 if _F == 0 else 1

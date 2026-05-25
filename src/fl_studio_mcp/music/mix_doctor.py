@@ -398,3 +398,77 @@ def diagnose(snapshot):
                for sev in ("high", "medium", "low")}
     return {"playing": playing, "track_count": len(tracks),
             "findings": findings, "notes": notes, "summary": summary}
+
+
+# --------------------------------------------------------------------------
+# Fix planning (PURE) -- turn findings into concrete, approvable changes.
+# Nothing here writes; the apply layer (scripts/mix_doctor_fix.py) executes a
+# chosen plan via safety.safe_write. Master clipping is handled by trimming the
+# hot SOURCES, never an automatic Master pull.
+# --------------------------------------------------------------------------
+DEFAULT_TARGET_PEAK_DB = -3.0      # trim a clip-risk source until its peak sits here
+
+
+def plan_fixes(snapshot, target_peak_db=DEFAULT_TARGET_PEAK_DB):
+    """Concrete, exact, approvable fix plans from the diagnosis. PURE.
+
+    Volume trims compute an ABSOLUTE target fader dB (fader change == post-fader
+    peak change), so the applied write equals exactly what is shown. Master
+    clipping yields SOURCE trims + an explanation -- never an auto Master pull.
+    """
+    from .. import protocol
+    res = diagnose(snapshot)
+    by_name = {t.get("name"): t for t in snapshot.get("tracks", [])}
+    plans, notes = [], list(res["notes"])
+    pid = 0
+
+    for f in res["findings"]:
+        if f["rule"] != "clipping" or not f["track"] or f["track"] == "Master":
+            continue
+        t = by_name.get(f["track"])
+        if not t or t.get("vol_db") is None or t.get("peak_db") is None:
+            continue
+        trim = round(t["peak_db"] - target_peak_db, 1)     # how far to come down
+        if trim <= 0:
+            continue
+        new_fader = round(t["vol_db"] - trim, 1)
+        pid += 1
+        plans.append({
+            "id": pid, "kind": "trim_volume", "severity": f["severity"], "actionable": True,
+            "track": t["index"], "track_name": t["name"],
+            "tool": "mixer_set_volume", "scope": "mixer_track:%d" % t["index"],
+            "command": protocol.CMD_MIXER_SET_VOLUME,
+            "params": {"track": t["index"], "value": new_fader, "unit": "db"},
+            "restore_field": "vol_norm",
+            "current_fader_db": t["vol_db"], "target_fader_db": new_fader,
+            "current_peak_db": t["peak_db"], "target_peak_db": target_peak_db,
+            "human": "%s: fader %.1f -> %.1f dB (trim %.1f dB) so its peak %.1f -> ~%.1f dBFS"
+                     % (t["name"], t["vol_db"], new_fader, -trim, t["peak_db"], target_peak_db),
+            "reason": "%s peaks at %.1f dBFS and feeds the clipping Master; trimming the "
+                      "SOURCE keeps the rest of the mix intact (vs pulling the whole Master)."
+                      % (t["name"], t["peak_db"]),
+        })
+
+    if any(f["rule"] in ("clipping", "headroom") and f["track"] == "Master"
+           for f in res["findings"]):
+        srcs = ", ".join(p["track_name"] for p in plans) or "the loud source tracks"
+        notes.append("Master is clipping -> recommended: trim the hot SOURCES (%s), NOT the "
+                     "Master fader (pulling Master shrinks the whole mix). A small Master trim "
+                     "is a fallback only if you prefer it." % srcs)
+
+    for f in res["findings"]:
+        if f["rule"] == "ungrouped":
+            pid += 1
+            plans.append({"id": pid, "kind": "group", "severity": f["severity"],
+                          "actionable": False, "tool": "group_tracks", "track_name": None,
+                          "args": f["proposed_fix"]["args"].get("tracks", []),
+                          "human": "Group: %s" % f["evidence"], "reason": f["message"],
+                          "note": "group apply wired after the volume-fix proof"})
+
+    hpf = [f["track"] for f in res["findings"] if f["rule"] == "missing_hpf"]
+    if hpf:
+        notes.append("missing_hpf (%s): can't auto-apply -- FL can't load a new plugin; needs "
+                     "an existing Fruity Parametric EQ 2 with a free band. Manual / later."
+                     % ", ".join(hpf))
+
+    return {"plans": plans, "notes": notes, "summary": res["summary"]}
