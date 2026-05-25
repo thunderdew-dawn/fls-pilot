@@ -38,6 +38,13 @@ dev = [
     "pytest-asyncio>=0.23",
     "ruff>=0.5",
 ]
+# Audio analysis (Integration 2/3). Needs ffmpeg on PATH for MP3 decoding.
+audio = [
+    "librosa>=0.10",
+    "soundfile>=0.12",
+    "numpy>=1.24",
+    "scipy>=1.10",
+]
 
 [project.scripts]
 fl-studio-mcp = "fl_studio_mcp.server:main"

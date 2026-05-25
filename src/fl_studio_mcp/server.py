@@ -26,6 +26,7 @@ from . import __version__
 from .connection import list_ports
 from .protocol import port_from_fl_name, port_to_fl_name
 from .tools import arrange as arrange_tools
+from .tools import audio as audio_tools
 from .tools import mixing as mixing_tools
 from .tools import phase1 as phase1_tools
 from .tools import pianoroll as pianoroll_tools
@@ -84,6 +85,7 @@ def build_server() -> FastMCP:
     routing_tools.register(mcp)     # Routing/cleanup Slice 1: read-only
     arrange_tools.register(mcp)     # Arrangement Slice 1: pattern create/clone + markers
     resource_defs.register(mcp)     # MCP resources: fl://status, fl://project, ...
+    audio_tools.register(mcp)       # Integration 2/3: audio analysis (tempo/key)
     # Later tool packs register here as they ship:
     #   pattern_tools.register(mcp)
     return mcp
