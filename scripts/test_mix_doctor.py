@@ -200,6 +200,20 @@ def main() -> int:
     check("gain-stage flags Master headroom as ALTERNATIVE",
           "Master" in by and by["Master"].get("alternative") is True)
 
+    # 11) mix_band_balance: name-based bucketing + shares sum to 100.
+    snap = {"tracks": [
+        trk(0, "Master", peak_max=db_lin(-1.0)),
+        trk(1, "Kick", peak_max=db_lin(-3.0)),       # low
+        trk(2, "HiHat", peak_max=db_lin(-6.0)),      # high
+        trk(3, "Lead Vox", peak_max=db_lin(-6.0)),   # mid
+    ]}
+    bal = md.mix_band_balance(snap)
+    check("band balance buckets kick->low, hihat->high, vox->mid",
+          "Kick" in bal["tracks"]["low"] and "HiHat" in bal["tracks"]["high"]
+          and "Lead Vox" in bal["tracks"]["mid"], str(bal["tracks"]))
+    check("band shares sum ~100%%",
+          abs(sum(bal["bands_pct"].values()) - 100.0) <= 0.5, str(bal["bands_pct"]))
+
     print("\n%d passed, %d failed" % (_P, _F))
     return 0 if _F == 0 else 1
 

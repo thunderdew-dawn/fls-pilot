@@ -10,6 +10,7 @@ fl_group_tracks / fl_apply_eq_intent tools (reuse, not re-implement).
 """
 from __future__ import annotations
 
+import math
 from typing import Annotated, Optional
 
 from fastmcp import FastMCP
@@ -199,3 +200,49 @@ def register(mcp: FastMCP) -> None:
                             "target_db=<proposal.target_db>). One at a time; undo via "
                             "fl_rollback_last_change. Skip the 'alternative' Master trim if you "
                             "already applied the source trims."}
+
+    @mcp.tool(annotations={"title": "Reference match (level/balance)", **_RO})
+    def fl_reference_match(
+        reference_audio_path: Annotated[str, Field(description="Path to a reference WAV/MP3 to compare against.")],
+    ) -> dict:
+        """Compare your mix's LEVEL + rough tonal BALANCE to a reference track.
+        READ-ONLY. Analyzes the reference FILE (overall level + low/mid/high
+        spectral-band shares) and your mix (Master peak for level + a ROUGH
+        name-based band estimate). HONEST: a level/balance compare, NOT a spectral
+        match -- FL doesn't expose its output audio, so the your-mix balance is
+        estimated from track names + peaks. Suggests adjustments; applies nothing."""
+        import os
+        if not os.path.isfile(reference_audio_path):
+            return {"ok": False, "error": "file not found: %s" % reference_audio_path}
+        try:
+            from .audio import analyze_bands
+            ref = analyze_bands(reference_audio_path)
+            wmax = md.get_watcher().last_max()
+            snap = md.gather_snapshot(get_bridge(), peaks_override=wmax or None)
+        except Exception as e:
+            return {"ok": False, "error": "%s: %s" % (type(e).__name__, e)}
+        if not (wmax or snap.get("levels_valid")):
+            return {"ok": True, "needs_levels": True, "reference": ref,
+                    "guidance": "Reference analyzed, but no mix level data -- press PLAY or run "
+                                "watch mode (fl_mix_watch_start -> play -> stop), then call again."}
+        bal = md.mix_band_balance(snap)
+        master = next((t for t in snap["tracks"] if t.get("index") == 0), None)
+        mix_peak = master.get("peak_db") if master else None
+        level_delta = (round(mix_peak - ref["peak_db"], 1)
+                       if (mix_peak is not None and ref.get("peak_db") is not None) else None)
+        band_cmp = {}
+        for b in ("low", "mid", "high"):
+            r = ref.get("bands_pct", {}).get(b, 0.0)
+            m = bal["bands_pct"][b]
+            band_cmp[b] = {"reference_pct": r, "your_mix_pct": m, "delta_pct": round(m - r, 1),
+                           "rough_db": round(10 * math.log10((m or 0.01) / (r or 0.01)), 1)}
+        return {"ok": True, "reference": ref,
+                "your_mix_balance": bal, "your_mix_peak_db": mix_peak,
+                "peak_source": "watch (full-song)" if wmax else snap.get("peak_window", {}).get("source"),
+                "level_delta_db": level_delta, "band_comparison": band_cmp,
+                "honest": "Level + ROUGH name-based balance only. Your-mix balance is estimated from "
+                          "track names + peaks, NOT FL's output spectrum. Reference bands are real "
+                          "(file analysis). +level_delta = your mix hotter; +band delta_pct = your "
+                          "mix has more energy in that band than the reference.",
+                "guidance": "Nudge via fl_apply_eq_intent (balance) / fl_apply_mix_fix (level): e.g. "
+                            "positive low delta -> high-pass/trim lows; negative high delta -> add_air."}

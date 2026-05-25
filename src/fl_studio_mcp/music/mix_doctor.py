@@ -549,6 +549,34 @@ def gain_stage_plan(snapshot, target_db=-9.0, band=(-12.0, -6.0),
     return {"plans": plans, "notes": notes, "target_db": target_db, "band": list(band)}
 
 
+_BAND_LOW = ("kick", "sub", "bass", "808", "boom", "tom", "floor")
+_BAND_HIGH = ("hat", "hihat", "cymbal", "ride", "crash", "shaker", "tamb", "air", "top")
+
+
+def mix_band_balance(snapshot):
+    """ROUGH name-based tonal balance from per-track PEAK energy. Buckets tracks
+    by name (kick/bass -> low, hat/cymbal -> high, else mid) and sums peak^2 ->
+    band SHARES (%). NOT a spectral read of FL's actual output (FL doesn't expose
+    output audio) -- a coarse estimate for reference comparison only. PURE."""
+    energy = {"low": 0.0, "mid": 0.0, "high": 0.0}
+    buckets = {"low": [], "mid": [], "high": []}
+    for t in snapshot.get("tracks", []):
+        if t.get("index") == 0 or t.get("mute"):
+            continue
+        pk = t.get("peak_max")
+        if not pk:
+            continue
+        nm = (t.get("name") or "").lower()
+        b = ("low" if any(k in nm for k in _BAND_LOW)
+             else "high" if any(k in nm for k in _BAND_HIGH) else "mid")
+        energy[b] += pk * pk
+        buckets[b].append(t.get("name"))
+    total = sum(energy.values()) or 1.0
+    return {"bands_pct": {b: round(100 * energy[b] / total, 1) for b in energy},
+            "tracks": buckets,
+            "method": "rough name-based peak-energy estimate (NOT FL output spectrum)"}
+
+
 # --------------------------------------------------------------------------
 # Full-song peak WATCH (peak-hold). A background thread polls every track's
 # peak at an interval and keeps a RUNNING MAX -- so a drop/chorus that happens

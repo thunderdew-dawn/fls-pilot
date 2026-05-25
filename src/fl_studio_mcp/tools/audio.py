@@ -59,6 +59,33 @@ def audio_analyze(path):
     return out
 
 
+def analyze_bands(path):
+    """Reference-track tonal profile: overall level (rms/peak dBFS) + low/mid/high
+    spectral-band energy SHARES (%). Offline; reuses librosa (cheap STFT)."""
+    import numpy as np
+    import librosa
+    y, sr = librosa.load(path, mono=True)
+    if not y.size:
+        return {"path": str(path), "error": "empty audio"}
+    rms = float(np.sqrt(np.mean(y ** 2)))
+    peak = float(np.max(np.abs(y)))
+    n_fft = 2048
+    S = np.abs(librosa.stft(y, n_fft=n_fft)) ** 2
+    freqs = librosa.fft_frequencies(sr=sr, n_fft=n_fft)
+    low = float(S[freqs < 250].sum())
+    mid = float(S[(freqs >= 250) & (freqs < 4000)].sum())
+    high = float(S[freqs >= 4000].sum())
+    total = (low + mid + high) or 1.0
+    return {"path": str(path),
+            "duration_sec": round(float(librosa.get_duration(y=y, sr=sr)), 2),
+            "rms_db": round(20 * np.log10(rms), 1) if rms > 0 else None,
+            "peak_db": round(20 * np.log10(peak), 1) if peak > 0 else None,
+            "bands_pct": {"low": round(100 * low / total, 1),
+                          "mid": round(100 * mid / total, 1),
+                          "high": round(100 * high / total, 1)},
+            "band_edges_hz": {"low": "<250", "mid": "250-4000", "high": ">4000"}}
+
+
 # -- pitch engines ----------------------------------------------------------
 # Two monophonic pitch trackers share one segmenter/quantizer:
 #   pyin  -- librosa, light, instant, lower accuracy (ships in [audio]).
