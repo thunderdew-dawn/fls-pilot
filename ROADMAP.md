@@ -5,25 +5,25 @@
 > [`docs/CHANGELOG.md`](docs/CHANGELOG.md). The tool surface is unchanged;
 > phase work continues on top of the new transport.
 
-Tracking the full Production scope — eight phases shipping the MCP server,
-the Tamil cinema preset packs, the SKILL.md, evals, and the Claude Code
-plugin marketplace bundle.
+Tracking the full scope — eight phases shipping the MCP server, the scale/mode
+composition tools, the SKILL.md, evals, and the Claude Code plugin marketplace
+bundle.
 
 Each phase is shippable on its own. Each ends with `python scripts/test_bridge.py`
 still passing.
 
 ## Phase 0 — Foundation (shipping)
 
-Goal: prove the file-queue bridge works end-to-end and ship the absolute
+Goal: prove the SysEx bridge works end-to-end and ship the absolute
 minimum tool surface.
 
-- [x] File-queue protocol (commands, responses, heartbeat, atomic writes).
-- [x] FL controller script with `OnIdle` polling and dispatch table.
+- [x] MIDI SysEx protocol (commands, responses, heartbeat) over two loopMIDI ports.
+- [x] FL controller script with `OnSysEx`/`OnMidiMsg` dispatch and an `OnIdle` heartbeat.
 - [x] FastMCP server skeleton with stdio transport.
 - [x] Transport tools: ping, tempo get/set, play, stop, toggle, record,
       play-state, song-position get/set. **10 tools total.**
 - [x] `scripts/test_bridge.py` standalone harness.
-- [x] Install scripts for Windows and macOS.
+- [x] Install script for Windows. (macOS / Linux: not shipped — contributions welcome.)
 
 ## Phase 1 — Channel rack (~12 tools)
 
@@ -62,12 +62,11 @@ gain, not 1.0. The tools accept dB and convert.
 - `fl_pattern_select`, `_rename`.
 - `fl_pattern_get_length` (in steps and beats).
 - `fl_playlist_get_tracks` — Playlist track names and visibility.
-- `fl_playlist_get_markers` — Time-line markers (used by Carnatic preset pack
-  to insert raga section markers).
+- `fl_playlist_get_markers` — Time-line markers (used to insert section markers).
 
 API limits worth surfacing in tool docs:
-- New patterns cannot be created from scratch. Cloning happens via the Piano
-  Roll pyscript by selecting all and stamping into a new pattern slot.
+- New patterns cannot be created from scratch; clone an existing pattern
+  instead (`fl_arrange_clone_pattern`).
 
 ## Phase 4 — Piano Roll pyscript (~6 tools)
 
@@ -82,15 +81,17 @@ This is the most invasive phase — adds the second script type.
 - `fl_piano_get_notes` — Read back what is in the active pattern.
 
 Mechanics:
-1. MCP server writes the job to `bridge/piano_roll/pending.json`.
-2. MCP server triggers a hotkey (`Ctrl+Alt+Y` on Windows, `Cmd+Alt+Y` on
-   macOS) via `pyautogui`. This is the only place we touch the keyboard.
-3. The `.pyscript` reads the JSON, writes the notes, writes `done.json`.
-4. MCP server polls `done.json`.
+1. FL's pyscript sandbox can't receive data the server hands it, so the daemon
+   generates the `MCP_Apply` `.pyscript` with the notes baked in and writes it
+   into FL's Piano roll scripts folder.
+2. FL exposes no API to run a pyscript, so the note bridge is armed once per
+   session: run `MCP_Apply` from the Piano roll's Scripting menu.
+3. To apply a batch, the daemon force-focuses FL and re-triggers the armed
+   script (FL's "Run last script again"); FL re-reads the `.pyscript` and writes
+   the notes. No file queue, no JSON polling.
 
-The keyboard trigger is the only fragile bit. We require FL Studio to be the
-focused window for piano-roll writes. The server detects focus loss and
-returns a clear error rather than guessing.
+The Piano roll must be FL's active panel for the re-trigger to land, so the
+bridge force-focuses FL first.
 
 ## Phase 5 — Plugin params (~5 tools)
 
@@ -101,27 +102,30 @@ returns a clear error rather than guessing.
 This is intentionally scoped tight. Per-VST parameter naming is a mess across
 plugins; we expose the raw FL view and let the LLM map names.
 
-## Phase 6 — Carnatic + kuthu presets (~8 tools)
+## Phase 6 — Scale & mode composition (~8 tools)
 
-Where the Tamil cinema differentiator lives.
+Genre- and producer-agnostic composition in any scale or mode: Western modes,
+pentatonic, the Carnatic melakarta and janya ragas, Arabic maqam, and beyond.
+Claude supplies the correct notes/intervals for the requested scale and writes
+them through the note bridge. Indian ragas are one supported family among many,
+not the headline.
 
-- `fl_preset_list_ragas` — All 72 melakarta ragas plus the common janyas
-  (Bhairavi, Mohanam, Kalyani, etc) with ascending/descending notes.
-- `fl_preset_get_raga_scale` — Returns the swara → MIDI mapping at a given
-  base note.
-- `fl_preset_write_raga_melody` — Generate a melody fragment in a chosen
-  raga with mood (`devotional`, `cinematic`, `kuthu-energetic`,
-  `melancholic`). Calls `fl_piano_write_notes` under the hood.
-- `fl_preset_list_kuthu_patterns` — Kuthu / gaana / chenda templates with
-  per-instrument rolls (tavil, parai, kanjira, dholak).
-- `fl_preset_write_kuthu_pattern` — Stamp a kuthu pattern across a chosen set
-  of channels in the active channel rack.
-- `fl_preset_chord_progression` — Common Tamil-film progressions in any key.
-- `fl_preset_get_tempo_for_mood` — Suggests BPM bands for moods used in
-  Tamil film scoring.
+- Scale catalogue — scales and modes by family, each with its
+  ascending/descending intervals (e.g. the 72 melakarta ragas plus common
+  janyas — Bhairavi, Mohanam, Kalyani — alongside Western modes, pentatonic,
+  and maqam).
+- Scale → note mapping at a chosen base note.
+- Melody and chords in a chosen scale, shaped by a mood/character (e.g.
+  `devotional`, `cinematic`, `melancholic`, `energetic`), written via the note
+  bridge (`fl_write_raga_melody`, `fl_write_raga_chords`).
+- Section markers for arrangement (intro, build, drop, …).
 
-The data files live in `src/fl_studio_mcp/presets/` as plain Python modules
-so they ship inside the wheel.
+Micro-tonal and gamaka-heavy traditions (e.g. Carnatic) get the *scale
+framework* — correct swaras/intervals — not gamaka or micro-tonal rendering;
+that's a 12-tone MIDI limit, not a tool limit.
+
+Scale/mode data lives in `src/fl_studio_mcp/presets/` as plain Python modules
+so it ships inside the wheel.
 
 ## Phase 7 — Polish & ship
 
@@ -141,5 +145,4 @@ so they ship inside the wheel.
 - Loading new VST instances — FL API does not allow this.
 - Creating new patterns ex nihilo — same limitation.
 - Audio recording control beyond the record-arm toggle.
-- Multiple FL Studio instances on one machine. The bridge supports it via
-  `FLSTUDIO_MCP_BRIDGE` but we don't ship that wiring.
+- Multiple FL Studio instances on one machine — not currently wired.

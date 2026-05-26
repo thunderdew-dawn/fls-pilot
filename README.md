@@ -5,7 +5,7 @@
 ![version](https://img.shields.io/badge/version-1.0.0-blue)
 ![status](https://img.shields.io/badge/status-beta-yellow)
 ![license](https://img.shields.io/badge/license-MIT-green)
-![python](https://img.shields.io/badge/python-3.12-blue)
+![python](https://img.shields.io/badge/python-3.10+-blue)
 ![platform](https://img.shields.io/badge/platform-Windows-blue)
 ![FL Studio](https://img.shields.io/badge/FL%20Studio-2025%2B-orange)
 
@@ -70,14 +70,14 @@ These are properties of FL Studio's scripting API, stated plainly:
 
 - **Plugins, audio files, and rendering are UI-only.** FL's API cannot load a plugin, load an audio file, or render audio. The plugin and preset tools therefore *suggest* — you load the chosen plugin or preset, and Claude then configures it. Audio export is done manually (File > Export); Claude can analyze the rendered file afterward.
 - **Note writing is armed once per session.** A generated pyscript writes notes into the piano roll; FL exposes no API to run a pyscript, so you run "MCP_Apply" once from the piano roll's scripting menu at the start of a session.
-- **Micro-tonal music is approximated.** Scales with intervals smaller than a semitone (e.g. Arabic maqam) are rounded to the nearest semitone — a limitation of 12-tone MIDI, not of the tools.
+- **Micro-tonal and gamaka-heavy music is approximated.** Scales with intervals smaller than a semitone (e.g. Arabic maqam) are rounded to the nearest semitone, and traditions built on gamaka/ornamentation (e.g. Carnatic) get the *scale framework* — the correct swaras and intervals — not gamaka or micro-tonal rendering. That's a limit of 12-tone MIDI, not of the tools.
 
 ## Requirements
 
 - **Windows 10/11** (tested on Windows 11)
 - **FL Studio 2025** or newer
 - **Claude Desktop** (or any MCP client)
-- **Python 3.12**
+- **Python 3.10+**
 - **loopMIDI** — for the two virtual MIDI ports ([download](https://www.tobias-erichsen.de/software/loopmidi.html))
 - Optional: **ffmpeg** on PATH (for MP3 analysis)
 
@@ -149,7 +149,7 @@ Plain-language prompts:
 
 ## Architecture
 
-A thin controller script runs inside FL Studio and returns only cheap, raw data; all judgement — diagnosis, calibration, planning — happens server-side. A standalone daemon owns the MIDI port so the server works regardless of how the MCP client is launched. Note authoring uses a generated pyscript bridge. Every project-modifying tool routes through a snapshot → write → readback → rollback safety layer backed by a persisted change log.
+A thin controller script runs inside FL Studio and returns only cheap, raw data; all judgement — diagnosis, calibration, planning — happens server-side. A standalone daemon owns the MIDI port so the server works regardless of how the MCP client is launched. Note authoring uses a generated pyscript bridge: the daemon re-triggers the armed `MCP_Apply` script with a keystroke (via pyautogui) after a brief window force-focus. Every project-modifying tool routes through a snapshot → write → readback → rollback safety layer backed by a persisted change log.
 
 Design notes and findings are in [`docs/`](docs/).
 
