@@ -134,6 +134,13 @@ CMD_MIXER_SET_ROUTE = "mixer_set_route"                # setRouteTo + afterRouti
 # Level awareness (read) -- meter peaks, meaningful only during playback
 CMD_MIXER_GET_PEAKS = "mixer_get_peaks"                # getTrackPeaks L/R/max
 
+# Track / channel color (RGB int 0xRRGGBB). Set accepts r/g/b 0-255 (fresh) or
+# an explicit "color" int (rollback re-sends the exact int FL gave us).
+CMD_MIXER_SET_COLOR = "mixer_set_color"
+CMD_MIXER_GET_COLOR = "mixer_get_color"
+CMD_CHANNEL_SET_COLOR = "channel_set_color"
+CMD_CHANNEL_GET_COLOR = "channel_get_color"
+
 # Plugin presets (navigate/read) -- op: info | next | prev
 CMD_PLUGIN_PRESET = "plugin_preset"                    # getPresetCount/next/prev/getName
 

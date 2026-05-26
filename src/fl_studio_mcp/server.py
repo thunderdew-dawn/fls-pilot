@@ -29,6 +29,7 @@ from .tools import arrange as arrange_tools
 from .tools import audio as audio_tools
 from .tools import bulk as bulk_tools
 from .tools import chains as chains_tools
+from .tools import color as color_tools
 from .tools import compose as compose_tools
 from .tools import export as export_tools
 from .tools import mix_doctor as mix_doctor_tools
@@ -90,6 +91,7 @@ def build_server() -> FastMCP:
     mixing_tools.register(mcp)      # Slice B: high-level EQ mixing intents
     routing_tools.register(mcp)     # Routing/cleanup Slice 1: read-only
     bulk_tools.register(mcp)        # Bulk mute/solo: server-side group orchestration
+    color_tools.register(mcp)       # Track/channel coloring: name/hex -> FL RGB, one rollback unit
     arrange_tools.register(mcp)     # Arrangement Slice 1: pattern create/clone + markers
     resource_defs.register(mcp)     # MCP resources: fl://status, fl://project, ...
     audio_tools.register(mcp)       # Integration 2/3: audio analysis (tempo/key)

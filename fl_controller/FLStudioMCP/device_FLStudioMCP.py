@@ -55,6 +55,13 @@ try:
 except Exception:
     arrangement = None
 
+# utils.RGBToColor builds a color int in FL's native byte order; prefer it for
+# coloring so we don't have to assume RGB-vs-BGR. Optional -- fall back if absent.
+try:
+    import utils
+except Exception:
+    utils = None
+
 
 # ---------------------------------------------------------------------------
 # Protocol constants -- MUST stay in sync with src/fl_studio_mcp/protocol.py
@@ -283,7 +290,7 @@ def _h_ping(params):
     return {
         "fl_version": _fl_version,
         "protocol_version": PROTOCOL_VERSION,
-        "build": "resources-v13",   # reload marker -- bump to verify reloads take
+        "build": "color-v14",   # reload marker -- bump to verify reloads take
         "ts": time.time(),
     }
 
@@ -438,6 +445,7 @@ def _mixer_track_dict(i):
         "pan": round(mixer.getTrackPan(i), 4),
         "mute": bool(mixer.isTrackMuted(i)),
         "solo": bool(mixer.isTrackSolo(i)),
+        "color": _color_out(_safe_track_color(i)),
         **_vol_out(mixer.getTrackVolume(i)),
     }
 
@@ -472,6 +480,7 @@ def _channel_dict(i):
         "mute": bool(channels.isChannelMuted(i)),
         "solo": bool(channels.isChannelSolo(i)),
         "target_fx_track": tgt,
+        "color": _color_out(_safe_channel_color(i)),
         **_vol_out(channels.getChannelVolume(i)),
     }
 
@@ -588,6 +597,71 @@ def _h_channel_set_solo(p):
     if bool(channels.isChannelSolo(c)) != bool(p["state"]):
         channels.soloChannel(c)
     return {"channel": c, "solo": bool(channels.isChannelSolo(c))}
+
+
+# -- Track / channel color ---------------------------------------------------
+# Thin: the server maps a color name/hex to r,g,b and we just apply it. We
+# prefer utils.RGBToColor so FL builds the int in its own byte order; rollback
+# instead sends the exact "color" int we read back (order-agnostic).
+
+def _rgb_to_int(r, g, b):
+    r = max(0, min(255, int(r)))
+    g = max(0, min(255, int(g)))
+    b = max(0, min(255, int(b)))
+    if utils is not None and hasattr(utils, "RGBToColor"):
+        try:
+            return int(utils.RGBToColor(r, g, b)) & 0xFFFFFF
+        except Exception:
+            pass
+    return (r << 16) | (g << 8) | b
+
+
+def _color_out(color):
+    c = int(color) & 0xFFFFFF
+    return {"int": c, "hex": "#%06X" % c,
+            "r": (c >> 16) & 0xFF, "g": (c >> 8) & 0xFF, "b": c & 0xFF}
+
+
+def _resolve_color(p):
+    if p.get("color") is not None:           # explicit int (rollback path)
+        return int(p["color"]) & 0xFFFFFF
+    return _rgb_to_int(p.get("r", 0), p.get("g", 0), p.get("b", 0))
+
+
+def _safe_track_color(i):
+    try:
+        return int(mixer.getTrackColor(i)) & 0xFFFFFF
+    except Exception:
+        return 0
+
+
+def _safe_channel_color(i):
+    try:
+        return int(channels.getChannelColor(i)) & 0xFFFFFF
+    except Exception:
+        return 0
+
+
+def _h_mixer_get_color(p):
+    t = int(p["track"])
+    return {"track": t, "color": _color_out(_safe_track_color(t))}
+
+
+def _h_mixer_set_color(p):
+    t = int(p["track"])
+    mixer.setTrackColor(t, _resolve_color(p))
+    return {"track": t, "color": _color_out(_safe_track_color(t))}
+
+
+def _h_channel_get_color(p):
+    c = int(p["channel"])
+    return {"channel": c, "color": _color_out(_safe_channel_color(c))}
+
+
+def _h_channel_set_color(p):
+    c = int(p["channel"])
+    channels.setChannelColor(c, _resolve_color(p))
+    return {"channel": c, "color": _color_out(_safe_channel_color(c))}
 
 
 # -- Phase 1B: plugin parameters --------------------------------------------
@@ -816,7 +890,8 @@ def _h_api_probe(p):
     op = p.get("op", "dir")
     if op == "dir":
         mods = {"playlist": playlist, "arrangement": arrangement, "patterns": patterns,
-                "general": general, "transport": transport, "ui": ui, "midi": midi}
+                "general": general, "transport": transport, "ui": ui, "midi": midi,
+                "mixer": mixer, "channels": channels}
         mod = mods.get(p.get("module", "playlist"))
         if mod is None:
             return {"module": p.get("module"), "error": "module not available"}
@@ -1013,6 +1088,10 @@ _HANDLERS = {
     "channel_routing_summary": _h_channel_routing_summary,
     "mixer_set_route": _h_mixer_set_route,
     "mixer_get_peaks": _h_mixer_get_peaks,
+    "mixer_set_color": _h_mixer_set_color,
+    "mixer_get_color": _h_mixer_get_color,
+    "channel_set_color": _h_channel_set_color,
+    "channel_get_color": _h_channel_get_color,
     "plugin_preset": _h_plugin_preset,
     "api_probe": _h_api_probe,
     "arrange_new_pattern": _h_arrange_new_pattern,

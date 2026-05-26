@@ -42,6 +42,7 @@ Full setup is below.
 - **Gain staging** — proposes per-track trims toward a healthy level with proper master headroom.
 - **Reference match** — compares your mix's level and tonal balance against a reference track.
 - **Bulk track control** — solo or mute a whole group (drums, vocals, …) in one step, with a one-call reset.
+- **Track & channel coloring** — color a track, a channel, or a whole group (drums, vocals, …) by color name or hex, reversible like every other change.
 
 ### Plugin & preset control
 - Read and set plugin parameters by name, on native and third-party plugins (the parameter list is resolved live).
@@ -57,7 +58,7 @@ Full setup is below.
 - Tempo and key estimation from an audio file.
 - Melody-to-MIDI transcription (CREPE pitch tracking, with a lighter fallback).
 
-The server exposes 65 tools across 13 categories, plus 6 live resources (project, mixer, transport, channels, patterns, status) that Claude can read directly.
+The server exposes 67 tools across 14 categories, plus 6 live resources (project, mixer, transport, channels, patterns, status) that Claude can read directly.
 
 ## What sets it apart
 
