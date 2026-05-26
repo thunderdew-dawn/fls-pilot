@@ -61,6 +61,7 @@ def register(mcp: FastMCP) -> None:
         track: Annotated[int, Field(ge=0)],
         value: Annotated[float, Field(ge=-1.0, le=1.0, description="-1 left .. +1 right.")],
     ) -> dict:
+        """Set a mixer track's pan position (-1 left .. +1 right)."""
         return safety.safe_write(
             get_bridge(), tool="mixer_set_pan", scope="mixer_track:%d" % track,
             command=protocol.CMD_MIXER_SET_PAN, params={"track": track, "value": value},
@@ -69,6 +70,7 @@ def register(mcp: FastMCP) -> None:
 
     @mcp.tool(annotations={"title": "Set mixer track mute", **_WR})
     def fl_set_mixer_mute(track: Annotated[int, Field(ge=0)], state: bool) -> dict:
+        """Mute or unmute a mixer track (state=True mutes)."""
         return safety.safe_write(
             get_bridge(), tool="mixer_set_mute", scope="mixer_track:%d" % track,
             command=protocol.CMD_MIXER_SET_MUTE, params={"track": track, "state": state},
@@ -78,6 +80,7 @@ def register(mcp: FastMCP) -> None:
 
     @mcp.tool(annotations={"title": "Set mixer track solo", **_WR})
     def fl_set_mixer_solo(track: Annotated[int, Field(ge=0)], state: bool) -> dict:
+        """Solo or unsolo a mixer track (state=True solos)."""
         return safety.safe_write(
             get_bridge(), tool="mixer_set_solo", scope="mixer_track:%d" % track,
             command=protocol.CMD_MIXER_SET_SOLO, params={"track": track, "state": state},
@@ -87,6 +90,7 @@ def register(mcp: FastMCP) -> None:
 
     @mcp.tool(annotations={"title": "Set mixer track name", **_WR})
     def fl_set_mixer_name(track: Annotated[int, Field(ge=0)], name: str) -> dict:
+        """Rename a mixer track."""
         return safety.safe_write(
             get_bridge(), tool="mixer_set_name", scope="mixer_track:%d" % track,
             command=protocol.CMD_MIXER_SET_NAME, params={"track": track, "name": name},
@@ -100,6 +104,7 @@ def register(mcp: FastMCP) -> None:
         value: Annotated[float, Field(description="Normalized 0..1 (0.8=unity) or dB.")],
         unit: Annotated[str, Field(description="'normalized' or 'db'.")] = "normalized",
     ) -> dict:
+        """Set a channel-rack channel's volume. unit='db' uses 0.8=unity (0 dB)."""
         return safety.safe_write(
             get_bridge(), tool="channel_set_volume", scope="channel:%d" % channel,
             command=protocol.CMD_CHANNEL_SET_VOLUME,
@@ -112,6 +117,7 @@ def register(mcp: FastMCP) -> None:
         channel: Annotated[int, Field(ge=0)],
         value: Annotated[float, Field(ge=-1.0, le=1.0)],
     ) -> dict:
+        """Set a channel-rack channel's pan position (-1 left .. +1 right)."""
         return safety.safe_write(
             get_bridge(), tool="channel_set_pan", scope="channel:%d" % channel,
             command=protocol.CMD_CHANNEL_SET_PAN, params={"channel": channel, "value": value},
@@ -120,6 +126,7 @@ def register(mcp: FastMCP) -> None:
 
     @mcp.tool(annotations={"title": "Set channel mute", **_WR})
     def fl_set_channel_mute(channel: Annotated[int, Field(ge=0)], state: bool) -> dict:
+        """Mute or unmute a channel-rack channel (state=True mutes)."""
         return safety.safe_write(
             get_bridge(), tool="channel_set_mute", scope="channel:%d" % channel,
             command=protocol.CMD_CHANNEL_SET_MUTE, params={"channel": channel, "state": state},
@@ -129,6 +136,7 @@ def register(mcp: FastMCP) -> None:
 
     @mcp.tool(annotations={"title": "Set channel solo", **_WR})
     def fl_set_channel_solo(channel: Annotated[int, Field(ge=0)], state: bool) -> dict:
+        """Solo or unsolo a channel-rack channel (state=True solos)."""
         return safety.safe_write(
             get_bridge(), tool="channel_set_solo", scope="channel:%d" % channel,
             command=protocol.CMD_CHANNEL_SET_SOLO, params={"channel": channel, "state": state},
