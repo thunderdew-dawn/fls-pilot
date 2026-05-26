@@ -123,7 +123,8 @@ def _handle_request(req: dict) -> dict:
                 except Exception as e:
                     ensured = {"ok": False, "error": "%s: %s" % (type(e).__name__, e)}
             from .pianoroll import apply_notes
-            res = apply_notes(req.get("notes") or [], req.get("mode", "replace"), trigger=trigger)
+            res = apply_notes(req.get("notes") or [], req.get("mode", "replace"), trigger=trigger,
+                              quantize=req.get("quantize"), snap_ends=req.get("snap_ends", False))
             if isinstance(res, dict):
                 res["piano_roll_ensured"] = ensured
             return res

@@ -16,17 +16,23 @@ Scripting menu so it becomes FL's "last script" (then Ctrl+Alt+Y targets it).
 
 from __future__ import annotations
 
-from .pyscript_gen import write_apply_script
+from .pyscript_gen import write_apply_script, write_quantize_script
 
 
-def apply_notes(notes, mode="replace", trigger=True):
-    """Write the notes into MCP_Apply.pyscript and (optionally) trigger FL.
+def apply_notes(notes, mode="replace", trigger=True, quantize=None, snap_ends=False):
+    """Write a pyscript into MCP_Apply.pyscript and (optionally) trigger FL.
 
-    notes: list of {pitch, time_bars, length_bars, velocity}.
-    Returns {ok, count, script, triggered, focused, hint?}.
+    Normally writes the given notes. If ``quantize`` (grid in bars) is set, writes
+    a script that instead reads the score and snaps existing notes to that grid.
+    Returns {ok, ..., script, triggered, focused, hint?}.
     """
-    path = write_apply_script(notes, mode)
-    result = {"ok": True, "count": len(notes), "script": path, "mode": mode}
+    if quantize is not None:
+        path = write_quantize_script(float(quantize), snap_ends)
+        result = {"ok": True, "action": "quantize", "grid_bars": float(quantize),
+                  "snap_ends": bool(snap_ends), "script": path}
+    else:
+        path = write_apply_script(notes, mode)
+        result = {"ok": True, "count": len(notes), "script": path, "mode": mode}
 
     if not trigger:
         result["triggered"] = False
