@@ -27,6 +27,7 @@ from .connection import list_ports
 from .protocol import port_from_fl_name, port_to_fl_name
 from .tools import arrange as arrange_tools
 from .tools import audio as audio_tools
+from .tools import bulk as bulk_tools
 from .tools import chains as chains_tools
 from .tools import compose as compose_tools
 from .tools import export as export_tools
@@ -88,6 +89,7 @@ def build_server() -> FastMCP:
     plugin_tools.register(mcp)      # Phase 1B: plugin param read/write (name or index)
     mixing_tools.register(mcp)      # Slice B: high-level EQ mixing intents
     routing_tools.register(mcp)     # Routing/cleanup Slice 1: read-only
+    bulk_tools.register(mcp)        # Bulk mute/solo: server-side group orchestration
     arrange_tools.register(mcp)     # Arrangement Slice 1: pattern create/clone + markers
     resource_defs.register(mcp)     # MCP resources: fl://status, fl://project, ...
     audio_tools.register(mcp)       # Integration 2/3: audio analysis (tempo/key)
