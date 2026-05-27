@@ -160,3 +160,5 @@ MIT — see [LICENSE](LICENSE).
 ## Status & contributing
 
 Beta — the public 1.0 release. Windows-only for now; macOS and Linux contributions are welcome. Issues and pull requests: [github.com/rosasynthesiz/flstudio-mcp](https://github.com/rosasynthesiz/flstudio-mcp).
+
+<!-- mcp-name: io.github.rosasynthesiz/flstudio-mcp -->
