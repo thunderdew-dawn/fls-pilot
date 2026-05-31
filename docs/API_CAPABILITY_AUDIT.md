@@ -92,9 +92,9 @@ available, and MCP rollback invokes `general.undoUp()`.
 
 The current static baseline reports:
 
-- 34 `write-safe` tools.
+- 57 `write-safe` tools.
 - 0 `write-gap` tools.
-- 30 `read-only` tools.
+- 49 `read-only` tools.
 - 5 `transient` runtime tools.
 - 4 `server-state` tools.
 - 2 `external-write` tools.
@@ -288,6 +288,7 @@ Safety requirement:
 | Piano Roll note readback to MCP | Piano Roll scripts can read notes locally, but the bridge has no return channel. | Generated transforms only; no `get_notes` tool yet. |
 | Playlist clip overlap detection | No general clip enumeration API confirmed. | Keep track-level only. |
 | Plugin loading | API controls loaded plugins; loading instances remains unsupported. | Suggest/load-manually/configure-loaded model. |
+| Plugin preset next/previous | FL exposes preset navigation, but no verified MCP restore primitive. | Read-only/manual guidance only. |
 | Full FLP snapshot/restore | MCP can snapshot affected state, not the full project file. | MCP-local snapshots only. |
 
 ## Feature Gate Template

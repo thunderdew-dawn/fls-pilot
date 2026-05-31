@@ -26,14 +26,48 @@ task.
 
 ## Current verification checkpoints
 
+- 2026-05-31: Scale & Mode Composition Pack Phase 6 live smoke passed on FL Studio
+  Producer Edition v25.2.5 (build 5055), controller build marker
+  `channels-v35`.
+  - Verified path: heartbeat -> ping -> scale catalog read -> scale notes query -> melody creation -> channel focus -> note writing & hotkey triggering via piano-roll bridge.
+  - Result: all checks passed, scale listing and mapping works, notes correctly generated and written to FL Studio.
+- 2026-05-31: Plugin Params Pack Phase 5 live smoke passed on FL Studio
+  Producer Edition v25.2.5 (build 5055), controller build marker
+  `channels-v35`.
+  - Verified path: heartbeat -> ping -> plugin list -> param list & single param read -> preset name read -> rollback-safe plugin param edit write/readback/rollback.
+  - Result: parameter read/write rollback passed. Preset next/prev remains read-only/manual because FL exposes navigation but no verified MCP restore primitive.
+- 2026-05-31: Piano Roll Pack Phase 4 offline tests passed.
+  - Verified path: note name parsing -> chord interval generation -> Pyscript rendering -> rollback undo action generation.
+  - Result: 31 tests passed.
+- 2026-05-31: Patterns & Playlist Pack Phase 3 live smoke passed on FL Studio
+  Producer Edition v25.2.5 (build 5055), controller build marker
+  `channels-v34`.
+  - Verified path: heartbeat -> ping -> pattern list & length read -> playlist tracks read ->
+    rollback-safe pattern rename write/readback/rollback ->
+    rollback-safe playlist track mute/rename/color/selection write/readback/rollback.
+  - Result: all checks passed, rollback restoration confirmed for patterns and playlist tracks.
+- 2026-05-31: Mixer Pack Phase 2 live smoke passed on FL Studio
+  Producer Edition v25.2.5 (build 5055), controller build marker
+  `channels-v28`.
+  - Verified path: heartbeat -> ping -> mixer track details read (with `dock_side` and `stereo_sep`) ->
+    rollback-safe select track write/readback/rollback -> rollback-safe send route
+    write/readback/rollback -> rollback-safe stereo separation write/readback/rollback ->
+    peak level measurement verification.
+  - Result: all checks passed, rollback restoration confirmed for selection, routing, and stereo separation.
+- 2026-05-31: Step Sequencer Pack Phase 1 live smoke passed on FL Studio
+  Producer Edition v25.2.5 (build 5055), controller build marker
+  `channels-v26`.
+  - Verified path: heartbeat -> ping -> grid read -> write-safe step grid bit
+    write/readback/rollback -> rollback verification.
+  - Result: grid bit mutation and rollback restoration successfully verified.
 - 2026-05-31: Channel Organizer Pack v1 live smoke passed on FL Studio
   Producer Edition v25.2.5 (build 5055), controller build marker
   `channels-v16`.
-- Verified path: heartbeat -> ping -> channel detail read (`type`, `pitch`) ->
-  rollback-safe rename write/readback/rollback -> rollback-safe mixer-target
-  write/readback/rollback.
-- Result: all checks passed, rollback restoration confirmed for both write
-  operations.
+  - Verified path: heartbeat -> ping -> channel detail read (`type`, `pitch`) ->
+    rollback-safe rename write/readback/rollback -> rollback-safe mixer-target
+    write/readback/rollback.
+  - Result: all checks passed, rollback restoration confirmed for both write
+    operations.
 
 For every write-capable tool, the required shape is:
 
@@ -252,15 +286,15 @@ minimum tool surface.
 
 The channel rack is where most users place samples and instruments.
 
-- `fl_channel_list` — Names, types, colors, current pattern.
-- `fl_channel_get` — Volume, pan, mute, solo, target mixer track.
-- `fl_channel_set_volume`, `_pan`, `_mute`, `_solo`.
-- `fl_channel_select` — Make a channel active.
-- `fl_channel_get_grid` — Read the step-sequencer grid for the current pattern.
-- `fl_channel_set_grid_bit` — Write a single step. (This is how we draw drum
+- [x] `fl_channel_list` — Names, types, colors, current pattern.
+- [x] `fl_channel_get` — Volume, pan, mute, solo, target mixer track.
+- [x] `fl_channel_set_volume`, `_pan`, `_mute`, `_solo`.
+- [x] `fl_channel_select` — Make a channel active.
+- [x] `fl_channel_get_grid` — Read the step-sequencer grid for the current pattern.
+- [x] `fl_channel_set_grid_bit` — Write a single step. (This is how we draw drum
   patterns without needing the Piano Roll pyscript.)
-- `fl_channel_clear_grid` — Wipe steps for a channel in the current pattern.
-- `fl_channel_get_color`, `_set_color` — Visual organization.
+- [x] `fl_channel_clear_grid` — Wipe steps for a channel in the current pattern.
+- [x] `fl_channel_get_color`, `_set_color` — Visual organization.
 
 Risk: FL's channel API uses `channels.channelNumber()` and `channels.selectedChannel()`
 for the active channel. Some functions need the explicit index; some use the
@@ -268,40 +302,41 @@ selection. The script normalizes to explicit indices.
 
 ## Phase 2 — Mixer (~10 tools)
 
-- `fl_mixer_list_tracks` — Up to 125 tracks plus Master at index 0.
-- `fl_mixer_get_track` — Name, volume, pan, mute, solo, dock side, color.
-- `fl_mixer_set_volume`, `_set_pan`, `_set_mute`, `_set_solo`.
-- `fl_mixer_select_track` — Drive UI focus.
-- `fl_mixer_get_route` — Where this track's audio is sent.
-- `fl_mixer_set_route` — Add/remove a route to another track.
-- `fl_mixer_get_levels` — Peak meter sample (read via `OnUpdateMeters`).
+- [x] `fl_mixer_list_tracks` — Up to 125 tracks plus Master at index 0.
+- [x] `fl_mixer_get_track` — Name, volume, pan, mute, solo, dock side, color, stereo separation.
+- [x] `fl_mixer_set_volume`, `_set_pan`, `_set_mute`, `_set_solo`, `_set_stereo_separation`.
+- [x] `fl_mixer_select_track` — Drive UI focus.
+- [x] `fl_mixer_get_route` — Where this track's audio is sent.
+- [x] `fl_mixer_set_route` — Add/remove a route to another track.
+- [x] `fl_mixer_get_levels` — Peak meter sample (read via `OnUpdateMeters`).
 
 Risk: `setTrackVolume` takes a normalized float 0.0–1.0 where 0.8 is unity
 gain, not 1.0. The tools accept dB and convert.
 
-## Phase 3 — Patterns + playlist (~6 tools)
+## Phase 3 — Patterns + playlist (~6 tools) [x] Completed
 
-- `fl_pattern_list` — Names, lengths, colors.
-- `fl_pattern_select`, `_rename`.
-- `fl_pattern_get_length` (in steps and beats).
-- `fl_playlist_get_tracks` — Playlist track names and visibility.
-- `fl_playlist_get_markers` — Time-line markers (used to insert section markers).
+- [x] `fl_pattern_list` — Names, lengths, colors.
+- [x] `fl_pattern_select`, `_rename`.
+- [x] `fl_pattern_get_length` (in steps and beats).
+- [x] `fl_playlist_list_tracks` — Playlist track list.
+- [x] `fl_playlist_get_track` — Playlist track details.
+- [x] `fl_playlist_set_mute`, `_set_solo`, `_set_name`, `_set_color`, `_select_track` — Playlist track mutations with rollback.
+- [x] `fl_arrange_add_marker` (previously implemented in arrangement slice) — Section markers.
 
 API limits worth surfacing in tool docs:
 - New patterns cannot be created from scratch; clone an existing pattern
   instead (`fl_arrange_clone_pattern`).
 
-## Phase 4 — Piano Roll pyscript (~6 tools)
+## Phase 4 — Piano Roll pyscript (~6 tools) [x] Completed
 
 This is the most invasive phase — adds the second script type.
 
-- `fl_piano_write_notes` — Note batch into the active pattern's Piano Roll.
-- `fl_piano_write_chord` — Helper that builds a chord by name (`Cmaj7`,
-  `Bbm9`) and writes it.
-- `fl_piano_clear` — Wipe the active pattern.
-- `fl_piano_quantize` — Snap selected notes.
-- `fl_piano_transpose` — Shift in semitones.
-- `fl_piano_get_notes` — Read back what is in the active pattern.
+- [x] `fl_piano_write_notes` — Note batch into the active pattern's Piano Roll.
+- [x] `fl_piano_write_chord` — Helper that builds a chord by name (`Cmaj7`, `Bbm9`) and writes it.
+- [x] `fl_piano_clear` — Wipe the active pattern.
+- [x] `fl_piano_quantize` — Snap selected notes.
+- [x] `fl_piano_transpose` — Shift in semitones.
+- [x] `fl_piano_get_notes` — Declared as `api-limited` with clear error response.
 
 Mechanics:
 1. FL's pyscript sandbox can't receive data the server hands it, so the daemon
@@ -316,16 +351,17 @@ Mechanics:
 The Piano roll must be FL's active panel for the re-trigger to land, so the
 bridge force-focuses FL first.
 
-## Phase 5 — Plugin params (~5 tools)
+## Phase 5 — Plugin params (~5 tools) [x] Completed
 
-- `fl_plugin_list_params` — Parameter index, name, current value, value range.
-- `fl_plugin_get_param`, `_set_param`.
-- `fl_plugin_get_preset_name`, `_select_preset_index`.
+- [x] `fl_plugin_list_params` — Parameter index, name, current value, value range.
+- [x] `fl_plugin_get_param`, `_set_param`.
+- [x] `fl_plugin_get_preset_name`.
+- [x] `fl_plugin_next_preset`, `fl_plugin_prev_preset` return read-only/manual guidance instead of mutating FL state, because preset navigation has no verified rollback primitive.
 
 This is intentionally scoped tight. Per-VST parameter naming is a mess across
 plugins; we expose the raw FL view and let the LLM map names.
 
-## Phase 6 — Scale & mode composition (~8 tools)
+## Phase 6 — Scale & mode composition (~8 tools) [x] Completed
 
 Genre- and producer-agnostic composition in any scale or mode: Western modes,
 pentatonic, the Carnatic melakarta and janya ragas, Arabic maqam, and beyond.
@@ -333,15 +369,15 @@ Claude supplies the correct notes/intervals for the requested scale and writes
 them through the note bridge. Indian ragas are one supported family among many,
 not the headline.
 
-- Scale catalogue — scales and modes by family, each with its
+- [x] Scale catalogue — scales and modes by family, each with its
   ascending/descending intervals (e.g. the 72 melakarta ragas plus common
   janyas — Bhairavi, Mohanam, Kalyani — alongside Western modes, pentatonic,
   and maqam).
-- Scale → note mapping at a chosen base note.
-- Melody and chords in a chosen scale, shaped by a mood/character (e.g.
+- [x] Scale → note mapping at a chosen base note.
+- [x] Melody and chords in a chosen scale, shaped by a mood/character (e.g.
   `devotional`, `cinematic`, `melancholic`, `energetic`), written via the note
   bridge (`fl_write_raga_melody`, `fl_write_raga_chords`).
-- Section markers for arrangement (intro, build, drop, …).
+- [x] Section markers for arrangement (`fl_arrange_add_marker`).
 
 Micro-tonal and gamaka-heavy traditions (e.g. Carnatic) get the *scale
 framework* — correct swaras/intervals — not gamaka or micro-tonal rendering;
