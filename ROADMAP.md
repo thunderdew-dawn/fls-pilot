@@ -26,6 +26,16 @@ task.
 
 ## Current verification checkpoints
 
+- 2026-06-01: Priority 1 + Priority 2 implementation slice (offline) passed.
+  - Verified path: `compileall` for `src/` + controller script, safety audit
+    gate (`scripts/audit_tool_safety.py --fail-on-gaps`), focused offline tests:
+    `scripts/test_effects_pattern_extensions.py`,
+    `scripts/test_step_sequencer.py`, `scripts/test_pattern_playlist.py`,
+    `scripts/test_pianoroll.py`.
+  - Result: new rollback-safe Pattern Completion, Effect Slot + Native EQ
+    tools, Project Doctor/Export Readiness reports, and initial Piano Roll
+    comfort transforms (`duplicate`, `velocity_ramp`) are integrated and
+    passing offline checks.
 - 2026-05-31: Scale & Mode Composition Pack Phase 6 live smoke passed on FL Studio
   Producer Edition v25.2.5 (build 5055), controller build marker
   `channels-v35`.
@@ -144,11 +154,11 @@ Before adding the API-backed production suite:
       effect slot mix/bypass, project time signature, and native mixer EQ.
 - [ ] Add grouped/named rollback units for project organizer, routing doctor,
       step-pattern writes, and bulk operations.
-- [ ] Treat Piano Roll generated-script transforms as write tools: they need
-      a reversible representation or must stay dry-run/manual until rollback is
-      solved for that operation.
+- [x] Treat Piano Roll generated-script transforms as write tools: all exposed
+      transforms route through `safety.safe_piano_roll_write` and FL undo
+      rollback. Readback remains explicitly API-limited.
 - [ ] Document each tool's safety class in its docstring and MCP annotations.
-- [ ] Add tests for planned restore payloads where FL-live tests are not
+- [x] Add tests for planned restore payloads where FL-live tests are not
       practical.
 
 ## Sister Project Consolidation — geezoria/FLStudioMCP

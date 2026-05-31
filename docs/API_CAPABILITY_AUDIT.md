@@ -193,9 +193,9 @@ Safety requirement:
 
 Current next slice:
 
-- Pattern color and length writes with scoped snapshots.
+- Pattern color and length writes with scoped snapshots. ✅ shipped
 - Current pattern selection snapshot/restore for grouped organizer changes.
-- Find-empty-pattern as read-only planning support.
+- Find-empty-pattern as read-only planning support. ✅ shipped
 - Clone/move only after live smoke verifies stable readback and restore.
 
 ### Playlist Track Organizer
@@ -263,7 +263,7 @@ Safety requirement:
 Current next slice:
 
 - Expose a user-facing Effect Slot + Native EQ Pack over the already-probed
-  primitives.
+  primitives. ✅ shipped
 - Add static audit coverage for slot and EQ restore payloads.
 - Live-smoke slot mix, track-slot enable, EQ gain/frequency/bandwidth, and
   rollback before promoting per-slot bypass or EQ type changes.
@@ -284,7 +284,7 @@ Useful API:
 MVP:
 
 - Read step velocity, pan, pitch/shift, release, and modulation where available.
-- Set one step parameter at a time with readback.
+- Set one step parameter at a time with readback. ✅ shipped
 - Apply full-pattern humanization as one named rollback unit after individual
   parameter writes are live-smoked.
 
@@ -301,7 +301,8 @@ Status: orchestration over API-backed primitives.
 
 MVP:
 
-- Project health report with read-only findings.
+- Project health report with read-only findings. ✅ shipped
+- Export readiness report with blocker/advisory split. ✅ shipped
 - Fix plan with one approved fix at a time.
 - Grouped rollback for organizer actions.
 
@@ -324,7 +325,7 @@ Useful API:
 
 Allowed next steps:
 
-- Build a return-channel probe before promoting `fl_piano_get_notes`.
+- Build a return-channel probe before promoting `fl_piano_get_notes`. ✅ shipped
 - Add undo-backed transforms for duplicate, humanize, velocity ramp, gate,
   legato, overlap trim, strum, arpeggiate, mute/unmute, note color, slide,
   porta, and snap-to-scale.
