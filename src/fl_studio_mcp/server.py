@@ -28,6 +28,7 @@ from .protocol import port_from_fl_name, port_to_fl_name
 from .tools import arrange as arrange_tools
 from .tools import audio as audio_tools
 from .tools import bulk as bulk_tools
+from .tools import channels as channel_tools
 from .tools import chains as chains_tools
 from .tools import color as color_tools
 from .tools import compose as compose_tools
@@ -86,6 +87,7 @@ def build_server() -> FastMCP:
     )
     transport_tools.register(mcp)
     phase1_tools.register(mcp)      # project/mixer/channel read+write + safety
+    channel_tools.register(mcp)     # Channel organizer: details, names, mixer assignment
     pianoroll_tools.register(mcp)   # Phase 2: write notes into the piano roll
     plugin_tools.register(mcp)      # Phase 1B: plugin param read/write (name or index)
     mixing_tools.register(mcp)      # Slice B: high-level EQ mixing intents
@@ -164,4 +166,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-

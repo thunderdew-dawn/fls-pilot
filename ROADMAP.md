@@ -93,6 +93,9 @@ APIs we have already documented or probed.
    - Promote the user's audio-default request only where API-backed:
      channel volume 50%, name/color/route are in scope; Normalize and Stretch
      Pro stay probe-dependent.
+   - v1 shipped: details read, unassigned-channel detection, rename, explicit
+     mixer-target assignment, and assign-to-free-mixer-track. Pitch write and
+     Normalize/Stretch Pro remain out of scope.
 
 3. **Pattern Management Pack**
    - Add first-class current/list/select/rename/color/length/clone/move/find

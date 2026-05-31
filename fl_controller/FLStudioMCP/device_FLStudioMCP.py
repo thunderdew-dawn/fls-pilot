@@ -290,7 +290,7 @@ def _h_ping(params):
     return {
         "fl_version": _fl_version,
         "protocol_version": PROTOCOL_VERSION,
-        "build": "safety-v15",  # reload marker -- bump to verify reloads take
+        "build": "channels-v16",  # reload marker -- bump to verify reloads take
         "ts": time.time(),
     }
 
@@ -476,6 +476,32 @@ def _h_mixer_get_track(params):
     return _mixer_track_dict(int(params.get("index", 0)))
 
 
+def _channel_type(i):
+    try:
+        code = int(channels.getChannelType(i))
+    except Exception:
+        return {"code": None, "label": None}
+    names = (
+        "CT_Sampler", "CT_Hybrid", "CT_GenPlug", "CT_AudioClip",
+        "CT_AutoClip", "CT_Layer", "CT_Envelope", "CT_MIDIOut",
+    )
+    for name in names:
+        if hasattr(midi, name):
+            try:
+                if code == int(getattr(midi, name)):
+                    return {"code": code, "label": name[3:].lower()}
+            except Exception:
+                pass
+    return {"code": code, "label": "unknown"}
+
+
+def _safe_channel_pitch(i):
+    try:
+        return channels.getChannelPitch(i)
+    except Exception:
+        return None
+
+
 def _channel_dict(i):
     try:
         tgt = channels.getTargetFxTrack(i)
@@ -489,6 +515,8 @@ def _channel_dict(i):
         "solo": bool(channels.isChannelSolo(i)),
         "target_fx_track": tgt,
         "color": _color_out(_safe_channel_color(i)),
+        "type": _channel_type(i),
+        "pitch": _safe_channel_pitch(i),
         **_vol_out(channels.getChannelVolume(i)),
     }
 
@@ -605,6 +633,23 @@ def _h_channel_set_solo(p):
     if bool(channels.isChannelSolo(c)) != bool(p["state"]):
         channels.soloChannel(c)
     return {"channel": c, "solo": bool(channels.isChannelSolo(c))}
+
+
+def _h_channel_set_name(p):
+    c = int(p["channel"])
+    channels.setChannelName(c, str(p["name"]))
+    return {"channel": c, "name": channels.getChannelName(c)}
+
+
+def _h_channel_set_target(p):
+    c = int(p["channel"])
+    track = int(p["track"])
+    channels.setTargetFxTrack(c, track)
+    try:
+        target = channels.getTargetFxTrack(c)
+    except Exception:
+        target = track
+    return {"channel": c, "target_fx_track": target}
 
 
 # -- Track / channel color ---------------------------------------------------
@@ -1093,6 +1138,8 @@ _HANDLERS = {
     "channel_set_pan": _h_channel_set_pan,
     "channel_set_mute": _h_channel_set_mute,
     "channel_set_solo": _h_channel_set_solo,
+    "channel_set_name": _h_channel_set_name,
+    "channel_set_target": _h_channel_set_target,
     "plugin_list": _h_plugin_list,
     "plugin_get_params": _h_plugin_get_params,
     "plugin_get_param": _h_plugin_get_param,

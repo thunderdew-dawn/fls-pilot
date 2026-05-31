@@ -111,6 +111,8 @@ CMD_CHANNEL_SET_MUTE = "channel_set_mute"
 CMD_CHANNEL_SET_SOLO = "channel_set_solo"
 CMD_CHANNEL_SELECT = "channel_select"
 CMD_CHANNEL_SELECTED = "channel_selected"
+CMD_CHANNEL_SET_NAME = "channel_set_name"
+CMD_CHANNEL_SET_TARGET = "channel_set_target"
 
 # Patterns (Phase 3)
 CMD_PATTERN_LIST = "pattern_list"

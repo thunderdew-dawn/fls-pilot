@@ -92,9 +92,9 @@ available, and MCP rollback invokes `general.undoUp()`.
 
 The current static baseline reports:
 
-- 31 `write-safe` tools.
+- 34 `write-safe` tools.
 - 0 `write-gap` tools.
-- 28 `read-only` tools.
+- 30 `read-only` tools.
 - 5 `transient` runtime tools.
 - 4 `server-state` tools.
 - 2 `external-write` tools.
@@ -147,6 +147,14 @@ MVP:
 - Classify channel types, including audio clip/generator/automation.
 - Assign unrouted channels to mixer tracks.
 - Apply confirmed audio defaults such as channel volume 50%.
+
+Current shipped slice:
+
+- `fl_get_channel_details`
+- `fl_detect_unassigned_channels`
+- `fl_set_channel_name`
+- `fl_set_channel_mixer_track`
+- `fl_assign_channel_to_free_mixer_track`
 
 Safety requirement:
 
