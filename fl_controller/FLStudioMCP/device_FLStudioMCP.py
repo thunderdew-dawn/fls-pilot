@@ -1274,6 +1274,10 @@ def _h_channel_get_steps(p):
         if previous_pattern != target_pattern:
             patterns.jumpToPattern(target_pattern)
     grid, vel, pan, shift, rep = [], [], [], [], []
+    rel, modx, pitch = [], [], []
+    p_release = getattr(midi, "pRelease", None)
+    p_modx = getattr(midi, "pModX", None)
+    p_pitch = getattr(midi, "pPitch", None) or getattr(midi, "pFinePitch", None)
     try:
         for s in range(steps):
             try:
@@ -1309,6 +1313,33 @@ def _h_channel_get_steps(p):
                 rp = 0
             rep.append(rp)
 
+            if p_release is not None:
+                try:
+                    raw_rel = channels.getStepParam(idx, s, p_release, 0, 0)
+                    rel.append(round(float(raw_rel) / 127.0, 4))
+                except Exception:
+                    rel.append(0.0)
+            else:
+                rel.append(None)
+
+            if p_modx is not None:
+                try:
+                    raw_modx = channels.getStepParam(idx, s, p_modx, 0, 0)
+                    modx.append(round(float(raw_modx) / 255.0, 4))
+                except Exception:
+                    modx.append(0.0)
+            else:
+                modx.append(None)
+
+            if p_pitch is not None:
+                try:
+                    raw_pitch = channels.getStepParam(idx, s, p_pitch, 0, 0)
+                    pitch.append(int(raw_pitch))
+                except Exception:
+                    pitch.append(0)
+            else:
+                pitch.append(None)
+
         return {
             "channel": idx,
             "pattern": patterns.patternNumber(),
@@ -1317,6 +1348,14 @@ def _h_channel_get_steps(p):
             "pan": pan,
             "shift": shift,
             "rep": rep,
+            "release": rel,
+            "mod": modx,
+            "pitch": pitch,
+            "capabilities": {
+                "release": bool(p_release is not None),
+                "mod": bool(p_modx is not None),
+                "pitch": bool(p_pitch is not None),
+            },
         }
     finally:
         if previous_pattern is not None and previous_pattern != patterns.patternNumber():
@@ -1380,6 +1419,36 @@ def _h_pattern_get_length(p):
         raise _ClientError("pattern index out of range")
     beats = patterns.getPatternLength(idx)
     return {"index": idx, "beats": beats, "steps": beats * 4}
+
+
+def _h_pattern_set_color(p):
+    idx = int(p["index"])
+    if idx < 1 or idx > patterns.patternCount():
+        raise _ClientError("pattern index out of range")
+    color_val = _resolve_color(p)
+    patterns.setPatternColor(idx, color_val)
+    return _h_pattern_get({"index": idx})
+
+
+def _h_pattern_set_length(p):
+    idx = int(p["index"])
+    beats = float(p["beats"])
+    if idx < 1 or idx > patterns.patternCount():
+        raise _ClientError("pattern index out of range")
+    if beats <= 0:
+        raise _ClientError("beats must be > 0")
+    patterns.setPatternLength(idx, beats)
+    return _h_pattern_get_length({"index": idx})
+
+
+def _h_pattern_find_empty(p):
+    try:
+        idx = int(patterns.findFirstNextEmptyPat())
+    except Exception:
+        idx = -1
+    if idx < 1:
+        idx = int(patterns.patternCount()) + 1
+    return {"index": idx, "pattern_count": int(patterns.patternCount())}
 
 
 def _h_playlist_list_tracks(p):
@@ -1462,6 +1531,45 @@ def _h_mixer_get_slot(p):
         "mix": mix,
         "enabled": enabled,
     }
+
+
+def _h_mixer_set_slot_mix(p):
+    track = int(p["track"])
+    slot = int(p["slot"])
+    mix = max(0.0, min(1.0, float(p["mix"])))
+    mixer.setPluginMixLevel(track, slot, mix)
+    return _h_mixer_get_slot({"track": track, "slot": slot})
+
+
+def _h_mixer_get_track_slots(p):
+    track = int(p["track"])
+    enabled = True
+    if hasattr(mixer, "isTrackSlotsEnabled"):
+        try:
+            enabled = bool(mixer.isTrackSlotsEnabled(track))
+        except Exception:
+            enabled = True
+    return {"track": track, "enabled": enabled}
+
+
+def _h_mixer_set_track_slots(p):
+    track = int(p["track"])
+    enabled = bool(p["enabled"])
+    if not hasattr(mixer, "enableTrackSlots"):
+        raise _ClientError("track slot enable API unavailable")
+    mixer.enableTrackSlots(track, 1 if enabled else 0)
+    return _h_mixer_get_track_slots({"track": track})
+
+
+def _h_mixer_set_slot_enabled(p):
+    track = int(p["track"])
+    slot = int(p["slot"])
+    enabled = bool(p["enabled"])
+    mute_fn = getattr(plugins, "setPluginMuteState", None)
+    if mute_fn is None:
+        raise _ClientError("slot mute API unavailable")
+    mute_fn(track, slot, 0 if enabled else 1)
+    return _h_mixer_get_slot({"track": track, "slot": slot})
 
 
 def _h_mixer_get_eq(p):
@@ -1551,6 +1659,9 @@ def _h_channel_set_steps(p):
         patterns.jumpToPattern(target_pattern)
     pat_idx = max(0, target_pattern - 1)
     failures = []
+    p_release = getattr(midi, "pRelease", None)
+    p_modx = getattr(midi, "pModX", None)
+    p_pitch = getattr(midi, "pPitch", None) or getattr(midi, "pFinePitch", None)
     try:
         for s_info in steps_list:
             step_idx = int(s_info["step"])
@@ -1591,6 +1702,40 @@ def _h_channel_set_steps(p):
                     )
                 except Exception as e:
                     failures.append({"step": step_idx, "param": "repeat", "error": str(e)})
+
+            if "release" in s_info and s_info["release"] is not None:
+                if p_release is None:
+                    failures.append({"step": step_idx, "param": "release", "error": "unsupported"})
+                else:
+                    release = max(0, min(127, int(float(s_info["release"]) * 127.0)))
+                    try:
+                        channels.setStepParameterByIndex(
+                            idx, pat_idx, step_idx, p_release, release, True
+                        )
+                    except Exception as e:
+                        failures.append({"step": step_idx, "param": "release", "error": str(e)})
+
+            if "mod" in s_info and s_info["mod"] is not None:
+                if p_modx is None:
+                    failures.append({"step": step_idx, "param": "mod", "error": "unsupported"})
+                else:
+                    mod = max(0, min(255, int(float(s_info["mod"]) * 255.0)))
+                    try:
+                        channels.setStepParameterByIndex(idx, pat_idx, step_idx, p_modx, mod, True)
+                    except Exception as e:
+                        failures.append({"step": step_idx, "param": "mod", "error": str(e)})
+
+            if "pitch" in s_info and s_info["pitch"] is not None:
+                if p_pitch is None:
+                    failures.append({"step": step_idx, "param": "pitch", "error": "unsupported"})
+                else:
+                    pitch = int(s_info["pitch"])
+                    try:
+                        channels.setStepParameterByIndex(
+                            idx, pat_idx, step_idx, p_pitch, pitch, True
+                        )
+                    except Exception as e:
+                        failures.append({"step": step_idx, "param": "pitch", "error": str(e)})
 
         try:
             channels.updateGraphEditor()
@@ -1662,6 +1807,9 @@ _HANDLERS = {
     "pattern_select": _h_pattern_select,
     "pattern_rename": _h_pattern_rename,
     "pattern_get_length": _h_pattern_get_length,
+    "pattern_set_color": _h_pattern_set_color,
+    "pattern_set_length": _h_pattern_set_length,
+    "pattern_find_empty": _h_pattern_find_empty,
     "channel_get_steps": _h_channel_get_steps,
     "pattern_get": _h_pattern_get,
     "pattern_selected": _h_pattern_selected,
@@ -1673,6 +1821,10 @@ _HANDLERS = {
     "playlist_set_color": _h_playlist_set_color,
     "playlist_select_track": _h_playlist_select_track,
     "mixer_get_slot": _h_mixer_get_slot,
+    "mixer_set_slot_mix": _h_mixer_set_slot_mix,
+    "mixer_get_track_slots": _h_mixer_get_track_slots,
+    "mixer_set_track_slots": _h_mixer_set_track_slots,
+    "mixer_set_slot_enabled": _h_mixer_set_slot_enabled,
     "mixer_get_eq": _h_mixer_get_eq,
     "mixer_set_eq": _h_mixer_set_eq,
     "get_time_sig": _h_get_time_sig,

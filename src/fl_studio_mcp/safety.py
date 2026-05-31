@@ -31,6 +31,7 @@ from .protocol import (
     CMD_PATTERN_SELECTED,
     CMD_PLAYLIST_GET_TRACK,
     CMD_MIXER_GET_SLOT,
+    CMD_MIXER_GET_TRACK_SLOTS,
     CMD_MIXER_GET_EQ,
     CMD_GET_TIME_SIG,
     CMD_MIXER_SELECTED,
@@ -184,7 +185,7 @@ def take_snapshot(bridge, scope):
            | "patterns_all" | "project_state"
            | "channel_steps:CHANNEL[:PATTERN]" | "pattern:INDEX" | "patterns_selected"
            | "playlist_track:INDEX" | "mixer_eq:TRACK" | "effect_slot:TRACK:SLOT"
-           | "time_signature"
+           | "track_slots:TRACK" | "time_signature"
     """
     kind, _, arg = str(scope).partition(":")
     if kind == "tempo":
@@ -238,6 +239,8 @@ def take_snapshot(bridge, scope):
     if kind == "effect_slot":
         track, slot = (int(x) for x in arg.split(":"))
         return bridge.call(CMD_MIXER_GET_SLOT, {"track": track, "slot": slot})
+    if kind == "track_slots":
+        return bridge.call(CMD_MIXER_GET_TRACK_SLOTS, {"track": int(arg)})
     if kind == "time_signature":
         return bridge.call(CMD_GET_TIME_SIG)
     raise ValueError(f"unknown snapshot scope: {scope!r}")

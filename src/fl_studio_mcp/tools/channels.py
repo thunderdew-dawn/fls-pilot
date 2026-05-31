@@ -28,17 +28,25 @@ def _target_restore(channel: int, before: dict) -> dict:
 
 def _steps_restore(channel: int, before: dict) -> dict:
     steps_list = []
+    rel = before.get("release", [])
+    mod = before.get("mod", [])
+    pitch = before.get("pitch", [])
     for s in range(len(before.get("grid", []))):
-        steps_list.append(
-            {
-                "step": s,
-                "value": before["grid"][s],
-                "velocity": before["vel"][s],
-                "pan": before["pan"][s],
-                "shift": before["shift"][s],
-                "repeat": before["rep"][s],
-            }
-        )
+        row = {
+            "step": s,
+            "value": before["grid"][s],
+            "velocity": before["vel"][s],
+            "pan": before["pan"][s],
+            "shift": before["shift"][s],
+            "repeat": before["rep"][s],
+        }
+        if s < len(rel) and rel[s] is not None:
+            row["release"] = rel[s]
+        if s < len(mod) and mod[s] is not None:
+            row["mod"] = mod[s]
+        if s < len(pitch) and pitch[s] is not None:
+            row["pitch"] = pitch[s]
+        steps_list.append(row)
     pattern = before.get("pattern")
     return {
         "command": protocol.CMD_CHANNEL_SET_STEPS,
@@ -265,6 +273,52 @@ def register(mcp: FastMCP) -> None:
             build_restore=lambda b: _steps_restore(channel, b),
         )
 
+    @mcp.tool(annotations={"title": "Set one step sequencer parameter", **_WR})
+    def fl_channel_set_step_param(
+        channel: Annotated[int, Field(ge=0, description="Channel-rack channel index.")],
+        step: Annotated[int, Field(ge=0, le=63, description="Zero-based step index.")],
+        parameter: Annotated[
+            str,
+            Field(description="One of: velocity, pan, shift, repeat, release, mod, pitch."),
+        ],
+        value: Annotated[float, Field(description="Value for the selected parameter.")],
+        pattern: Annotated[
+            int | None,
+            Field(ge=1, description="Optional pattern index. Defaults to current pattern."),
+        ] = None,
+    ) -> dict:
+        """Set one step parameter with rollback-safe snapshot/readback."""
+        key = parameter.strip().lower()
+        payload: dict[str, object] = {"step": step}
+        if key in ("velocity", "vel"):
+            payload["velocity"] = max(0.0, min(1.0, float(value)))
+        elif key == "pan":
+            payload["pan"] = max(-1.0, min(1.0, float(value)))
+        elif key == "shift":
+            payload["shift"] = max(0.0, min(1.0, float(value)))
+        elif key == "repeat":
+            payload["repeat"] = max(0, min(15, int(value)))
+        elif key == "release":
+            payload["release"] = max(0.0, min(1.0, float(value)))
+        elif key == "mod":
+            payload["mod"] = max(0.0, min(1.0, float(value)))
+        elif key == "pitch":
+            payload["pitch"] = int(value)
+        else:
+            raise ValueError("parameter must be one of: velocity, pan, shift, repeat, release, mod, pitch")
+
+        bridge = get_bridge()
+        selected = bridge.call(protocol.CMD_PATTERN_SELECTED)
+        pattern_index = int(pattern or selected["selected"])
+        return safety.safe_write(
+            bridge,
+            tool="channel_set_step_param",
+            scope=f"channel_steps:{channel}:{pattern_index}",
+            command=protocol.CMD_CHANNEL_SET_STEPS,
+            params={"channel": channel, "pattern": pattern_index, "steps": [payload]},
+            build_restore=lambda b: _steps_restore(channel, b),
+        )
+
     @mcp.tool(annotations={"title": "Set step sequencer steps in batch", **_WR})
     def fl_channel_set_steps(
         channel: Annotated[int, Field(ge=0, description="Channel-rack channel index.")],
@@ -299,6 +353,12 @@ def register(mcp: FastMCP) -> None:
                 s_dict["shift"] = max(0.0, min(1.0, float(s["shift"])))
             if "repeat" in s and s["repeat"] is not None:
                 s_dict["repeat"] = max(0, min(15, int(s["repeat"])))
+            if "release" in s and s["release"] is not None:
+                s_dict["release"] = max(0.0, min(1.0, float(s["release"])))
+            if "mod" in s and s["mod"] is not None:
+                s_dict["mod"] = max(0.0, min(1.0, float(s["mod"])))
+            if "pitch" in s and s["pitch"] is not None:
+                s_dict["pitch"] = int(s["pitch"])
             validated_steps.append(s_dict)
 
         bridge = get_bridge()

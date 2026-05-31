@@ -33,6 +33,7 @@ from .tools import channels as channel_tools
 from .tools import color as color_tools
 from .tools import compose as compose_tools
 from .tools import export as export_tools
+from .tools import effects as effects_tools
 from .tools import mix_doctor as mix_doctor_tools
 from .tools import mixing as mixing_tools
 from .tools import phase1 as phase1_tools
@@ -40,6 +41,7 @@ from .tools import phase3 as phase3_tools
 from .tools import pianoroll as pianoroll_tools
 from .tools import plugin as plugin_tools
 from .tools import presets as presets_tools
+from .tools import project_doctor as project_doctor_tools
 from .tools import resources as resource_defs
 from .tools import routing as routing_tools
 from .tools import transport as transport_tools
@@ -90,6 +92,7 @@ def build_server() -> FastMCP:
     channel_tools.register(mcp)  # Channel organizer: details, names, mixer assignment
     pianoroll_tools.register(mcp)  # Phase 2: write notes into the piano roll
     plugin_tools.register(mcp)  # Phase 1B: plugin param read/write (name or index)
+    effects_tools.register(mcp)  # Effect slot + native EQ pack
     mixing_tools.register(mcp)  # Slice B: high-level EQ mixing intents
     routing_tools.register(mcp)  # Routing/cleanup Slice 1: read-only
     bulk_tools.register(mcp)  # Bulk mute/solo: server-side group orchestration
@@ -102,6 +105,7 @@ def build_server() -> FastMCP:
     export_tools.register(mcp)  # MIDI export: arrangement spec -> type-1 .mid on disk
     presets_tools.register(mcp)  # Preset suggester: read preset names from disk
     mix_doctor_tools.register(mcp)  # Mix Doctor: diagnose whole mix + gated apply-fixes
+    project_doctor_tools.register(mcp)  # Project doctor + export readiness reports
     phase3_tools.register(mcp)  # Phase 3: Patterns & Playlist pack
     return mcp
 

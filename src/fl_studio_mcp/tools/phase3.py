@@ -81,6 +81,55 @@ def register(mcp: FastMCP) -> None:
             },
         )
 
+    @mcp.tool(annotations={"title": "Set pattern color", **_WR})
+    def fl_pattern_set_color(
+        index: Annotated[int, Field(ge=1, description="Pattern index to recolor.")],
+        r: Annotated[int, Field(ge=0, le=255, description="Red component.")] = 0,
+        g: Annotated[int, Field(ge=0, le=255, description="Green component.")] = 0,
+        b: Annotated[int, Field(ge=0, le=255, description="Blue component.")] = 0,
+        color: Annotated[int | None, Field(description="Optional FL color integer.")] = None,
+    ) -> dict:
+        """Set a pattern color; rollback restores the previous color integer."""
+        params: dict = {"index": index}
+        if color is not None:
+            params["color"] = int(color)
+        else:
+            params.update({"r": r, "g": g, "b": b})
+        return safety.safe_write(
+            get_bridge(),
+            tool="pattern_set_color",
+            scope=f"pattern:{index}",
+            command=protocol.CMD_PATTERN_SET_COLOR,
+            params=params,
+            build_restore=lambda b: {
+                "command": protocol.CMD_PATTERN_SET_COLOR,
+                "params": {"index": index, "color": b["color"]["int"]},
+            },
+        )
+
+    @mcp.tool(annotations={"title": "Set pattern length", **_WR})
+    def fl_pattern_set_length(
+        index: Annotated[int, Field(ge=1, description="Pattern index to resize.")],
+        beats: Annotated[float, Field(gt=0.0, description="New pattern length in beats.")],
+    ) -> dict:
+        """Set a pattern length; rollback restores the previous length."""
+        return safety.safe_write(
+            get_bridge(),
+            tool="pattern_set_length",
+            scope=f"pattern:{index}",
+            command=protocol.CMD_PATTERN_SET_LENGTH,
+            params={"index": index, "beats": float(beats)},
+            build_restore=lambda b: {
+                "command": protocol.CMD_PATTERN_SET_LENGTH,
+                "params": {"index": index, "beats": float(b.get("length", 16))},
+            },
+        )
+
+    @mcp.tool(annotations={"title": "Find next empty pattern", **_RO})
+    def fl_pattern_find_empty() -> dict:
+        """Find the first empty pattern index (or next index after the current count)."""
+        return get_bridge().call(protocol.CMD_PATTERN_FIND_EMPTY, {})
+
     # ---- Playlist Reads -----------------------------------------------------
 
     @mcp.tool(annotations={"title": "List playlist tracks", **_RO})
