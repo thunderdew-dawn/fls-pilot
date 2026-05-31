@@ -81,6 +81,7 @@ def port_from_fl_name() -> str:
 CMD_PING = "ping"
 CMD_GET_TEMPO = "get_tempo"
 CMD_SET_TEMPO = "set_tempo"
+CMD_GENERAL_UNDO = "general_undo"
 CMD_PLAY = "play"
 CMD_STOP = "stop"
 CMD_TOGGLE_PLAY = "toggle_play"
@@ -109,6 +110,7 @@ CMD_CHANNEL_SET_PAN = "channel_set_pan"
 CMD_CHANNEL_SET_MUTE = "channel_set_mute"
 CMD_CHANNEL_SET_SOLO = "channel_set_solo"
 CMD_CHANNEL_SELECT = "channel_select"
+CMD_CHANNEL_SELECTED = "channel_selected"
 
 # Patterns (Phase 3)
 CMD_PATTERN_LIST = "pattern_list"

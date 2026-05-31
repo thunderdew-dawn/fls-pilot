@@ -290,7 +290,7 @@ def _h_ping(params):
     return {
         "fl_version": _fl_version,
         "protocol_version": PROTOCOL_VERSION,
-        "build": "color-v14",   # reload marker -- bump to verify reloads take
+        "build": "safety-v15",  # reload marker -- bump to verify reloads take
         "ts": time.time(),
     }
 
@@ -314,6 +314,14 @@ def _h_set_tempo(params):
     flags = midi.REC_UpdateValue | midi.REC_UpdateControl
     general.processRECEvent(midi.REC_Tempo, int(bpm * _tempo_scale()), flags)
     return {"bpm": mixer.getCurrentTempo() / _tempo_scale()}
+
+
+def _h_general_undo(params):
+    try:
+        general.undoUp()
+        return {"ok": True, "undid": True}
+    except Exception as e:
+        return {"ok": False, "error": "undoUp: %s" % e}
 
 
 def _is_playing():
@@ -1031,6 +1039,11 @@ def _h_channel_select(p):
             "selected": channels.channelNumber()}
 
 
+def _h_channel_selected(p):
+    idx = channels.channelNumber()
+    return {"selected": idx, "name": channels.getChannelName(idx)}
+
+
 def _h_arrange_add_marker(p):
     if arrangement is None:
         return {"ok": False, "error": "arrangement module not available"}
@@ -1058,6 +1071,7 @@ _HANDLERS = {
     "ping": _h_ping,
     "get_tempo": _h_get_tempo,
     "set_tempo": _h_set_tempo,
+    "general_undo": _h_general_undo,
     "play": _h_play,
     "stop": _h_stop,
     "toggle_play": _h_toggle_play,
@@ -1098,6 +1112,7 @@ _HANDLERS = {
     "arrange_clone_pattern": _h_arrange_clone_pattern,
     "arrange_add_marker": _h_arrange_add_marker,
     "channel_select": _h_channel_select,
+    "channel_selected": _h_channel_selected,
     "ensure_piano_roll": _h_ensure_piano_roll,
     "pattern_list": _h_pattern_list,
 }

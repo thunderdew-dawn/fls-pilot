@@ -15,7 +15,7 @@ from typing import Annotated, List, Optional
 from fastmcp import FastMCP
 from pydantic import BaseModel, Field
 
-from .. import protocol
+from .. import protocol, safety
 from ..connection import get_bridge
 
 
@@ -28,13 +28,19 @@ class RagaNote(BaseModel):
 
 def _write(notes, channel, mode):
     bridge = get_bridge()
-    sel = None
-    if channel is not None:
-        sel = bridge.call(protocol.CMD_CHANNEL_SELECT, {"channel": channel})
-    res = bridge.apply_notes([n.model_dump() for n in notes], mode)
-    if isinstance(res, dict) and sel is not None:
-        res["channel_selected"] = sel
-    return res
+    dumped = [n.model_dump() for n in notes]
+
+    def apply():
+        out = {}
+        if channel is not None:
+            out["channel_selected"] = bridge.call(protocol.CMD_CHANNEL_SELECT, {"channel": channel})
+        out["notes"] = bridge.apply_notes(dumped, mode)
+        return out
+
+    return safety.safe_piano_roll_write(
+        bridge, tool="write_scale_notes",
+        params={"notes": dumped, "channel": channel, "mode": mode},
+        apply=apply)
 
 
 def register(mcp: FastMCP) -> None:

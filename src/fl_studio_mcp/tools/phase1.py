@@ -54,7 +54,9 @@ def register(mcp: FastMCP) -> None:
             command=protocol.CMD_MIXER_SET_VOLUME,
             params={"track": track, "value": value, "unit": unit},
             build_restore=lambda b: {"command": protocol.CMD_MIXER_SET_VOLUME,
-                                     "params": {"track": track, "value": b["vol_norm"], "unit": "normalized"}})
+                                     "params": {"track": track,
+                                                "value": b["vol_norm"],
+                                                "unit": "normalized"}})
 
     @mcp.tool(annotations={"title": "Set mixer track pan", **_WR})
     def fl_set_mixer_pan(
@@ -110,7 +112,9 @@ def register(mcp: FastMCP) -> None:
             command=protocol.CMD_CHANNEL_SET_VOLUME,
             params={"channel": channel, "value": value, "unit": unit},
             build_restore=lambda b: {"command": protocol.CMD_CHANNEL_SET_VOLUME,
-                                     "params": {"channel": channel, "value": b["vol_norm"], "unit": "normalized"}})
+                                     "params": {"channel": channel,
+                                                "value": b["vol_norm"],
+                                                "unit": "normalized"}})
 
     @mcp.tool(annotations={"title": "Set channel pan", **_WR})
     def fl_set_channel_pan(
@@ -147,10 +151,45 @@ def register(mcp: FastMCP) -> None:
     # ---- safety ---------------------------------------------------------
     @mcp.tool(annotations={"title": "Take snapshot", **_RO})
     def fl_take_snapshot(
-        scope: Annotated[str, Field(description="'mixer_track:N' | 'channel:N' | 'mixer_all' | 'channels_all'")],
+        scope: Annotated[
+            str,
+            Field(description="'mixer_track:N' | 'channel:N' | 'mixer_all' | 'channels_all'"),
+        ],
     ) -> dict:
         """Read current state for a scope (for your own before/after diffing)."""
         return safety.take_snapshot(get_bridge(), scope)
+
+    @mcp.tool(annotations={"title": "Get change history", **_RO})
+    def fl_get_change_history(
+        limit: Annotated[
+            int,
+            Field(ge=1, le=50, description="Number of recent changes to return."),
+        ] = 10,
+        include_payload: Annotated[
+            bool,
+            Field(description="Include full before/after/restore payloads."),
+        ] = False,
+    ) -> dict:
+        """Return recent MCP-managed changes. Read-only; does not touch FL."""
+        return safety.change_history(limit, include_payload=include_payload)
+
+    @mcp.tool(annotations={"title": "Export change log",
+                           "readOnlyHint": False, "destructiveHint": False,
+                           "idempotentHint": False, "openWorldHint": True})
+    def fl_export_change_log(
+        output_path: Annotated[
+            str | None,
+            Field(
+                description="Optional JSON export path. Defaults to the live jsonl changelog path."
+            ),
+        ] = None,
+        include_payload: Annotated[
+            bool,
+            Field(description="Include full before/after/restore payloads."),
+        ] = True,
+    ) -> dict:
+        """Export or locate the server-side MCP changelog. Does not touch FL."""
+        return safety.export_change_log(output_path, include_payload=include_payload)
 
     @mcp.tool(annotations={"title": "Rollback last change",
                            "readOnlyHint": False, "destructiveHint": True,
@@ -158,6 +197,18 @@ def register(mcp: FastMCP) -> None:
     def fl_rollback_last_change() -> dict:
         """Undo the most recent write by replaying its pre-change snapshot."""
         return safety.rollback_last_change(get_bridge())
+
+    @mcp.tool(annotations={"title": "Rollback change by id",
+                           "readOnlyHint": False, "destructiveHint": True,
+                           "idempotentHint": False, "openWorldHint": True})
+    def fl_rollback_change(
+        change_id: Annotated[str, Field(description="Change id from fl_get_change_history.")],
+    ) -> dict:
+        """Rollback a change by id.
+
+        Only the latest entry is accepted to avoid unsafe non-LIFO rollback.
+        """
+        return safety.rollback_change(get_bridge(), change_id)
 
     @mcp.tool(annotations={"title": "Set dry-run mode",
                            "readOnlyHint": False, "destructiveHint": False,

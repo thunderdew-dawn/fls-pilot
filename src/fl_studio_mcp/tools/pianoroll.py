@@ -14,6 +14,7 @@ from typing import Annotated, List
 from fastmcp import FastMCP
 from pydantic import BaseModel, Field
 
+from .. import safety
 from ..connection import get_bridge
 from ..pyscript_gen import quantize_notes
 
@@ -55,7 +56,11 @@ def register(mcp: FastMCP) -> None:
         arr = [n.model_dump() for n in notes]
         if quantize and quantize > 0:
             arr = quantize_notes(arr, float(quantize))
-        return get_bridge().apply_notes(arr, mode)
+        bridge = get_bridge()
+        return safety.safe_piano_roll_write(
+            bridge, tool="write_piano_roll_notes",
+            params={"notes": arr, "mode": mode, "quantize": quantize},
+            apply=lambda: bridge.apply_notes(arr, mode))
 
     @mcp.tool(annotations={
         "title": "Quantize piano-roll notes",
@@ -70,4 +75,9 @@ def register(mcp: FastMCP) -> None:
         snaps note starts (and optionally lengths) to the grid, rewrites -- via
         the pyscript bridge, no dialog. Needs the Piano roll open + MCP_Apply
         armed once this session (same setup as note writing)."""
-        return get_bridge().apply_notes([], trigger=True, quantize=float(grid_bars), snap_ends=snap_ends)
+        bridge = get_bridge()
+        return safety.safe_piano_roll_write(
+            bridge, tool="quantize_pattern",
+            params={"grid_bars": float(grid_bars), "snap_ends": bool(snap_ends)},
+            apply=lambda: bridge.apply_notes(
+                [], trigger=True, quantize=float(grid_bars), snap_ends=snap_ends))

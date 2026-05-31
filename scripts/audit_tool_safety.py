@@ -26,6 +26,7 @@ PROTOCOL = ROOT / "src" / "fl_studio_mcp" / "protocol.py"
 
 WRITE_CONSTANTS = {
     "CMD_SET_TEMPO",
+    "CMD_GENERAL_UNDO",
     "CMD_MIXER_SET_VOLUME",
     "CMD_MIXER_SET_PAN",
     "CMD_MIXER_SET_MUTE",
@@ -72,11 +73,17 @@ READ_CONSTANTS = {
     "CMD_MIXER_GET_ROUTING",
     "CMD_MIXER_GET_ROUTING_ALL",
     "CMD_CHANNEL_ROUTING_SUMMARY",
+    "CMD_CHANNEL_SELECTED",
     "CMD_MIXER_GET_PEAKS",
 }
 
-SERVER_STATE_TOOLS = {"fl_set_dry_run", "fl_take_snapshot", "fl_rollback_last_change"}
-EXTERNAL_WRITE_TOOLS = {"fl_export_midi"}
+SERVER_STATE_TOOLS = {
+    "fl_set_dry_run",
+    "fl_take_snapshot",
+    "fl_rollback_last_change",
+    "fl_rollback_change",
+}
+EXTERNAL_WRITE_TOOLS = {"fl_export_midi", "fl_export_change_log"}
 
 
 @dataclass
@@ -206,7 +213,9 @@ class FunctionEffects:
 def _function_effects(fn: ast.FunctionDef) -> FunctionEffects:
     calls = [_call_name(n) for n in ast.walk(fn) if isinstance(n, ast.Call)]
     constants = _protocol_constants(fn)
-    has_safe = any(name.endswith("safety.safe_write") or name.endswith("safety.safe_write_group")
+    has_safe = any(name.endswith(("safety.safe_write",
+                                  "safety.safe_write_group",
+                                  "safety.safe_piano_roll_write"))
                    for name in calls)
     has_apply_notes = any(name.endswith("apply_notes") for name in calls)
     return FunctionEffects(has_safe, has_apply_notes, constants)
@@ -250,7 +259,7 @@ def _classify_tool(
         return "server-state", "; ".join(evidence_bits) or "server-only state"
     if fn.name in EXTERNAL_WRITE_TOOLS:
         return "external-write", "; ".join(evidence_bits) or "writes outside FL"
-    if has_safe and not has_apply_notes:
+    if has_safe:
         return "write-safe", "; ".join(evidence_bits)
     if has_apply_notes:
         return "write-gap", "; ".join(evidence_bits)

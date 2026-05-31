@@ -12,7 +12,7 @@ from typing import Annotated
 from fastmcp import FastMCP
 from pydantic import Field
 
-from .. import protocol
+from .. import protocol, safety
 from ..connection import FLCommandFailed, FLNotRunning, FLTimeout, get_bridge
 
 
@@ -92,9 +92,13 @@ def register(mcp: FastMCP) -> None:
     def fl_set_tempo(
         bpm: Annotated[float, Field(ge=10.0, le=999.0, description="Target tempo in BPM, FL accepts 10-999.")],
     ) -> dict:
-        """Set the FL Studio project tempo. Range is 10-999 BPM (FL's own limits)."""
-        data = _safe_call(protocol.CMD_SET_TEMPO, {"bpm": float(bpm)})
-        return {"bpm": data["bpm"]}
+        """Set the FL Studio project tempo. Snapshot + readback; rollback restores BPM."""
+        return safety.safe_write(
+            get_bridge(), tool="set_tempo", scope="tempo",
+            command=protocol.CMD_SET_TEMPO,
+            params={"bpm": float(bpm)},
+            build_restore=lambda b: {"command": protocol.CMD_SET_TEMPO,
+                                     "params": {"bpm": b["bpm"]}})
 
     @mcp.tool(
         annotations={

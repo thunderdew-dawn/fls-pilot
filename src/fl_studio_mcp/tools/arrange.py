@@ -15,7 +15,7 @@ from typing import Annotated
 from fastmcp import FastMCP
 from pydantic import Field
 
-from .. import protocol
+from .. import protocol, safety
 from ..connection import get_bridge
 
 
@@ -27,33 +27,45 @@ def register(mcp: FastMCP) -> None:
     def fl_arrange_new_pattern(
         name: Annotated[str, Field(description="Pattern name, e.g. 'INTRO'.")],
     ) -> dict:
-        """Create + select + name the next empty pattern. After this, the note
-        bridge (fl_write_piano_roll_notes) writes INTO this pattern."""
-        return get_bridge().call(protocol.CMD_ARRANGE_NEW_PATTERN, {"name": name})
+        """Create + select + name the next empty pattern. Rollback uses FL undo."""
+        return safety.safe_write(
+            get_bridge(), tool="arrange_new_pattern", scope="patterns_all",
+            command=protocol.CMD_ARRANGE_NEW_PATTERN,
+            params={"name": name},
+            build_restore=lambda _b: {"command": protocol.CMD_GENERAL_UNDO, "params": {}})
 
     @mcp.tool(annotations={"title": "Select channel (note-bridge target)", **_WR})
     def fl_arrange_select_channel(
         channel: Annotated[int, Field(ge=0, description="Channel-rack channel index.")],
     ) -> dict:
-        """Make a channel the active selection so the note bridge
-        (fl_write_piano_roll_notes) writes INTO it. Use before writing each
-        instrument's notes in a section (drums -> ch X, bass -> ch Y, ...)."""
-        return get_bridge().call(protocol.CMD_CHANNEL_SELECT, {"channel": channel})
+        """Make a channel active; rollback restores the previously selected channel."""
+        return safety.safe_write(
+            get_bridge(), tool="arrange_select_channel", scope="selected_channel",
+            command=protocol.CMD_CHANNEL_SELECT,
+            params={"channel": channel},
+            build_restore=lambda b: {"command": protocol.CMD_CHANNEL_SELECT,
+                                     "params": {"channel": b["selected"]}})
 
     @mcp.tool(annotations={"title": "Clone a pattern (copies notes)", **_WR})
     def fl_arrange_clone_pattern(
         src: Annotated[int, Field(ge=1, description="Source pattern index.")],
         new_name: Annotated[str, Field(description="Name for the clone.")],
     ) -> dict:
-        """Clone a pattern (copies its notes) and rename the clone -- e.g. for
-        verse -> verse2 variations."""
-        return get_bridge().call(protocol.CMD_ARRANGE_CLONE_PATTERN,
-                                 {"src": src, "new_name": new_name})
+        """Clone a pattern and rename the clone. Rollback uses FL undo."""
+        return safety.safe_write(
+            get_bridge(), tool="arrange_clone_pattern", scope="patterns_all",
+            command=protocol.CMD_ARRANGE_CLONE_PATTERN,
+            params={"src": src, "new_name": new_name},
+            build_restore=lambda _b: {"command": protocol.CMD_GENERAL_UNDO, "params": {}})
 
     @mcp.tool(annotations={"title": "Add a section marker at a bar", **_WR})
     def fl_arrange_add_marker(
         bar: Annotated[int, Field(ge=1, description="Bar number (1 = song start).")],
         name: Annotated[str, Field(description="Marker name, e.g. 'Verse'.")],
     ) -> dict:
-        """Add a named timeline marker at a bar (intro/verse/chorus/drop)."""
-        return get_bridge().call(protocol.CMD_ARRANGE_ADD_MARKER, {"bar": bar, "name": name})
+        """Add a named timeline marker at a bar. Rollback uses FL undo."""
+        return safety.safe_write(
+            get_bridge(), tool="arrange_add_marker", scope="project_state",
+            command=protocol.CMD_ARRANGE_ADD_MARKER,
+            params={"bar": bar, "name": name},
+            build_restore=lambda _b: {"command": protocol.CMD_GENERAL_UNDO, "params": {}})
