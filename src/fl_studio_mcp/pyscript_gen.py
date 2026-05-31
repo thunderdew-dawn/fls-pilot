@@ -250,3 +250,113 @@ def write_transpose_script(semitones: int, scripts_dir: str | None = None) -> st
     with open(path, "w", encoding="ascii") as f:
         f.write(text)
     return path
+
+
+_DUPLICATE_TEMPLATE = """# Script.Name = "MCP Apply"
+# Script.Category = "MCP"
+
+import flpianoroll as flp
+
+OFFSET_BARS = {offset_bars!r}
+
+
+def _run():
+    score = flp.score
+    shift = int(round(OFFSET_BARS * score.PPQ * 4))
+    if shift <= 0:
+        return
+    notes = []
+    for i in range(score.noteCount):
+        n = score.getNote(i)
+        notes.append((n.number, n.time + shift, n.length, n.velocity))
+    for num, t, ln, vel in notes:
+        m = flp.Note()
+        m.number = num
+        m.time = t
+        m.length = ln
+        m.velocity = vel
+        score.addNote(m)
+
+
+def _go():
+    undo = getattr(flp.score, "undoSection", None)
+    if callable(undo):
+        try:
+            with undo():
+                _run()
+            return
+        except Exception:
+            pass
+    _run()
+
+
+_go()
+"""
+
+
+def write_duplicate_script(offset_bars: float, scripts_dir: str | None = None) -> str:
+    scripts_dir = scripts_dir or PIANO_ROLL_SCRIPTS_DIR
+    text = _DUPLICATE_TEMPLATE.format(offset_bars=float(offset_bars))
+    path = os.path.join(scripts_dir, APPLY_SCRIPT_NAME)
+    with open(path, "w", encoding="ascii") as f:
+        f.write(text)
+    return path
+
+
+_VELOCITY_RAMP_TEMPLATE = """# Script.Name = "MCP Apply"
+# Script.Category = "MCP"
+
+import flpianoroll as flp
+
+START = {start!r}
+END = {end!r}
+
+
+def _run():
+    score = flp.score
+    count = score.noteCount
+    if count <= 0:
+        return
+    notes = []
+    for i in range(count):
+        n = score.getNote(i)
+        frac = float(i) / float(max(1, count - 1))
+        vel = START + ((END - START) * frac)
+        vel = max(0.0, min(1.0, vel))
+        notes.append((n.number, n.time, n.length, vel))
+    try:
+        score.clearNotes(True)
+    except TypeError:
+        score.clearNotes()
+    for num, t, ln, vel in notes:
+        m = flp.Note()
+        m.number = num
+        m.time = t
+        m.length = ln
+        m.velocity = vel
+        score.addNote(m)
+
+
+def _go():
+    undo = getattr(flp.score, "undoSection", None)
+    if callable(undo):
+        try:
+            with undo():
+                _run()
+            return
+        except Exception:
+            pass
+    _run()
+
+
+_go()
+"""
+
+
+def write_velocity_ramp_script(start: float, end: float, scripts_dir: str | None = None) -> str:
+    scripts_dir = scripts_dir or PIANO_ROLL_SCRIPTS_DIR
+    text = _VELOCITY_RAMP_TEMPLATE.format(start=float(start), end=float(end))
+    path = os.path.join(scripts_dir, APPLY_SCRIPT_NAME)
+    with open(path, "w", encoding="ascii") as f:
+        f.write(text)
+    return path

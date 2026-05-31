@@ -252,6 +252,57 @@ def register(mcp: FastMCP) -> None:
             apply=lambda: bridge.apply_notes([], trigger=True, transpose=semitones),
         )
 
+    @mcp.tool(annotations={"title": "Duplicate Piano roll notes forward", **_WR})
+    def fl_piano_duplicate(
+        offset_bars: Annotated[
+            float,
+            Field(gt=0.0, description="How far forward to duplicate notes, in bars."),
+        ] = 1.0,
+    ) -> dict:
+        """Duplicate all notes in the active Piano roll forward by a bar offset."""
+        bridge = get_bridge()
+        bridge.call(protocol.CMD_ENSURE_PIANO_ROLL)
+        return safety.safe_piano_roll_write(
+            bridge,
+            tool="piano_duplicate",
+            params={"offset_bars": float(offset_bars)},
+            apply=lambda: bridge.apply_notes([], trigger=True, duplicate_bars=float(offset_bars)),
+        )
+
+    @mcp.tool(annotations={"title": "Apply Piano roll velocity ramp", **_WR})
+    def fl_piano_velocity_ramp(
+        start: Annotated[float, Field(ge=0.0, le=1.0, description="Start velocity 0..1.")],
+        end: Annotated[float, Field(ge=0.0, le=1.0, description="End velocity 0..1.")],
+    ) -> dict:
+        """Apply a linear velocity ramp over note order in the active Piano roll."""
+        bridge = get_bridge()
+        bridge.call(protocol.CMD_ENSURE_PIANO_ROLL)
+        return safety.safe_piano_roll_write(
+            bridge,
+            tool="piano_velocity_ramp",
+            params={"start": float(start), "end": float(end)},
+            apply=lambda: bridge.apply_notes(
+                [], trigger=True, velocity_ramp=(float(start), float(end))
+            ),
+        )
+
+    @mcp.tool(annotations={"title": "Probe Piano roll return channel", **_RO})
+    def fl_piano_probe_return_channel() -> dict:
+        """Report current Piano roll note-readback capability and known limitations."""
+        return {
+            "ok": True,
+            "readback_available": False,
+            "status": "api-limited",
+            "reason": (
+                "Piano Roll scripts can read notes locally, but there is no verified, "
+                "safe return channel back to the MCP server in this branch."
+            ),
+            "recommended_path": (
+                "Use write tools with undo-backed rollback. Treat note readback as probe-only "
+                "until a version-stable return channel is implemented."
+            ),
+        }
+
     @mcp.tool(annotations={"title": "Get notes in active Piano roll (API Limited)", **_RO})
     def fl_piano_get_notes() -> dict:
         """Read back notes from the Piano roll (API Limited -- returns error)."""

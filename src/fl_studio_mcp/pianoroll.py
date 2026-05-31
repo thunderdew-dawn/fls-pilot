@@ -16,7 +16,13 @@ Scripting menu so it becomes FL's "last script" (then Ctrl+Alt+Y targets it).
 
 from __future__ import annotations
 
-from .pyscript_gen import write_apply_script, write_quantize_script, write_transpose_script
+from .pyscript_gen import (
+    write_apply_script,
+    write_duplicate_script,
+    write_quantize_script,
+    write_transpose_script,
+    write_velocity_ramp_script,
+)
 
 
 def apply_notes(
@@ -26,6 +32,8 @@ def apply_notes(
     quantize=None,
     snap_ends=False,
     transpose=None,
+    duplicate_bars=None,
+    velocity_ramp=None,
 ):
     """Write a pyscript into MCP_Apply.pyscript and (optionally) trigger FL.
 
@@ -34,7 +42,25 @@ def apply_notes(
     If ``transpose`` (semitones) is set, writes a script that shifts pitch.
     Returns {ok, ..., script, triggered, focused, hint?}.
     """
-    if transpose is not None:
+    if duplicate_bars is not None:
+        path = write_duplicate_script(float(duplicate_bars))
+        result = {
+            "ok": True,
+            "action": "duplicate",
+            "offset_bars": float(duplicate_bars),
+            "script": path,
+        }
+    elif velocity_ramp is not None:
+        start, end = velocity_ramp
+        path = write_velocity_ramp_script(float(start), float(end))
+        result = {
+            "ok": True,
+            "action": "velocity_ramp",
+            "start": float(start),
+            "end": float(end),
+            "script": path,
+        }
+    elif transpose is not None:
         path = write_transpose_script(int(transpose))
         result = {
             "ok": True,
