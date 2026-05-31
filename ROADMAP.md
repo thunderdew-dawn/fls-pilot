@@ -136,6 +136,9 @@ APIs we have already documented or probed.
 5. **Effect Slot and Native EQ Pack**
    - Add effect slot read, slot mix, track-slot enable/bypass, and native mixer
      EQ read/write.
+   - Support setting Low/High bands to Low Cut (High Pass) and High Cut (Low Pass)
+     modes via `general.processRECEvent` (using `mixer.REC_Mixer_EQ_Type`,
+     `_Freq`, and `_Q` event IDs) to allow plugin-free, CPU-friendly channel high-passing.
    - Snapshot slot mix/enabled state and every changed EQ band parameter.
    - Treat per-slot mute as live-test-required before user-facing exposure.
 
