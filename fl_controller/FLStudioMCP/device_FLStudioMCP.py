@@ -303,7 +303,7 @@ def _h_ping(params):
     return {
         "fl_version": _fl_version,
         "protocol_version": PROTOCOL_VERSION,
-        "build": "channels-v35",  # reload marker -- bump to verify reloads take
+        "build": "channels-v36",  # reload marker -- bump to verify reloads take
         "ts": time.time(),
     }
 
