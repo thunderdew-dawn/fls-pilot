@@ -138,8 +138,30 @@ def main() -> None:
         __version__, port_to_fl_name(), port_from_fl_name(),
     )
     server = build_server()
-    server.run()  # stdio transport by default
+
+    # Transport selection: stdio (default, Claude/Cursor) or sse (ChatGPT).
+    # --sse flag or FLSTUDIO_MCP_SERVER_TRANSPORT=sse switches to SSE/HTTP.
+    transport = os.environ.get("FLSTUDIO_MCP_SERVER_TRANSPORT", "stdio").lower()
+    if "--sse" in sys.argv:
+        transport = "sse"
+
+    if transport == "sse":
+        sse_host = os.environ.get("FLSTUDIO_MCP_SSE_HOST", "127.0.0.1")
+        sse_port = int(os.environ.get("FLSTUDIO_MCP_SSE_PORT", "8080"))
+        # Allow --port N from CLI
+        if "--port" in sys.argv:
+            try:
+                idx = sys.argv.index("--port")
+                sse_port = int(sys.argv[idx + 1])
+            except (IndexError, ValueError):
+                pass
+        logger.info("Starting SSE transport on %s:%d (for ChatGPT / remote MCP clients)",
+                    sse_host, sse_port)
+        server.run(transport="sse", host=sse_host, port=sse_port)
+    else:
+        server.run()  # stdio transport (Claude Desktop, Cursor, Claude Code)
 
 
 if __name__ == "__main__":
     main()
+

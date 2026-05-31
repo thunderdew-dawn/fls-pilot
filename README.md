@@ -74,57 +74,104 @@ These are properties of FL Studio's scripting API, stated plainly:
 
 ## Requirements
 
-- **Windows 10/11** (tested on Windows 11)
-- **FL Studio 2025** or newer
-- **Claude Desktop** (or any MCP client)
+- **Windows 10/11** (tested on Windows 11) or **macOS 12+** (Intel & Apple Silicon)
+- **FL Studio 2025** or newer (or FL Studio 20.7+ on Windows/macOS)
+- **Claude Desktop** or **ChatGPT Desktop** (or any MCP client)
 - **Python 3.10+**
-- **loopMIDI** — for the two virtual MIDI ports ([download](https://www.tobias-erichsen.de/software/loopmidi.html))
+- Virtual MIDI ports:
+  - **loopMIDI** on Windows ([download](https://www.tobias-erichsen.de/software/loopmidi.html))
+  - **IAC Driver** (built into macOS)
 - Optional: **ffmpeg** on PATH (for MP3 analysis)
-
-macOS and Linux are not yet supported — contributions welcome.
 
 ## Setup
 
-1. **Create two virtual MIDI ports** in loopMIDI, named exactly `FLStudioMCP RX` and `FLStudioMCP TX`.
+### 1. Configure MIDI Ports
 
-2. **Install the controller script and server:**
-   ```bat
-   git clone https://github.com/rosasynthesiz/flstudio-mcp
-   cd flstudio-mcp
-   scripts\install_windows.bat
-   ```
-   This copies the controller script, seeds the note-bridge pyscript (`MCP_Apply`), installs the server, and checks that your loopMIDI ports exist. For audio features, add the optional extras:
-   ```bat
-   pip install -e ".[audio]"                   :: tempo/key + melody analysis
-   pip install -e ".[audio,audio-accurate]"    :: + CREPE (higher accuracy, ~500 MB)
-   ```
+* **Windows**: Create two virtual MIDI ports in loopMIDI, named exactly `FLStudioMCP RX` and `FLStudioMCP TX`.
+* **macOS**:
+  1. Open the **Audio MIDI Setup** app.
+  2. Choose **Window > Show MIDI Studio** (or press `Cmd+8`).
+  3. Double-click the **IAC Driver** icon.
+  4. Tick the **Device is online** checkbox.
+  5. Under **Ports** (or **Buses**), add/rename two ports to exactly:
+     * `FLStudioMCP RX`
+     * `FLStudioMCP TX`
+  6. Click **Apply**.
 
-3. **Configure FL Studio** — Options > MIDI Settings:
-   - Enable `FLStudioMCP RX` as an **input**, set its controller type to **FLStudioMCP**, and give it a port number.
-   - Enable `FLStudioMCP TX` as an **output** with the **same** port number.
-   - View > Script output should show `[FLStudioMCP] Ready`.
+### 2. Install the Controller Script & Server
 
-4. **Start the bridge daemon** (recommended) so the MIDI port is held by a stable process:
-   ```bat
-   fl-studio-mcp-daemon
-   ```
+#### Windows:
+```bat
+git clone https://github.com/rosasynthesiz/flstudio-mcp
+cd flstudio-mcp
+scripts\install_windows.bat
+```
 
-5. **Register the server with Claude Desktop** (`%APPDATA%\Claude\claude_desktop_config.json`):
+#### macOS:
+```bash
+git clone https://github.com/rosasynthesiz/flstudio-mcp
+cd flstudio-mcp
+chmod +x scripts/install_macos.sh
+./scripts/install_macos.sh
+```
+This script will copy the controller script, create a virtual environment (`.venv`), install the server inside it, and verify that the IAC Driver ports are online. It also pre-seeds the note-bridge script (`MCP_Apply.pyscript`) inside your FL Studio user data directory.
+
+> [!IMPORTANT]
+> **macOS Accessibility Permissions**: Since the note-writing tool simulates keyboard shortcuts (`Cmd+Opt+Y`) via `pyautogui` to trigger script runs in FL Studio, the application executing the MCP server (e.g., your terminal, iTerm, Warp, or the Claude/ChatGPT Desktop client app) must be granted Accessibility permissions. Go to **System Settings > Privacy & Security > Accessibility** and ensure the app you are running is enabled.
+
+For optional audio/melody analysis extras:
+* Windows: `pip install -e ".[audio,audio-accurate]"`
+* macOS: `.venv/bin/pip install -e ".[audio,audio-accurate]"`
+
+### 3. Configure FL Studio (All Platforms)
+
+1. Open FL Studio.
+2. Go to **Options > MIDI Settings**:
+   * **Input list**: Click `FLStudioMCP RX`, tick **Enable**, set **Controller type** to `FLStudioMCP`, and set **Port** to `42`.
+   * **Output list**: Click `FLStudioMCP TX`, tick **Enable**, and set **Port** to `42` (MUST match the input port).
+3. Go to **View > Script output**. It should show `[FLStudioMCP] Ready`.
+
+### 4. Connect to your MCP Client
+
+#### Option A: Claude Desktop (stdio)
+1. Start the MIDI bridge daemon (recommended so MIDI ports are held by a stable background process):
+   * Windows: Run `fl-studio-mcp-daemon`
+   * macOS: Run `.venv/bin/fl-studio-mcp-daemon`
+2. Configure Claude Desktop. Add this to your configuration file (Windows: `%APPDATA%\Claude\claude_desktop_config.json`, macOS: `~/Library/Application Support/Claude/claude_desktop_config.json`):
    ```json
    {
      "mcpServers": {
        "fl-studio": {
-         "command": "fl-studio-mcp",
-         "env": { "FLSTUDIO_MCP_TRANSPORT": "tcp" }
+         "command": "/path/to/flstudio-mcp/.venv/bin/fl-studio-mcp",
+         "env": {
+           "FLSTUDIO_MCP_TRANSPORT": "tcp"
+         }
        }
      }
    }
    ```
-   `tcp` routes through the daemon, which works regardless of how Claude Desktop launches the server. Omit the env var to let the server open the MIDI ports directly instead.
+   *(Note: On Windows, use `fl-studio-mcp` for the command instead of the `.venv` path if installed globally.)*
 
-6. **Arm the note bridge (per session)** — open the piano roll and run **MCP_Apply** once from its scripting menu, so note-writing works.
+#### Option B: ChatGPT Desktop (SSE)
+ChatGPT Desktop does not support local stdio subprocesses and requires a remote/SSE connection:
+1. Start the MIDI bridge daemon in a terminal:
+   * Windows: `fl-studio-mcp-daemon`
+   * macOS: `.venv/bin/fl-studio-mcp-daemon`
+2. Start the MCP server with the SSE transport in another terminal:
+   * Windows: `set FLSTUDIO_MCP_TRANSPORT=tcp && fl-studio-mcp --sse --port 8080`
+   * macOS: `export FLSTUDIO_MCP_TRANSPORT=tcp && .venv/bin/fl-studio-mcp --sse --port 8080`
+3. Enable Developer Mode in ChatGPT Desktop (Settings > Developer).
+4. Go to **Settings > Developer > MCP**, click **Add New Server**:
+   * **Name**: `FL Studio`
+   * **Type**: `sse`
+   * **URL**: `http://localhost:8080/sse`
+   * Click **Save**.
 
-Verify the connection by asking Claude to call `fl_ping`.
+### 5. Arm the Note Bridge (Per Session)
+
+Open the FL Studio Piano Roll, click the arrow menu (top-left), and run **MCP_Apply** once from the **File > Script** menu. This arms the note bridge for composition tools.
+
+Verify the connection by asking your AI assistant to run `fl_ping`.
 
 ## Troubleshooting
 
@@ -159,6 +206,6 @@ MIT — see [LICENSE](LICENSE).
 
 ## Status & contributing
 
-Beta — the public 1.0 release. Windows-only for now; macOS and Linux contributions are welcome. Issues and pull requests: [github.com/rosasynthesiz/flstudio-mcp](https://github.com/rosasynthesiz/flstudio-mcp).
+Beta — the public 1.0 release. Fully compatible with Windows and macOS. Issues and pull requests: [github.com/rosasynthesiz/flstudio-mcp](https://github.com/rosasynthesiz/flstudio-mcp).
 
 <!-- mcp-name: io.github.rosasynthesiz/flstudio-mcp -->

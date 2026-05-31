@@ -10,7 +10,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
 echo
-echo "[1/3] Installing FL Studio controller script..."
+echo "[1/4] Installing FL Studio controller script..."
 if [[ ! -d "$FL_HARDWARE" ]]; then
   echo "  FL Studio Hardware folder not found at:"
   echo "    $FL_HARDWARE"
@@ -22,17 +22,31 @@ cp "$REPO_ROOT/fl_controller/FLStudioMCP/device_FLStudioMCP.py" "$TARGET/"
 echo "  Installed to $TARGET"
 
 echo
-echo "[2/3] Installing the MCP server (editable)..."
+echo "[2/4] Installing the MCP server (editable)..."
 if ! command -v python3 >/dev/null 2>&1; then
   echo "  python3 not found. Install Python 3.10+ and re-run."
   exit 1
 fi
 cd "$REPO_ROOT"
+
+if [[ -z "${VIRTUAL_ENV:-}" ]]; then
+  if [[ ! -d ".venv" ]]; then
+    echo "  Creating virtual environment (.venv)..."
+    python3 -m venv .venv
+  fi
+  echo "  Activating virtual environment (.venv)..."
+  source .venv/bin/activate
+fi
+
 python3 -m pip install --upgrade pip >/dev/null
 python3 -m pip install -e .
 
 echo
-echo "[3/3] Checking for IAC Driver ports..."
+echo "[3/4] Seeding the note-bridge pyscript (MCP_Apply)..."
+python3 -c "import os, fl_studio_mcp.pyscript_gen as g; os.makedirs(g.PIANO_ROLL_SCRIPTS_DIR, exist_ok=True); print('  Seeded ' + g.write_apply_script([], mode='append'))" || echo "  Note: Could not pre-seed MCP_Apply. Non-fatal -- daemon will write it on first note-write."
+
+echo
+echo "[4/4] Checking for IAC Driver ports..."
 python3 - <<'PYEOF'
 import mido
 names = set(mido.get_output_names()) | set(mido.get_input_names())
@@ -63,4 +77,31 @@ Next steps:
        Output list > click 'FLStudioMCP TX', tick Enable, Port=42 (SAME number).
   4. View > Script output should show '[FLStudioMCP] Ready. ...'.
   5. Run: python3 scripts/test_bridge.py
+
+To use with Claude Desktop (stdio):
+  Add this to your Claude Desktop config (~/Library/Application Support/Claude/claude_desktop_config.json):
+  {
+    "mcpServers": {
+      "fl-studio": {
+        "command": "$REPO_ROOT/.venv/bin/fl-studio-mcp"
+      }
+    }
+  }
+
+To use with ChatGPT Desktop (SSE):
+  1. Start the daemon (holds the MIDI ports):
+     $REPO_ROOT/.venv/bin/fl-studio-mcp-daemon
+  2. In another terminal, run the MCP server with SSE transport:
+     export FLSTUDIO_MCP_TRANSPORT=tcp
+     $REPO_ROOT/.venv/bin/fl-studio-mcp --sse --port 8080
+  3. Open ChatGPT Desktop, go to Settings > Developer > MCP, click "Add New Server":
+     - Name: FL Studio
+     - URL: http://localhost:8080/sse
+
+IMPORTANT (macOS Accessibility):
+  Because the note-writing tool simulates keyboard shortcuts (Cmd+Opt+Y) to trigger
+  the script in FL Studio, you must grant Accessibility permissions to the application
+  running the MCP server.
+  Go to System Settings > Privacy & Security > Accessibility and ensure your terminal
+  (e.g., Terminal, iTerm, Warp) or the Claude/ChatGPT Desktop app is checked/enabled.
 EOF

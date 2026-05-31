@@ -19,6 +19,7 @@ classifiers = [
     "Intended Audience :: End Users/Desktop",
     "License :: OSI Approved :: MIT License",
     "Operating System :: Microsoft :: Windows",
+    "Operating System :: MacOS",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
@@ -32,8 +33,8 @@ dependencies = [
     "pydantic>=2.7.0",
     "mido>=1.3.2",
     "python-rtmidi>=1.5.8",
-    "pyautogui>=0.9.54",      # piano-roll script trigger (Ctrl+Alt+Y)
-    "pygetwindow>=0.0.9",     # (Windows focus helper)
+    "pyautogui>=0.9.54",      # piano-roll script trigger (Ctrl+Alt+Y / Cmd+Opt+Y)
+    "pygetwindow>=0.0.9; sys_platform == 'win32'",  # Windows focus helper (unused on macOS)
 ]
 
 [project.optional-dependencies]
