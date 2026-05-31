@@ -50,17 +50,17 @@ Run the local audit before adding write tools:
 .venv/bin/python scripts/audit_tool_safety.py
 ```
 
-Use the current baseline as a ratchet while the existing gaps are being fixed:
-
-```bash
-.venv/bin/python scripts/audit_tool_safety.py --max-write-gaps 9
-```
-
-That command should pass today and fail if a new unsafe write tool is added.
-Once a gap is resolved, lower the baseline. When all gaps are gone, switch CI to:
+The current branch has no static write gaps; this is the PR gate:
 
 ```bash
 .venv/bin/python scripts/audit_tool_safety.py --fail-on-gaps
+```
+
+That command should pass today and fail if a new unsafe write tool is added.
+For historical context, the pre-fix ratchet was:
+
+```bash
+.venv/bin/python scripts/audit_tool_safety.py --max-write-gaps 9
 ```
 
 For downstream tooling or PR bots, the same audit can emit JSON:
@@ -79,28 +79,27 @@ The audit statically classifies FastMCP tools as:
 - `write-gap`: mutates FL without the rollback contract.
 - `needs-review`: cannot be confidently classified statically.
 
-Initial expected gaps on this branch are older direct-write tools:
+The initial gaps on this branch were older direct-write tools:
 
 - Tempo writes in transport.
 - Arrangement pattern/marker writes.
 - Piano Roll generated-script writes and transforms.
 - Composer tools that select a channel and call the Piano Roll bridge.
 
-Those are not blockers for auditing; they are the first backlog before adding
-new write-heavy domains.
+They now route through the safety layer. Piano Roll writes are backed by FL
+Studio undo: the generated scripts wrap edits in `flp.score.undoSection()` when
+available, and MCP rollback invokes `general.undoUp()`.
 
-The initial static baseline reports:
+The current static baseline reports:
 
-- 22 `write-safe` tools.
-- 9 `write-gap` tools.
-- 27 `read-only` tools.
+- 31 `write-safe` tools.
+- 0 `write-gap` tools.
+- 28 `read-only` tools.
 - 5 `transient` runtime tools.
-- 3 `server-state` tools.
-- 1 `external-write` tool.
+- 4 `server-state` tools.
+- 2 `external-write` tools.
 
-`--fail-on-gaps` is expected to fail until the 9 write gaps are resolved or
-explicitly reclassified with a documented rollback story. `--max-write-gaps 9`
-is the current no-regression gate.
+`--fail-on-gaps` is the current no-regression gate.
 
 ## API-Backed Feature Packs
 
