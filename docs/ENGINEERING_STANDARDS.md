@@ -142,6 +142,9 @@ project's rollback-first architecture. Do not import a broad 160+ tool surface.
 - Avoid mixing unrelated formatting, cleanup, and feature work.
 - Update README, roadmap, API audit, or docs when tool behavior or safety
   guarantees change.
+- Keep `ROADMAP.md` current as an operational source of truth:
+  every completed slice, live verification checkpoint, and priority/order change
+  must be reflected in the same PR or commit series.
 
 ## Testing And Verification
 

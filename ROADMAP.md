@@ -11,6 +11,30 @@ This project follows the contribution rule strictly: **no tool may modify FL
 Studio state unless the change is reversible through the MCP safety layer**.
 Read-only actions are the only exception.
 
+## Roadmap maintenance rule
+
+`ROADMAP.md` is the active execution tracker for this branch. It must be kept
+up to date in the same PR or commit series whenever:
+
+1. A roadmap slice is completed or materially re-scoped.
+2. A live FL verification checkpoint passes or fails.
+3. Priority order changes due to API limits, safety constraints, or user
+   direction.
+
+If implementation and roadmap diverge, roadmap alignment is a blocking follow-up
+task.
+
+## Current verification checkpoints
+
+- 2026-05-31: Channel Organizer Pack v1 live smoke passed on FL Studio
+  Producer Edition v25.2.5 (build 5055), controller build marker
+  `channels-v16`.
+- Verified path: heartbeat -> ping -> channel detail read (`type`, `pitch`) ->
+  rollback-safe rename write/readback/rollback -> rollback-safe mixer-target
+  write/readback/rollback.
+- Result: all checks passed, rollback restoration confirmed for both write
+  operations.
+
 For every write-capable tool, the required shape is:
 
 1. Take a scoped snapshot before the write.
