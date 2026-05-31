@@ -92,6 +92,34 @@ do not change the saved project structure, but any persisted project mutation
 such as tempo, pattern edits, channel routing, note writes, or mixer/plugin
 changes must follow this contract.
 
+## Contract-broken features
+
+The following capabilities are useful in FL Studio, but they violate this
+project's safety contract unless a future implementation proves scoped
+snapshot, write, readback, changelog, and rollback. They must not ship as
+user-facing write tools in their current form:
+
+- Plugin loading or plugin insertion. Keep the current model: suggest the
+  plugin, ask the user to load it manually, then configure already-loaded
+  plugin parameters through rollback-backed tools.
+- Playlist clip editing, placement, movement, or deletion. Playlist track
+  organization is in scope; clip-level mutation is not in scope until the API
+  exposes reliable enumeration, readback, and restore data.
+- Pattern or clip deletion. Destructive removal is not acceptable without a
+  complete restore story.
+- Project open, project new, project render, or similar file/workflow commands.
+  These are high-impact session operations and remain manual unless a robust
+  project backup and recovery design exists.
+- Raw UI automation or raw escape-hatch calls. They bypass reviewable safety
+  semantics and make commits impossible to audit.
+- Destructive Edison or Slicex live edits without an audio snapshot. Audio
+  editor scripts may be generated as manual/probe workflows, but direct sample
+  mutation needs full restore data before it can become a write tool.
+- Preset next/previous as a write action without rollback. FL Studio exposes
+  preset navigation in some places, but no reliable MCP restore primitive is
+  currently verified. These commands must stay read-only/manual guidance unless
+  preset state can be read back and restored.
+
 ## Phase A — Safety baseline before expansion
 
 Before adding the API-backed production suite:
@@ -261,6 +289,75 @@ APIs we have already documented or probed.
    - Push events and optional TCP transport.
    - Piano Roll readback/return-channel research.
    - REC automation write/readback probes.
+
+## Official API Expansion Backlog
+
+These items come from the official MIDI Controller, Piano Roll, Edison/Audio
+Editor, and Slicex scripting surfaces. They are prioritized for product value
+and compatibility with the safety contract.
+
+### Priority 1 — rollback-backed production primitives
+
+1. **Effect Slot + Native EQ Pack**
+   - Add user-facing tools for mixer effect slot readback, slot mix, slot
+     enabled/bypass state where verified, and native mixer EQ band read/write.
+   - Snapshot every changed slot and EQ band parameter before writes.
+   - Read back slot/EQ state after every mutation and log a restore payload.
+   - Treat per-slot bypass/mute and EQ type changes as live-smoke-required
+     before exposing them broadly.
+
+2. **Step Parameter Pack**
+   - Extend the Step Sequencer Pack beyond grid bits to step velocity, pan,
+     pitch, release, and modulation parameters where the MIDI Controller API
+     exposes stable read/write calls.
+   - Snapshot the affected channel's step grid and changed step parameters as
+     one named rollback unit for full-pattern operations.
+   - Add read-only inspection first for any step parameter whose value range or
+     restore behavior differs across FL Studio versions.
+
+3. **Pattern Organizer Completion**
+   - Add rollback-backed tools for pattern color, pattern length, current
+     pattern selection snapshot/restore, find-empty-pattern, and clone/move if
+     readback proves stable.
+   - Keep pattern delete, merge, split, and destructive cleanup out of scope
+     until restore data is complete.
+   - Use one grouped rollback unit for multi-pattern organizer actions.
+
+4. **Project Doctor / Export Readiness Report**
+   - Build a read-only aggregate report over existing safe primitives:
+     routing, mixer peaks, plugin parameter visibility, muted/solo states,
+     duplicate or empty names, unassigned channels, suspicious pattern lengths,
+     and playlist organization.
+   - Produce fix plans as dry-run recommendations first.
+   - Apply fixes only one approved rollback-backed operation at a time.
+
+### Priority 2 — Piano Roll productivity after return-channel research
+
+1. **Piano Roll Return-Channel Probe**
+   - Research whether generated Piano Roll scripts can return structured note
+     data to the MCP server through a reliable file, clipboard, bridge, or
+     controller-mediated path.
+   - Keep `fl_piano_get_notes` explicitly API-limited until this probe is
+     proven and tested.
+   - Document failure modes and FL version assumptions before enabling any
+     readback-dependent tool.
+
+2. **Piano Roll Comfort Transforms**
+   - Add selected/all scope transforms for duplicate, humanize timing,
+     humanize velocity, velocity ramp, gate/length, legato, overlap trim,
+     strum, arpeggiate, mute/unmute, note color, slide, porta, and
+     snap-to-scale.
+   - Every transform must use the Piano Roll undo-backed safety path and return
+     an explicit readback limitation until the return-channel probe is solved.
+   - Avoid destructive delete-selected/delete-region tools unless the selected
+     note set can be captured and restored.
+
+3. **Piano Roll Marker Pack**
+   - Add scale, section, time-signature, and cue marker helpers where the Piano
+     Roll scripting API can write them predictably.
+   - Keep marker edits undo-backed and grouped with related note transforms
+     when they are part of one musical operation.
+   - Prefer generated reviewable script payloads over broad opaque commands.
 
 Tracking the full scope — eight phases shipping the MCP server, the scale/mode
 composition tools, the SKILL.md, evals, and the Claude Code plugin marketplace
