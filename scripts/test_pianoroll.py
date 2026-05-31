@@ -18,6 +18,8 @@ from fl_studio_mcp import protocol  # noqa: E402
 from fl_studio_mcp.tools import pianoroll as pr_tools  # noqa: E402
 from fl_studio_mcp.pyscript_gen import (  # noqa: E402
     render_apply_script,
+    write_marker_add_script,
+    write_marker_clear_script,
     render_quantize_script,
     render_transpose_script,
 )
@@ -33,18 +35,38 @@ class FakeBridge:
         self.last_quantize = None
         self.last_snap = None
         self.last_transpose = None
+        self.last_duplicate = None
+        self.last_velocity_ramp = None
+        self.last_marker_add = None
+        self.last_marker_clear = None
 
     def call(self, command, params=None):
         params = params or {}
         self.calls.append((command, params))
         return {"ok": True, "command": command, "params": params}
 
-    def apply_notes(self, notes, mode="replace", trigger=True, quantize=None, snap_ends=False, transpose=None):
+    def apply_notes(
+        self,
+        notes,
+        mode="replace",
+        trigger=True,
+        quantize=None,
+        snap_ends=False,
+        transpose=None,
+        duplicate_bars=None,
+        velocity_ramp=None,
+        marker_add=None,
+        marker_clear=False,
+    ):
         self.last_notes = notes
         self.last_mode = mode
         self.last_quantize = quantize
         self.last_snap = snap_ends
         self.last_transpose = transpose
+        self.last_duplicate = duplicate_bars
+        self.last_velocity_ramp = velocity_ramp
+        self.last_marker_add = marker_add
+        self.last_marker_clear = marker_clear
         return {"ok": True, "count": len(notes), "triggered": trigger}
 
 
@@ -110,6 +132,10 @@ def main() -> int:
 
     trans_src = render_transpose_script(4)
     check("render_transpose_script bakes in SEMITONES", "SEMITONES = 4" in trans_src)
+    marker_path = write_marker_add_script(2.0, "Verse", mode=0)
+    check("write_marker_add_script writes MCP_Apply.pyscript", marker_path.endswith("MCP_Apply.pyscript"))
+    marker_clear_path = write_marker_clear_script()
+    check("write_marker_clear_script writes MCP_Apply.pyscript", marker_clear_path.endswith("MCP_Apply.pyscript"))
 
 
     # 3. Test Core Rollback / safe_piano_roll_write
@@ -129,6 +155,10 @@ def main() -> int:
     fl_piano_write_chord = mcp.tools["fl_piano_write_chord"]
     fl_piano_clear = mcp.tools["fl_piano_clear"]
     fl_piano_transpose = mcp.tools["fl_piano_transpose"]
+    fl_piano_duplicate = mcp.tools["fl_piano_duplicate"]
+    fl_piano_velocity_ramp = mcp.tools["fl_piano_velocity_ramp"]
+    fl_piano_add_marker = mcp.tools["fl_piano_add_marker"]
+    fl_piano_clear_markers = mcp.tools["fl_piano_clear_markers"]
     fl_piano_get_notes = mcp.tools["fl_piano_get_notes"]
 
     bridge = FakeBridge()
@@ -169,6 +199,22 @@ def main() -> int:
         res_trans = fl_piano_transpose(semitones=-2)
         check("fl_piano_transpose returned ok", res_trans.get("ok") is True)
         check("apply_notes received transpose factor", bridge.last_transpose == -2)
+
+        res_dup = fl_piano_duplicate(offset_bars=1.0)
+        check("fl_piano_duplicate returned ok", res_dup.get("ok") is True)
+        check("apply_notes received duplicate offset", bridge.last_duplicate == 1.0)
+
+        res_ramp = fl_piano_velocity_ramp(start=0.3, end=0.9)
+        check("fl_piano_velocity_ramp returned ok", res_ramp.get("ok") is True)
+        check("apply_notes received velocity_ramp tuple", bridge.last_velocity_ramp == (0.3, 0.9))
+
+        res_marker = fl_piano_add_marker(time_bars=2.0, name="Verse")
+        check("fl_piano_add_marker returned ok", res_marker.get("ok") is True)
+        check("apply_notes received marker_add payload", bridge.last_marker_add.get("name") == "Verse")
+
+        res_clear_markers = fl_piano_clear_markers()
+        check("fl_piano_clear_markers returned ok", res_clear_markers.get("ok") is True)
+        check("apply_notes marker_clear flag set", bridge.last_marker_clear is True)
 
         # Test fl_piano_get_notes API limit reporting
         res_get = fl_piano_get_notes()

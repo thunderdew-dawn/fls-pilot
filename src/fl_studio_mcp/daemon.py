@@ -135,6 +135,8 @@ def _handle_request(req: dict) -> dict:
                 transpose=req.get("transpose"),
                 duplicate_bars=req.get("duplicate_bars"),
                 velocity_ramp=req.get("velocity_ramp"),
+                marker_add=req.get("marker_add"),
+                marker_clear=req.get("marker_clear", False),
             )
             if isinstance(res, dict):
                 res["piano_roll_ensured"] = ensured

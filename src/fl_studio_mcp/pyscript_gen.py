@@ -360,3 +360,114 @@ def write_velocity_ramp_script(start: float, end: float, scripts_dir: str | None
     with open(path, "w", encoding="ascii") as f:
         f.write(text)
     return path
+
+
+_MARKER_ADD_TEMPLATE = """# Script.Name = "MCP Apply"
+# Script.Category = "MCP"
+
+import flpianoroll as flp
+
+TIME_BARS = {time_bars!r}
+NAME = {name!r}
+MODE = {mode!r}
+TS_NUM = {ts_num!r}
+TS_DEN = {ts_den!r}
+
+
+def _run():
+    score = flp.score
+    marker_cls = getattr(flp, "Marker", None)
+    add_marker = getattr(score, "addMarker", None)
+    if marker_cls is None or not callable(add_marker):
+        return
+    m = marker_cls()
+    m.time = int(round(TIME_BARS * score.PPQ * 4))
+    if hasattr(m, "name"):
+        m.name = NAME
+    if hasattr(m, "mode"):
+        m.mode = int(MODE)
+    if TS_NUM is not None and hasattr(m, "tsnum"):
+        m.tsnum = int(TS_NUM)
+    if TS_DEN is not None and hasattr(m, "tsden"):
+        m.tsden = int(TS_DEN)
+    add_marker(m)
+
+
+def _go():
+    undo = getattr(flp.score, "undoSection", None)
+    if callable(undo):
+        try:
+            with undo():
+                _run()
+            return
+        except Exception:
+            pass
+    _run()
+
+
+_go()
+"""
+
+
+def write_marker_add_script(
+    time_bars: float,
+    name: str,
+    mode: int = 0,
+    ts_num: int | None = None,
+    ts_den: int | None = None,
+    scripts_dir: str | None = None,
+) -> str:
+    scripts_dir = scripts_dir or PIANO_ROLL_SCRIPTS_DIR
+    text = _MARKER_ADD_TEMPLATE.format(
+        time_bars=float(time_bars),
+        name=str(name),
+        mode=int(mode),
+        ts_num=ts_num if ts_num is None else int(ts_num),
+        ts_den=ts_den if ts_den is None else int(ts_den),
+    )
+    path = os.path.join(scripts_dir, APPLY_SCRIPT_NAME)
+    with open(path, "w", encoding="ascii") as f:
+        f.write(text)
+    return path
+
+
+_MARKER_CLEAR_TEMPLATE = """# Script.Name = "MCP Apply"
+# Script.Category = "MCP"
+
+import flpianoroll as flp
+
+
+def _run():
+    score = flp.score
+    count = int(getattr(score, "markerCount", 0) or 0)
+    delete_fn = getattr(score, "deleteMarker", None)
+    if not callable(delete_fn):
+        delete_fn = getattr(score, "removeMarker", None)
+    if not callable(delete_fn):
+        return
+    for i in range(count - 1, -1, -1):
+        delete_fn(i)
+
+
+def _go():
+    undo = getattr(flp.score, "undoSection", None)
+    if callable(undo):
+        try:
+            with undo():
+                _run()
+            return
+        except Exception:
+            pass
+    _run()
+
+
+_go()
+"""
+
+
+def write_marker_clear_script(scripts_dir: str | None = None) -> str:
+    scripts_dir = scripts_dir or PIANO_ROLL_SCRIPTS_DIR
+    path = os.path.join(scripts_dir, APPLY_SCRIPT_NAME)
+    with open(path, "w", encoding="ascii") as f:
+        f.write(_MARKER_CLEAR_TEMPLATE)
+    return path

@@ -303,6 +303,72 @@ def register(mcp: FastMCP) -> None:
             ),
         }
 
+    @mcp.tool(annotations={"title": "Add Piano roll marker", **_WR})
+    def fl_piano_add_marker(
+        time_bars: Annotated[float, Field(ge=0.0, description="Marker position in bars.")],
+        name: Annotated[str, Field(min_length=1, description="Marker label.")],
+        mode: Annotated[int, Field(description="Marker mode/type integer.", ge=0)] = 0,
+    ) -> dict:
+        """Add one marker in the active Piano roll. Undo-backed write, readback-limited."""
+        bridge = get_bridge()
+        bridge.call(protocol.CMD_ENSURE_PIANO_ROLL)
+        return safety.safe_piano_roll_write(
+            bridge,
+            tool="piano_add_marker",
+            params={"time_bars": float(time_bars), "name": name, "mode": int(mode)},
+            apply=lambda: bridge.apply_notes(
+                [],
+                trigger=True,
+                marker_add={"time_bars": float(time_bars), "name": name, "mode": int(mode)},
+            ),
+        )
+
+    @mcp.tool(annotations={"title": "Add Piano roll time-signature marker", **_WR})
+    def fl_piano_add_time_signature_marker(
+        time_bars: Annotated[float, Field(ge=0.0, description="Marker position in bars.")],
+        numerator: Annotated[int, Field(ge=1, description="Time-signature numerator.")],
+        denominator: Annotated[int, Field(ge=1, description="Time-signature denominator.")],
+        name: Annotated[
+            str, Field(description="Optional marker label, defaults to 'Time Signature'.")
+        ] = "Time Signature",
+    ) -> dict:
+        """Add a time-signature marker in the active Piano roll (undo-backed, readback-limited)."""
+        bridge = get_bridge()
+        bridge.call(protocol.CMD_ENSURE_PIANO_ROLL)
+        return safety.safe_piano_roll_write(
+            bridge,
+            tool="piano_add_time_signature_marker",
+            params={
+                "time_bars": float(time_bars),
+                "numerator": int(numerator),
+                "denominator": int(denominator),
+                "name": name,
+            },
+            apply=lambda: bridge.apply_notes(
+                [],
+                trigger=True,
+                marker_add={
+                    "time_bars": float(time_bars),
+                    "name": name,
+                    "mode": 8,
+                    "ts_num": int(numerator),
+                    "ts_den": int(denominator),
+                },
+            ),
+        )
+
+    @mcp.tool(annotations={"title": "Clear Piano roll markers", **_WR})
+    def fl_piano_clear_markers() -> dict:
+        """Clear all markers in the active Piano roll (undo-backed, readback-limited)."""
+        bridge = get_bridge()
+        bridge.call(protocol.CMD_ENSURE_PIANO_ROLL)
+        return safety.safe_piano_roll_write(
+            bridge,
+            tool="piano_clear_markers",
+            params={},
+            apply=lambda: bridge.apply_notes([], trigger=True, marker_clear=True),
+        )
+
     @mcp.tool(annotations={"title": "Get notes in active Piano roll (API Limited)", **_RO})
     def fl_piano_get_notes() -> dict:
         """Read back notes from the Piano roll (API Limited -- returns error)."""

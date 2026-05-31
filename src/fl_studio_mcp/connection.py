@@ -260,6 +260,8 @@ class FLBridge:
         transpose=None,
         duplicate_bars=None,
         velocity_ramp=None,
+        marker_add=None,
+        marker_clear=False,
     ):
         """Author piano-roll notes locally (direct mode: this process writes
         the generated .pyscript and triggers FL itself). Auto-opens the Piano
@@ -282,6 +284,8 @@ class FLBridge:
             transpose=transpose,
             duplicate_bars=duplicate_bars,
             velocity_ramp=velocity_ramp,
+            marker_add=marker_add,
+            marker_clear=marker_clear,
         )
         if isinstance(res, dict) and ensured is not None:
             res["piano_roll_ensured"] = ensured
@@ -430,6 +434,8 @@ class TCPBridge:
         transpose=None,
         duplicate_bars=None,
         velocity_ramp=None,
+        marker_add=None,
+        marker_clear=False,
     ):
         """Author piano-roll notes via the daemon (write generated .pyscript +
         force-focus FL + Ctrl+Alt+Y). ``quantize`` (grid in bars) instead snaps
@@ -446,6 +452,8 @@ class TCPBridge:
                     "transpose": transpose,
                     "duplicate_bars": duplicate_bars,
                     "velocity_ramp": velocity_ramp,
+                    "marker_add": marker_add,
+                    "marker_clear": marker_clear,
                 },
                 timeout=30.0,
             )

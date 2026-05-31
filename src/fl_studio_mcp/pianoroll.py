@@ -19,6 +19,8 @@ from __future__ import annotations
 from .pyscript_gen import (
     write_apply_script,
     write_duplicate_script,
+    write_marker_add_script,
+    write_marker_clear_script,
     write_quantize_script,
     write_transpose_script,
     write_velocity_ramp_script,
@@ -34,6 +36,8 @@ def apply_notes(
     transpose=None,
     duplicate_bars=None,
     velocity_ramp=None,
+    marker_add=None,
+    marker_clear=False,
 ):
     """Write a pyscript into MCP_Apply.pyscript and (optionally) trigger FL.
 
@@ -42,7 +46,28 @@ def apply_notes(
     If ``transpose`` (semitones) is set, writes a script that shifts pitch.
     Returns {ok, ..., script, triggered, focused, hint?}.
     """
-    if duplicate_bars is not None:
+    if marker_clear:
+        path = write_marker_clear_script()
+        result = {
+            "ok": True,
+            "action": "marker_clear",
+            "script": path,
+        }
+    elif marker_add is not None:
+        path = write_marker_add_script(
+            marker_add.get("time_bars", 0.0),
+            marker_add.get("name", "Marker"),
+            mode=marker_add.get("mode", 0),
+            ts_num=marker_add.get("ts_num"),
+            ts_den=marker_add.get("ts_den"),
+        )
+        result = {
+            "ok": True,
+            "action": "marker_add",
+            "marker": marker_add,
+            "script": path,
+        }
+    elif duplicate_bars is not None:
         path = write_duplicate_script(float(duplicate_bars))
         result = {
             "ok": True,
