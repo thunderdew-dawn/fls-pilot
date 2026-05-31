@@ -132,6 +132,7 @@ def _handle_request(req: dict) -> dict:
                 trigger=trigger,
                 quantize=req.get("quantize"),
                 snap_ends=req.get("snap_ends", False),
+                transpose=req.get("transpose"),
             )
             if isinstance(res, dict):
                 res["piano_roll_ensured"] = ensured

@@ -146,3 +146,103 @@ def register(mcp: FastMCP) -> None:
         if isinstance(result, dict):
             result["resolved_param"] = {"index": idx, "name": name}
         return result
+
+    @mcp.tool(annotations={"title": "List plugin parameters", **_RO})
+    def fl_plugin_list_params(
+        track: Annotated[int, Field(ge=0, description="Mixer track index (0 = Master).")],
+        slot: Annotated[int, Field(ge=0, le=9, description="Effect slot index 0-9.")],
+    ) -> dict:
+        """List all parameters of a plugin. Alias for fl_plugin_get_params."""
+        return fl_plugin_get_params(track, slot)
+
+    @mcp.tool(annotations={"title": "Get plugin parameter value", **_RO})
+    def fl_plugin_get_param(
+        track: Annotated[int, Field(ge=0)],
+        slot: Annotated[int, Field(ge=0, le=9)],
+        param: Annotated[int | str, Field(description="Param index (int) or name (str).")],
+    ) -> dict:
+        """Get the current value and display string of a single plugin parameter."""
+        bridge = get_bridge()
+        try:
+            idx, name = resolve_param_index(bridge, track, slot, param)
+        except ParamNotFound as e:
+            return {"ok": False, "error": str(e)}
+        
+        val = bridge.call(
+            protocol.CMD_PLUGIN_GET_PARAM, {"track": track, "slot": slot, "param": idx}
+        )
+        return {
+            "ok": True,
+            "track": track,
+            "slot": slot,
+            "param_index": idx,
+            "param_name": name,
+            "value": val.get("v", 0.0),
+            "string": val.get("s", ""),
+        }
+
+    @mcp.tool(annotations={"title": "Get current plugin preset name", **_RO})
+    def fl_plugin_get_preset_name(
+        track: Annotated[int, Field(ge=0)],
+        slot: Annotated[
+            int,
+            Field(ge=-1, le=9, description="Effect slot index. Use -1 for channel generators."),
+        ],
+    ) -> dict:
+        """Get the current preset name of a plugin."""
+        bridge = get_bridge()
+        val = bridge.call(protocol.CMD_PLUGIN_GET_PRESET_NAME, {"track": track, "slot": slot})
+        return {
+            "ok": True,
+            "track": track,
+            "slot": slot,
+            "plugin_name": val.get("plugin_name"),
+            "preset_name": val.get("name_f3") or val.get("name_f6") or "Unknown",
+            "preset_count": val.get("preset_count"),
+        }
+
+    @mcp.tool(annotations={"title": "Plan next plugin preset switch", **_RO})
+    def fl_plugin_next_preset(
+        track: Annotated[int, Field(ge=0)],
+        slot: Annotated[
+            int,
+            Field(ge=-1, le=9, description="Effect slot index. Use -1 for channel generators."),
+        ],
+    ) -> dict:
+        """Return manual guidance; preset switching is not exposed as a write tool.
+
+        Safety: Read-Only. FL exposes next/previous preset navigation, but this
+        project does not have a plugin-preset restore primitive that satisfies
+        the rollback contract.
+        """
+        current = fl_plugin_get_preset_name(track, slot)
+        return {
+            "ok": False,
+            "api_limited": True,
+            "manual_action": "Use the plugin UI to switch to the next preset.",
+            "reason": "Plugin preset navigation has no verified MCP rollback path.",
+            "current": current,
+        }
+
+    @mcp.tool(annotations={"title": "Plan previous plugin preset switch", **_RO})
+    def fl_plugin_prev_preset(
+        track: Annotated[int, Field(ge=0)],
+        slot: Annotated[
+            int,
+            Field(ge=-1, le=9, description="Effect slot index. Use -1 for channel generators."),
+        ],
+    ) -> dict:
+        """Return manual guidance; preset switching is not exposed as a write tool.
+
+        Safety: Read-Only. FL exposes next/previous preset navigation, but this
+        project does not have a plugin-preset restore primitive that satisfies
+        the rollback contract.
+        """
+        current = fl_plugin_get_preset_name(track, slot)
+        return {
+            "ok": False,
+            "api_limited": True,
+            "manual_action": "Use the plugin UI to switch to the previous preset.",
+            "reason": "Plugin preset navigation has no verified MCP rollback path.",
+            "current": current,
+        }

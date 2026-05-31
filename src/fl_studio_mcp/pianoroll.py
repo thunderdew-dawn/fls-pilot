@@ -16,17 +16,33 @@ Scripting menu so it becomes FL's "last script" (then Ctrl+Alt+Y targets it).
 
 from __future__ import annotations
 
-from .pyscript_gen import write_apply_script, write_quantize_script
+from .pyscript_gen import write_apply_script, write_quantize_script, write_transpose_script
 
 
-def apply_notes(notes, mode="replace", trigger=True, quantize=None, snap_ends=False):
+def apply_notes(
+    notes,
+    mode="replace",
+    trigger=True,
+    quantize=None,
+    snap_ends=False,
+    transpose=None,
+):
     """Write a pyscript into MCP_Apply.pyscript and (optionally) trigger FL.
 
     Normally writes the given notes. If ``quantize`` (grid in bars) is set, writes
     a script that instead reads the score and snaps existing notes to that grid.
+    If ``transpose`` (semitones) is set, writes a script that shifts pitch.
     Returns {ok, ..., script, triggered, focused, hint?}.
     """
-    if quantize is not None:
+    if transpose is not None:
+        path = write_transpose_script(int(transpose))
+        result = {
+            "ok": True,
+            "action": "transpose",
+            "semitones": int(transpose),
+            "script": path,
+        }
+    elif quantize is not None:
         path = write_quantize_script(float(quantize), snap_ends)
         result = {
             "ok": True,

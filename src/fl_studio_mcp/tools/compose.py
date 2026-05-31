@@ -33,9 +33,22 @@ def _write(notes, channel, mode):
 
     def apply():
         out = {}
+        previous_channel = None
         if channel is not None:
-            out["channel_selected"] = bridge.call(protocol.CMD_CHANNEL_SELECT, {"channel": channel})
-        out["notes"] = bridge.apply_notes(dumped, mode)
+            previous_channel = bridge.call(protocol.CMD_CHANNEL_SELECTED)
+            if previous_channel.get("selected") != channel:
+                out["channel_selected"] = bridge.call(
+                    protocol.CMD_CHANNEL_SELECT, {"channel": channel}
+                )
+        try:
+            out["notes"] = bridge.apply_notes(dumped, mode)
+        finally:
+            if previous_channel is not None:
+                selected = previous_channel.get("selected")
+                if isinstance(selected, int) and selected != channel:
+                    out["channel_restored"] = bridge.call(
+                        protocol.CMD_CHANNEL_SELECT, {"channel": selected}
+                    )
         return out
 
     return safety.safe_piano_roll_write(
@@ -111,3 +124,46 @@ def register(mcp: FastMCP) -> None:
             "channel": channel,
             "bridge": _write(notes, channel, mode),
         }
+
+    _RO = {"readOnlyHint": True, "idempotentHint": True, "openWorldHint": True}
+
+    @mcp.tool(annotations={"title": "List all scales and ragas", **_RO})
+    def fl_scale_list() -> dict:
+        """Get a categorized list of all available scales and ragas,
+        including their families and moods."""
+        from ..music.scales import SCALES_CATALOGUE
+        families = {}
+        for k, v in SCALES_CATALOGUE.items():
+            fam = v["family"]
+            if fam not in families:
+                families[fam] = []
+            families[fam].append({
+                "key": k,
+                "name": v["name"],
+                "mood": v["mood"]
+            })
+        return {"ok": True, "families": families}
+
+    @mcp.tool(annotations={"title": "Get details of a scale or raga", **_RO})
+    def fl_scale_get(
+        scale_name: Annotated[
+            str,
+            Field(description="Scale or Raga key/name, for example 'dorian'."),
+        ],
+        root_note: Annotated[
+            str | int,
+            Field(description="Root note, for example 'C5', 'F#4', or MIDI number."),
+        ] = "C5",
+        octave_range: Annotated[
+            int,
+            Field(ge=1, le=4, description="Generate pitches over this many octaves."),
+        ] = 1,
+    ) -> dict:
+        """Get the notes, MIDI numbers, and mood of a scale/raga relative to a root note."""
+        from ..music import scales
+        try:
+            res = scales.get_scale_notes(scale_name, root_note, octave_range)
+            res["ok"] = True
+            return res
+        except Exception as e:
+            return {"ok": False, "error": str(e)}
