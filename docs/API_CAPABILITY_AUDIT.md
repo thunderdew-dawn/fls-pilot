@@ -40,6 +40,9 @@ Primary references:
 
 - MIDI scripting API: <https://www.image-line.com/fl-studio-learning-content/fl-studio-online-manual/html/midi_scripting.htm>
 - Piano Roll scripting API: <https://www.image-line.com/fl-studio-learning/fl-studio-online-manual/html/pianoroll_scripting_api.htm>
+- Edison / Audio Editor Script Tool: <https://www.image-line.com/fl-studio-learning/fl-studio-online-manual/html/plugins/editortool_run.htm>
+- Slicex: <https://www.image-line.com/fl-studio-learning/fl-studio-online-manual/html/plugins/Slicex.htm>
+- Slicex Wave Editor: <https://www.image-line.com/fl-studio-learning/fl-studio-online-manual/html/plugins/Slicex%20Editor.htm>
 - Sampler Channel settings: <https://www.image-line.com/fl-studio-learning/fl-studio-online-manual/html/chansettings_sampler.htm>
 
 ## Current Safety Baseline
@@ -188,6 +191,13 @@ Safety requirement:
 - Clone and move need explicit restore behavior.
 - Do not implement delete/merge/split until an API-backed rollback story exists.
 
+Current next slice:
+
+- Pattern color and length writes with scoped snapshots.
+- Current pattern selection snapshot/restore for grouped organizer changes.
+- Find-empty-pattern as read-only planning support.
+- Clone/move only after live smoke verifies stable readback and restore.
+
 ### Playlist Track Organizer
 
 Status: `documented`, `live-probed` for track-level operations.
@@ -217,7 +227,7 @@ Not currently supported:
 - Stacked/overlapping clip detection.
 - Clip movement/deletion.
 
-### Effect Slot Control
+### Effect Slot Control and Native Mixer EQ
 
 Status: `documented`, `live-probed` for mix and track slot enable; per-slot
 mute needs a live behavior test before user-facing exposure.
@@ -230,25 +240,6 @@ Useful API:
 - `mixer.enableTrackSlots`
 - `mixer.isTrackPluginValid`
 - Live-probed: `getPluginMuteState`, `setPluginMuteState`.
-
-MVP:
-
-- List effect slots with plugin names and slot mix.
-- Set slot mix.
-- Bypass/enable all slots on a track.
-- Per-slot bypass only after live readback is proven.
-
-Safety requirement:
-
-- Snapshot slot mix and bypass state.
-- Do not promise full chain restore; plugin loading/removal is API-limited.
-
-### Native Mixer EQ
-
-Status: `documented`, `live-probed`.
-
-Useful API:
-
 - `mixer.getEqGain` / `setEqGain`
 - `mixer.getEqFrequency` / `setEqFrequency`
 - `mixer.getEqBandwidth` / `setEqBandwidth`
@@ -256,12 +247,53 @@ Useful API:
 
 MVP:
 
+- List effect slots with plugin names and slot mix.
+- Set slot mix.
+- Bypass/enable all slots on a track.
 - Read native mixer EQ.
 - Apply simple low/high shaping intents as fallback when no EQ plugin is loaded.
+- Per-slot bypass and EQ type changes only after live readback is proven.
 
 Safety requirement:
 
+- Snapshot slot mix and bypass state.
 - Snapshot every changed band parameter before writing.
+- Do not promise full chain restore; plugin loading/removal is API-limited.
+
+Current next slice:
+
+- Expose a user-facing Effect Slot + Native EQ Pack over the already-probed
+  primitives.
+- Add static audit coverage for slot and EQ restore payloads.
+- Live-smoke slot mix, track-slot enable, EQ gain/frequency/bandwidth, and
+  rollback before promoting per-slot bypass or EQ type changes.
+
+### Step Parameter Pack
+
+Status: `documented`, `probe-needed` for value ranges and restore behavior per
+parameter.
+
+Useful API:
+
+- `channels.getStepParam`
+- `channels.getCurrentStepParam`
+- `channels.setStepParameterByIndex`
+- Step parameter constants such as `pVelocity`, `pPan`, `pShift`, and
+  `pRepeat`.
+
+MVP:
+
+- Read step velocity, pan, pitch/shift, release, and modulation where available.
+- Set one step parameter at a time with readback.
+- Apply full-pattern humanization as one named rollback unit after individual
+  parameter writes are live-smoked.
+
+Safety requirement:
+
+- Snapshot the affected channel's grid and every changed step parameter.
+- Start with read-only inspection for parameters whose ranges vary by FL build.
+- Do not ship randomized bulk writes until deterministic readback and rollback
+  are verified.
 
 ### Project Doctor and Organizer
 
@@ -278,6 +310,87 @@ Safety requirement:
 - No direct writes. The doctor must call only safe lower-level operations.
 - Multi-step organizer changes must be one named rollback unit by default.
 
+### Piano Roll Return Channel and Comfort Transforms
+
+Status: `documented` for local Piano Roll note/marker mutation,
+`api-limited` for returning note data to the MCP server.
+
+Useful API:
+
+- `flp.score` note access and mutation inside a generated Piano Roll script.
+- Note properties such as time, length, number, velocity, pan, release, color,
+  slide, porta, selected, and muted where exposed by FL's Piano Roll API.
+- Marker creation and mutation where supported by the active FL build.
+
+Allowed next steps:
+
+- Build a return-channel probe before promoting `fl_piano_get_notes`.
+- Add undo-backed transforms for duplicate, humanize, velocity ramp, gate,
+  legato, overlap trim, strum, arpeggiate, mute/unmute, note color, slide,
+  porta, and snap-to-scale.
+- Add marker helpers only as generated, reviewable script payloads.
+
+Safety requirement:
+
+- Treat every generated script transform as a write tool.
+- Use the existing Piano Roll undo-backed safety path.
+- Return explicit readback limitations until the return-channel probe is
+  solved.
+- Avoid destructive delete-selected/delete-region until selected note data can
+  be captured and restored.
+
+### Edison / Audio Editor Script Tool
+
+Status: `documented`, `probe-needed` for MCP return paths and practical rollback.
+
+Useful API:
+
+- Audio Editor scripts can operate on Edison and Slicex audio through generated
+  scripts.
+- Documented operations include sample/selection edits such as normalize,
+  amplification, silence, reverse, trim, centering, and region operations.
+
+Allowed next steps:
+
+- Generate and install manual audio editor script templates.
+- Build read-only probes for sample length, selection, sample rate, channels,
+  region count, and region names if a reliable return path exists.
+- Prefer offline audio artifact generation: analyzed WAV copies, markerized
+  WAV files, region JSON, CUE-style metadata, and reviewable reports.
+
+Safety requirement:
+
+- Do not directly mutate the active Edison/Slicex sample without an audio
+  snapshot and restore path.
+- Treat generated audio editor scripts as manual/probe workflows until restore
+  data is complete.
+
+### Slicex
+
+Status: `documented`, `probe-needed`.
+
+Useful API:
+
+- Slicex can consume slices and region metadata from audio material.
+- Official docs describe both Audio Editor script usage and Slicex editor
+  scripting surfaces, so FL-version behavior must be probed before committing
+  to a single implementation path.
+
+Allowed next steps:
+
+- Build a Slicex prep pack outside FL: transient detection, zero-crossing
+  alignment, markerized WAV export, and region metadata export.
+- Generate manual Slicex script templates for region cleanup and reporting
+  after the active scripting path is verified.
+- Keep Slicex-to-Piano-Roll workflows manual or artifact-based until readback
+  and rollback are proven.
+
+Safety requirement:
+
+- Do not auto-load Slicex, load samples, dump score, send clips to the
+  playlist, or delete regions through UI automation.
+- Direct region/sample edits need full restore data before becoming tools.
+
 ## Probe-Needed or Limited Areas
 
 | Area | Current result | Allowed next step |
@@ -289,7 +402,23 @@ Safety requirement:
 | Playlist clip overlap detection | No general clip enumeration API confirmed. | Keep track-level only. |
 | Plugin loading | API controls loaded plugins; loading instances remains unsupported. | Suggest/load-manually/configure-loaded model. |
 | Plugin preset next/previous | FL exposes preset navigation, but no verified MCP restore primitive. | Read-only/manual guidance only. |
+| Edison/Slicex destructive live edits | Audio editor scripts can mutate samples, but no MCP-level audio snapshot/restore path exists. | Manual script generation, probes, or offline artifacts only. |
+| Slicex scripting path | Official docs expose Slicex scripting surfaces, but practical Python vs legacy editor behavior must be verified per FL build. | Build a probe before user-facing tools. |
 | Full FLP snapshot/restore | MCP can snapshot affected state, not the full project file. | MCP-local snapshots only. |
+
+## Contract-Broken Capabilities
+
+These capabilities must not be exposed as user-facing write tools until a
+future design proves the full safety contract:
+
+- Plugin loading or plugin insertion.
+- Playlist clip editing, placement, movement, or deletion.
+- Pattern or clip deletion.
+- Project open, project new, project render, or similar file/session commands.
+- Raw UI automation or raw escape-hatch calls.
+- Destructive Edison or Slicex live edits without an audio snapshot.
+- Preset next/previous as a write action without verified readback and
+  rollback.
 
 ## Feature Gate Template
 
