@@ -28,8 +28,8 @@ from .protocol import port_from_fl_name, port_to_fl_name
 from .tools import arrange as arrange_tools
 from .tools import audio as audio_tools
 from .tools import bulk as bulk_tools
-from .tools import channels as channel_tools
 from .tools import chains as chains_tools
+from .tools import channels as channel_tools
 from .tools import color as color_tools
 from .tools import compose as compose_tools
 from .tools import export as export_tools
@@ -42,7 +42,6 @@ from .tools import presets as presets_tools
 from .tools import resources as resource_defs
 from .tools import routing as routing_tools
 from .tools import transport as transport_tools
-
 
 logger = logging.getLogger("fl_studio_mcp")
 
@@ -86,21 +85,21 @@ def build_server() -> FastMCP:
         instructions=SERVER_INSTRUCTIONS,
     )
     transport_tools.register(mcp)
-    phase1_tools.register(mcp)      # project/mixer/channel read+write + safety
-    channel_tools.register(mcp)     # Channel organizer: details, names, mixer assignment
-    pianoroll_tools.register(mcp)   # Phase 2: write notes into the piano roll
-    plugin_tools.register(mcp)      # Phase 1B: plugin param read/write (name or index)
-    mixing_tools.register(mcp)      # Slice B: high-level EQ mixing intents
-    routing_tools.register(mcp)     # Routing/cleanup Slice 1: read-only
-    bulk_tools.register(mcp)        # Bulk mute/solo: server-side group orchestration
-    color_tools.register(mcp)       # Track/channel coloring: name/hex -> FL RGB, one rollback unit
-    arrange_tools.register(mcp)     # Arrangement Slice 1: pattern create/clone + markers
-    resource_defs.register(mcp)     # MCP resources: fl://status, fl://project, ...
-    audio_tools.register(mcp)       # Integration 2/3: audio analysis (tempo/key)
-    compose_tools.register(mcp)     # Raga/scale composer: write Claude notes via the bridge
-    chains_tools.register(mcp)      # Genre chain setup: map recipes to existing plugins
-    export_tools.register(mcp)      # MIDI export: arrangement spec -> type-1 .mid on disk
-    presets_tools.register(mcp)     # Preset suggester: read preset names from disk
+    phase1_tools.register(mcp)  # project/mixer/channel read+write + safety
+    channel_tools.register(mcp)  # Channel organizer: details, names, mixer assignment
+    pianoroll_tools.register(mcp)  # Phase 2: write notes into the piano roll
+    plugin_tools.register(mcp)  # Phase 1B: plugin param read/write (name or index)
+    mixing_tools.register(mcp)  # Slice B: high-level EQ mixing intents
+    routing_tools.register(mcp)  # Routing/cleanup Slice 1: read-only
+    bulk_tools.register(mcp)  # Bulk mute/solo: server-side group orchestration
+    color_tools.register(mcp)  # Track/channel coloring: name/hex -> FL RGB, one rollback unit
+    arrange_tools.register(mcp)  # Arrangement Slice 1: pattern create/clone + markers
+    resource_defs.register(mcp)  # MCP resources: fl://status, fl://project, ...
+    audio_tools.register(mcp)  # Integration 2/3: audio analysis (tempo/key)
+    compose_tools.register(mcp)  # Raga/scale composer: write Claude notes via the bridge
+    chains_tools.register(mcp)  # Genre chain setup: map recipes to existing plugins
+    export_tools.register(mcp)  # MIDI export: arrangement spec -> type-1 .mid on disk
+    presets_tools.register(mcp)  # Preset suggester: read preset names from disk
     mix_doctor_tools.register(mcp)  # Mix Doctor: diagnose whole mix + gated apply-fixes
     # Later tool packs register here as they ship:
     #   pattern_tools.register(mcp)
@@ -112,8 +111,8 @@ def _print_ports() -> int:
     expected_out = port_to_fl_name()
     expected_in = port_from_fl_name()
     print("Expected port names (override via FLSTUDIO_MCP_PORT_TO_FL / _FROM_FL):")
-    print("  server output (commands -> FL):  %r" % expected_out)
-    print("  server input  (responses <- FL): %r" % expected_in)
+    print(f"  server output (commands -> FL):  {expected_out!r}")
+    print(f"  server input  (responses <- FL): {expected_in!r}")
     print()
     print("MIDI output ports visible to this Python process:")
     for name in ports["outputs"]:
@@ -137,7 +136,9 @@ def main() -> None:
 
     logger.info(
         "fl-studio-mcp %s; ports: out=%r, in=%r",
-        __version__, port_to_fl_name(), port_from_fl_name(),
+        __version__,
+        port_to_fl_name(),
+        port_from_fl_name(),
     )
     server = build_server()
 
@@ -157,8 +158,9 @@ def main() -> None:
                 sse_port = int(sys.argv[idx + 1])
             except (IndexError, ValueError):
                 pass
-        logger.info("Starting SSE transport on %s:%d (for ChatGPT / remote MCP clients)",
-                    sse_host, sse_port)
+        logger.info(
+            "Starting SSE transport on %s:%d (for ChatGPT / remote MCP clients)", sse_host, sse_port
+        )
         server.run(transport="sse", host=sse_host, port=sse_port)
     else:
         server.run()  # stdio transport (Claude Desktop, Cursor, Claude Code)

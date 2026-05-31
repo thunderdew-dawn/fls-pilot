@@ -43,9 +43,10 @@ import os
 import socketserver
 import threading
 
-from . import __version__
-from . import protocol
+from . import __version__, protocol
 from .connection import (
+    DEFAULT_TCP_HOST,
+    DEFAULT_TCP_PORT,
     FLBridge,
     FLBridgeError,
     FLCommandFailed,
@@ -53,8 +54,6 @@ from .connection import (
     FLPortMissing,
     FLTimeout,
 )
-from .connection import DEFAULT_TCP_HOST, DEFAULT_TCP_PORT
-
 
 logger = logging.getLogger("fl_studio_mcp.daemon")
 
@@ -96,8 +95,12 @@ def _handle_request(req: dict) -> dict:
             data = _get_bridge().call(command, params, timeout=timeout)
             return {"ok": True, "data": data}
         except FLCommandFailed as e:
-            return {"ok": False, "exc": "FLCommandFailed", "error": str(e),
-                    "code": getattr(e, "code", "error")}
+            return {
+                "ok": False,
+                "exc": "FLCommandFailed",
+                "error": str(e),
+                "code": getattr(e, "code", "error"),
+            }
         except FLNotRunning as e:
             return {"ok": False, "exc": "FLNotRunning", "error": str(e)}
         except FLTimeout as e:
@@ -107,8 +110,7 @@ def _handle_request(req: dict) -> dict:
         except FLBridgeError as e:
             return {"ok": False, "exc": "FLBridgeError", "error": str(e)}
         except Exception as e:  # pragma: no cover - defensive
-            return {"ok": False, "exc": "Error",
-                    "error": "%s: %s" % (type(e).__name__, e)}
+            return {"ok": False, "exc": "Error", "error": f"{type(e).__name__}: {e}"}
 
     if op == "apply_notes":
         # Daemon-side note authoring: generate the .pyscript with notes baked
@@ -117,22 +119,27 @@ def _handle_request(req: dict) -> dict:
         try:
             trigger = req.get("trigger", True)
             ensured = None
-            if trigger:                       # auto-open the piano roll first
+            if trigger:  # auto-open the piano roll first
                 try:
                     ensured = _get_bridge().call(protocol.CMD_ENSURE_PIANO_ROLL, {}, timeout=5.0)
                 except Exception as e:
-                    ensured = {"ok": False, "error": "%s: %s" % (type(e).__name__, e)}
+                    ensured = {"ok": False, "error": f"{type(e).__name__}: {e}"}
             from .pianoroll import apply_notes
-            res = apply_notes(req.get("notes") or [], req.get("mode", "replace"), trigger=trigger,
-                              quantize=req.get("quantize"), snap_ends=req.get("snap_ends", False))
+
+            res = apply_notes(
+                req.get("notes") or [],
+                req.get("mode", "replace"),
+                trigger=trigger,
+                quantize=req.get("quantize"),
+                snap_ends=req.get("snap_ends", False),
+            )
             if isinstance(res, dict):
                 res["piano_roll_ensured"] = ensured
             return res
         except Exception as e:
-            return {"ok": False, "exc": "Error",
-                    "error": "%s: %s" % (type(e).__name__, e)}
+            return {"ok": False, "exc": "Error", "error": f"{type(e).__name__}: {e}"}
 
-    return {"ok": False, "exc": "Error", "error": "unknown op: %r" % (op,)}
+    return {"ok": False, "exc": "Error", "error": f"unknown op: {op!r}"}
 
 
 class _Handler(socketserver.StreamRequestHandler):
@@ -146,7 +153,7 @@ class _Handler(socketserver.StreamRequestHandler):
                 try:
                     req = json.loads(line.decode("utf-8"))
                 except Exception as e:
-                    resp = {"ok": False, "exc": "Error", "error": "bad json: %s" % e}
+                    resp = {"ok": False, "exc": "Error", "error": f"bad json: {e}"}
                 else:
                     resp = _handle_request(req)
                 self.wfile.write((json.dumps(resp) + "\n").encode("utf-8"))
@@ -177,8 +184,10 @@ def main() -> None:
         logger.info("MIDI bridge open.")
     except FLPortMissing as e:
         logger.warning("MIDI ports not ready yet: %s", e)
-        logger.warning("Create the loopMIDI ports and start FL; the daemon "
-                       "will pick them up on the next request.")
+        logger.warning(
+            "Create the loopMIDI ports and start FL; the daemon "
+            "will pick them up on the next request."
+        )
 
     server = _Server((host, port), _Handler)
     logger.info("fl-studio-mcp daemon %s listening on %s:%d", __version__, host, port)

@@ -63,9 +63,7 @@ class ChangeLog:
     def _persist(self) -> None:
         try:
             self._path.parent.mkdir(parents=True, exist_ok=True)
-            self._path.write_text(
-                "".join(json.dumps(e) + "\n" for e in self._dq), encoding="utf-8"
-            )
+            self._path.write_text("".join(json.dumps(e) + "\n" for e in self._dq), encoding="utf-8")
         except Exception:
             pass
 
@@ -107,7 +105,7 @@ class ChangeLog:
 
     def recent(self, n: int = 10, *, include_payload: bool = False) -> list:
         with self._lock:
-            entries = list(self._dq)[-max(0, int(n)):]
+            entries = list(self._dq)[-max(0, int(n)) :]
         if include_payload:
             return entries
         return [_entry_summary(e) for e in entries]
@@ -186,6 +184,7 @@ def take_snapshot(bridge, scope):
         return bridge.call(CMD_GET_PROJECT_STATE)
     if kind == "patterns_all":
         from .connection import fetch_all_pages
+
         out = fetch_all_pages(bridge, CMD_PATTERN_LIST, "patterns")
         out["project"] = bridge.call(CMD_GET_PROJECT_STATE)
         return out
@@ -195,8 +194,7 @@ def take_snapshot(bridge, scope):
         return bridge.call(CMD_CHANNEL_GET, {"index": int(arg)})
     if kind == "plugin_param":
         track, slot, idx = (int(x) for x in arg.split(":"))
-        return bridge.call(CMD_PLUGIN_GET_PARAM,
-                           {"track": track, "slot": slot, "param": idx})
+        return bridge.call(CMD_PLUGIN_GET_PARAM, {"track": track, "slot": slot, "param": idx})
     if kind == "route":
         src, dst = (int(x) for x in arg.split(":"))
         info = bridge.call(CMD_MIXER_GET_ROUTING, {"track": src})
@@ -204,16 +202,21 @@ def take_snapshot(bridge, scope):
         return {"src": src, "dst": dst, "enabled": enabled}
     if kind == "mixer_all":
         from .connection import fetch_all_pages
+
         return fetch_all_pages(bridge, CMD_MIXER_LIST_TRACKS, "tracks")
     if kind == "channels_all":
         from .connection import fetch_all_pages
+
         return fetch_all_pages(bridge, CMD_CHANNEL_LIST, "channels")
     raise ValueError(f"unknown snapshot scope: {scope!r}")
 
 
 def _dry_run_plan(tool, command, params):
-    return {"ok": True, "dry_run": True,
-            "planned": {"tool": tool, "command": command, "params": params}}
+    return {
+        "ok": True,
+        "dry_run": True,
+        "planned": {"tool": tool, "command": command, "params": params},
+    }
 
 
 def _verify_retry(bridge, command, params, result, verify, attempts=4, delay=0.06):
@@ -255,11 +258,19 @@ def safe_write(bridge, *, tool, scope, command, params, build_restore, verify=No
         after = take_snapshot(bridge, scope)
     except Exception:
         after = echo
-    entry = _log.append({
-        "tool": tool, "scope": scope, "command": command, "params": params,
-        "before": before, "after": after, "echo": echo, "restore": restore,
-        "ts": time.time(),
-    })
+    entry = _log.append(
+        {
+            "tool": tool,
+            "scope": scope,
+            "command": command,
+            "params": params,
+            "before": before,
+            "after": after,
+            "echo": echo,
+            "restore": restore,
+            "ts": time.time(),
+        }
+    )
     return {"ok": True, "change_id": entry["change_id"], "before": before, "after": after}
 
 
@@ -279,14 +290,25 @@ def safe_piano_roll_write(bridge, *, tool, params, apply):
     result = apply()
     restore = {"command": protocol.CMD_GENERAL_UNDO, "params": {}}
     entry = {
-        "tool": tool, "scope": "piano_roll", "command": "piano_roll_apply",
-        "params": params, "before": before, "after": result, "echo": result,
-        "restore": restore, "ts": time.time(),
+        "tool": tool,
+        "scope": "piano_roll",
+        "command": "piano_roll_apply",
+        "params": params,
+        "before": before,
+        "after": result,
+        "echo": result,
+        "restore": restore,
+        "ts": time.time(),
         "rollback_note": "Uses FL Studio undo for the generated Piano Roll script.",
     }
     entry = _log.append(entry)
-    return {"ok": True, "change_id": entry["change_id"], "before": before, "after": result,
-            "rollback": "fl_rollback_last_change uses FL Studio undo for this Piano Roll edit"}
+    return {
+        "ok": True,
+        "change_id": entry["change_id"],
+        "before": before,
+        "after": result,
+        "rollback": "fl_rollback_last_change uses FL Studio undo for this Piano Roll edit",
+    }
 
 
 def safe_write_group(bridge, *, tool, scope, writes):
@@ -304,22 +326,31 @@ def safe_write_group(bridge, *, tool, scope, writes):
     """
     if _dry_run:
         return {
-            "ok": True, "dry_run": True,
-            "planned": {"tool": tool, "scope": scope,
-                        "writes": [{"command": w["command"], "params": w["params"]}
-                                   for w in writes]},
+            "ok": True,
+            "dry_run": True,
+            "planned": {
+                "tool": tool,
+                "scope": scope,
+                "writes": [{"command": w["command"], "params": w["params"]} for w in writes],
+            },
         }
     befores, restores = [], []
-    for w in writes:                       # snapshot all first
+    for w in writes:  # snapshot all first
         before = take_snapshot(bridge, w["snap_scope"])
         befores.append(before)
         restores.append(w["restore"](before))
     afters = [bridge.call(w["command"], w["params"]) for w in writes]
-    entry = _log.append({
-        "tool": tool, "scope": scope, "group": True,
-        "befores": befores, "afters": afters, "restores": restores,
-        "ts": time.time(),
-    })
+    entry = _log.append(
+        {
+            "tool": tool,
+            "scope": scope,
+            "group": True,
+            "befores": befores,
+            "afters": afters,
+            "restores": restores,
+            "ts": time.time(),
+        }
+    )
     return {"ok": True, "change_id": entry["change_id"], "before": befores, "after": afters}
 
 
@@ -356,24 +387,39 @@ def export_change_log(output_path: str | None = None, *, include_payload: bool =
 
 def _rollback_entry(bridge, entry: dict):
     change_id = entry.get("change_id")
-    if entry.get("group"):                 # grouped write -> replay every restore
-        restored = [bridge.call(r["command"], r.get("params") or {})
-                    for r in reversed(entry.get("restores") or [])]
-        return {"ok": True, "rolled_back": entry.get("tool"),
-                "scope": entry.get("scope"), "change_id": change_id,
-                "restored": restored}
+    if entry.get("group"):  # grouped write -> replay every restore
+        restored = [
+            bridge.call(r["command"], r.get("params") or {})
+            for r in reversed(entry.get("restores") or [])
+        ]
+        return {
+            "ok": True,
+            "rolled_back": entry.get("tool"),
+            "scope": entry.get("scope"),
+            "change_id": change_id,
+            "restored": restored,
+        }
     restore = entry.get("restore")
     if not restore:
-        return {"ok": False, "error": "entry has no restore action",
-                "tool": entry.get("tool"), "change_id": change_id}
+        return {
+            "ok": False,
+            "error": "entry has no restore action",
+            "tool": entry.get("tool"),
+            "change_id": change_id,
+        }
     rparams = restore.get("params") or {}
     restored = bridge.call(restore["command"], rparams)
     # mute/solo restores are toggles -> verify+retry like safe_write
     if "state" in rparams:
         field = "mute" if "mute" in restored else ("solo" if "solo" in restored else None)
         if field is not None:
-            restored = _verify_retry(bridge, restore["command"], rparams,
-                                     restored, (field, rparams["state"]))
-    return {"ok": True, "rolled_back": entry.get("tool"),
-            "scope": entry.get("scope"), "change_id": change_id,
-            "restored": restored}
+            restored = _verify_retry(
+                bridge, restore["command"], rparams, restored, (field, rparams["state"])
+            )
+    return {
+        "ok": True,
+        "rolled_back": entry.get("tool"),
+        "scope": entry.get("scope"),
+        "change_id": change_id,
+        "restored": restored,
+    }

@@ -29,8 +29,6 @@ import os
 import platform
 import secrets
 import string
-from typing import Tuple
-
 
 # Bump when the wire format changes incompatibly. Server and FL refuse to
 # talk to a mismatched peer.
@@ -121,22 +119,22 @@ CMD_PATTERN_RENAME = "pattern_rename"
 CMD_PATTERN_GET_LENGTH = "pattern_get_length"
 
 # Plugin params (Phase 1B)
-CMD_PLUGIN_LIST = "plugin_list"            # list plugins on a mixer track's slots
+CMD_PLUGIN_LIST = "plugin_list"  # list plugins on a mixer track's slots
 CMD_PLUGIN_GET_PARAMS = "plugin_get_params"  # paginated param dump for one plugin
 CMD_PLUGIN_LIST_PARAMS = "plugin_list_params"
 CMD_PLUGIN_GET_PARAM = "plugin_get_param"
 CMD_PLUGIN_SET_PARAM = "plugin_set_param"
 
 # Routing / grouping / cleanup (read surface -- Slice 1)
-CMD_MIXER_GET_ROUTING = "mixer_get_routing"            # one track's send destinations
-CMD_MIXER_GET_ROUTING_ALL = "mixer_get_routing_all"    # paginated routing matrix
+CMD_MIXER_GET_ROUTING = "mixer_get_routing"  # one track's send destinations
+CMD_MIXER_GET_ROUTING_ALL = "mixer_get_routing_all"  # paginated routing matrix
 CMD_CHANNEL_ROUTING_SUMMARY = "channel_routing_summary"  # channel -> mixer links
 
 # Routing writes (Slice 2)
-CMD_MIXER_SET_ROUTE = "mixer_set_route"                # setRouteTo + afterRoutingChanged
+CMD_MIXER_SET_ROUTE = "mixer_set_route"  # setRouteTo + afterRoutingChanged
 
 # Level awareness (read) -- meter peaks, meaningful only during playback
-CMD_MIXER_GET_PEAKS = "mixer_get_peaks"                # getTrackPeaks L/R/max
+CMD_MIXER_GET_PEAKS = "mixer_get_peaks"  # getTrackPeaks L/R/max
 
 # Track / channel color (RGB int 0xRRGGBB). Set accepts r/g/b 0-255 (fresh) or
 # an explicit "color" int (rollback re-sends the exact int FL gave us).
@@ -146,26 +144,26 @@ CMD_CHANNEL_SET_COLOR = "channel_set_color"
 CMD_CHANNEL_GET_COLOR = "channel_get_color"
 
 # Plugin presets (navigate/read) -- op: info | next | prev
-CMD_PLUGIN_PRESET = "plugin_preset"                    # getPresetCount/next/prev/getName
+CMD_PLUGIN_PRESET = "plugin_preset"  # getPresetCount/next/prev/getName
 
 # API introspection / arrangement probe -- op: dir | ppq | marker_add | undo
 CMD_API_PROBE = "api_probe"
 
 # Arrangement primitives (Slice 1) -- pattern create/clone + section markers
-CMD_ARRANGE_NEW_PATTERN = "arrange_new_pattern"        # find empty + jumpTo + name
-CMD_ARRANGE_CLONE_PATTERN = "arrange_clone_pattern"    # clonePattern + rename
-CMD_ARRANGE_ADD_MARKER = "arrange_add_marker"          # addAutoTimeMarker at a bar
+CMD_ARRANGE_NEW_PATTERN = "arrange_new_pattern"  # find empty + jumpTo + name
+CMD_ARRANGE_CLONE_PATTERN = "arrange_clone_pattern"  # clonePattern + rename
+CMD_ARRANGE_ADD_MARKER = "arrange_add_marker"  # addAutoTimeMarker at a bar
 
 # Note-bridge hardening -- ensure the Piano roll is open before a note-write
-CMD_ENSURE_PIANO_ROLL = "ensure_piano_roll"            # ui.showWindow(widPianoRoll)
+CMD_ENSURE_PIANO_ROLL = "ensure_piano_roll"  # ui.showWindow(widPianoRoll)
 
 
 # ---------------------------------------------------------------------------
 # SysEx wire format
 # ---------------------------------------------------------------------------
 
-SYSEX_MANUFACTURER = 0x7D            # MIDI-spec reserved for private use
-SYSEX_MAGIC = (0x4D, 0x43, 0x50)     # ASCII "MCP"
+SYSEX_MANUFACTURER = 0x7D  # MIDI-spec reserved for private use
+SYSEX_MAGIC = (0x4D, 0x43, 0x50)  # ASCII "MCP"
 
 DIR_REQUEST = 0x01
 DIR_RESPONSE = 0x02
@@ -188,10 +186,10 @@ def encode_message(direction: int, request_id: str, payload: dict) -> bytes:
     The serializer (mido.Message('sysex', data=...)) will add the framing.
     """
     if direction not in (DIR_REQUEST, DIR_RESPONSE, DIR_HEARTBEAT):
-        raise ValueError("Bad direction: %r" % direction)
+        raise ValueError(f"Bad direction: {direction!r}")
     rid = request_id.encode("ascii")
     if len(rid) != REQUEST_ID_LEN or any(b > 0x7F for b in rid):
-        raise ValueError("Bad request id: %r" % request_id)
+        raise ValueError(f"Bad request id: {request_id!r}")
 
     body_json = json.dumps(payload, ensure_ascii=True, separators=(",", ":"))
     body_b64 = base64.b64encode(body_json.encode("ascii"))
@@ -205,7 +203,7 @@ def encode_message(direction: int, request_id: str, payload: dict) -> bytes:
     return bytes(out)
 
 
-def decode_message(data) -> Tuple[int, str, dict] | None:
+def decode_message(data) -> tuple[int, str, dict] | None:
     """Decode a SysEx payload. Returns None if not one of ours.
 
     ``data`` is the bytes between F0 and F7 (mido strips the framing).
@@ -233,6 +231,7 @@ def decode_message(data) -> Tuple[int, str, dict] | None:
 # Request / response envelope shapes
 # ---------------------------------------------------------------------------
 
+
 def make_request(command: str, params: dict | None = None) -> dict:
     return {
         "v": PROTOCOL_VERSION,
@@ -251,4 +250,4 @@ def make_response_err(error: str, *, code: str = "error") -> dict:
 
 def system_label() -> str:
     """Short OS label, useful in heartbeats and logs."""
-    return "%s %s" % (platform.system(), platform.release())
+    return f"{platform.system()} {platform.release()}"

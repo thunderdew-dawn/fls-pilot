@@ -12,6 +12,7 @@ actually exist on this FL build, and (2) sets a known color and reads it back so
 we can see FL's native int + hex -- then leaves the track colored for a visual
 check. The printed 'restore' int re-applies the original.
 """
+
 from __future__ import annotations
 
 import os
@@ -44,7 +45,7 @@ def main() -> int:
     b = get_bridge()
 
     pong = b.call("ping", {})
-    print("FL: %s | build=%s (want color-v14)" % (pong.get("fl_version"), pong.get("build")))
+    print(f"FL: {pong.get('fl_version')} | build={pong.get('build')} (want color-v14)")
     if pong.get("build") != "color-v14":
         print("  !! controller not reloaded yet -- restart FL after deploying the new controller.")
 
@@ -60,8 +61,8 @@ def main() -> int:
     chan = _dir_names(b, "channels")
     need_mix = [n for n in ("setTrackColor", "getTrackColor") if n in mix]
     need_chan = [n for n in ("setChannelColor", "getChannelColor") if n in chan]
-    print("mixer color fns present:   %s" % need_mix)
-    print("channel color fns present: %s" % need_chan)
+    print(f"mixer color fns present:   {need_mix}")
+    print(f"channel color fns present: {need_chan}")
     if len(need_mix) < 2:
         print("  !! mixer.setTrackColor/getTrackColor missing on this build -- stop.")
         return 1
@@ -72,11 +73,17 @@ def main() -> int:
 
     after = b.call("mixer_set_color", {"track": track, "r": 255, "g": 0, "b": 0}).get("color", {})
     print("track %d set RED (255,0,0) -> readback: %s" % (track, after))
-    print("  format check: hex should read #FF0000 if FL is 0xRRGGBB -> got %s" % after.get("hex"))
+    print(
+        "  format check: hex should read #FF0000 if FL is 0xRRGGBB -> got {}".format(
+            after.get("hex")
+        )
+    )
 
     print("\n>> LOOK AT FL: mixer track %d should now be RED." % track)
-    print(">> restore original with:  python scripts/test_color_live.py %d %s"
-          % (track, before.get("int", 0)))
+    print(
+        ">> restore original with:  python scripts/test_color_live.py %d %s"
+        % (track, before.get("int", 0))
+    )
     return 0
 
 

@@ -44,17 +44,17 @@ def register(mcp: FastMCP) -> None:
             return {
                 "alive": False,
                 "reason": "No heartbeat received. FL Studio is closed, the "
-                          "FLStudioMCP controller is not selected, or the "
-                          "loopMIDI / IAC output port number does not match "
-                          "the input port number in FL's MIDI Settings.",
+                "FLStudioMCP controller is not selected, or the "
+                "loopMIDI / IAC output port number does not match "
+                "the input port number in FL's MIDI Settings.",
                 **port_info,
             }
         if age > protocol.HEARTBEAT_STALE_SECONDS:
             return {
                 "alive": False,
                 "reason": f"Heartbeat is {age:.1f}s old (stale > "
-                          f"{protocol.HEARTBEAT_STALE_SECONDS:.0f}s). FL may "
-                          f"be frozen or the controller stopped responding.",
+                f"{protocol.HEARTBEAT_STALE_SECONDS:.0f}s). FL may "
+                f"be frozen or the controller stopped responding.",
                 "heartbeat_age_seconds": round(age, 2),
                 **port_info,
             }
@@ -90,15 +90,22 @@ def register(mcp: FastMCP) -> None:
         },
     )
     def fl_set_tempo(
-        bpm: Annotated[float, Field(ge=10.0, le=999.0, description="Target tempo in BPM, FL accepts 10-999.")],
+        bpm: Annotated[
+            float, Field(ge=10.0, le=999.0, description="Target tempo in BPM, FL accepts 10-999.")
+        ],
     ) -> dict:
         """Set the FL Studio project tempo. Snapshot + readback; rollback restores BPM."""
         return safety.safe_write(
-            get_bridge(), tool="set_tempo", scope="tempo",
+            get_bridge(),
+            tool="set_tempo",
+            scope="tempo",
             command=protocol.CMD_SET_TEMPO,
             params={"bpm": float(bpm)},
-            build_restore=lambda b: {"command": protocol.CMD_SET_TEMPO,
-                                     "params": {"bpm": b["bpm"]}})
+            build_restore=lambda b: {
+                "command": protocol.CMD_SET_TEMPO,
+                "params": {"bpm": b["bpm"]},
+            },
+        )
 
     @mcp.tool(
         annotations={
@@ -202,8 +209,6 @@ def _safe_call(command: str, params: dict | None = None):
         # retrying blindly.
         raise RuntimeError(str(e)) from e
     except FLTimeout as e:
-        raise RuntimeError(
-            f"{e}. Try fl_ping to confirm the controller is alive."
-        ) from e
+        raise RuntimeError(f"{e}. Try fl_ping to confirm the controller is alive.") from e
     except FLCommandFailed as e:
         raise RuntimeError(f"FL Studio rejected the command: {e}") from e

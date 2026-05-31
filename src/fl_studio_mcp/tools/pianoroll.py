@@ -9,7 +9,7 @@ run 'MCP_Apply' once from the piano-roll Scripting menu so that
 
 from __future__ import annotations
 
-from typing import Annotated, List
+from typing import Annotated
 
 from fastmcp import FastMCP
 from pydantic import BaseModel, Field
@@ -20,31 +20,41 @@ from ..pyscript_gen import quantize_notes
 
 
 class PianoRollNote(BaseModel):
-    pitch: int = Field(ge=0, le=127,
-                       description="MIDI note (60 = middle C; FL displays it as C5).")
-    time_bars: float = Field(0.0, ge=0.0,
-                             description="Start, in bars from the pattern start.")
+    pitch: int = Field(ge=0, le=127, description="MIDI note (60 = middle C; FL displays it as C5).")
+    time_bars: float = Field(0.0, ge=0.0, description="Start, in bars from the pattern start.")
     length_bars: float = Field(1.0, gt=0.0, description="Duration in bars.")
-    velocity: float = Field(100 / 127.0, ge=0.0, le=1.0,
-                            description="0.0-1.0 (0.787 ~= MIDI velocity 100).")
+    velocity: float = Field(
+        100 / 127.0, ge=0.0, le=1.0, description="0.0-1.0 (0.787 ~= MIDI velocity 100)."
+    )
 
 
 def register(mcp: FastMCP) -> None:
-    @mcp.tool(annotations={
-        "title": "Write piano-roll notes",
-        "readOnlyHint": False,
-        "destructiveHint": True,   # mode='replace' clears existing notes
-        "idempotentHint": False,
-        "openWorldHint": True,
-    })
+    @mcp.tool(
+        annotations={
+            "title": "Write piano-roll notes",
+            "readOnlyHint": False,
+            "destructiveHint": True,  # mode='replace' clears existing notes
+            "idempotentHint": False,
+            "openWorldHint": True,
+        }
+    )
     def fl_write_piano_roll_notes(
-        notes: List[PianoRollNote],
-        mode: Annotated[str, Field(
-            description="'replace' clears the pattern first; 'append' adds to it.",
-        )] = "replace",
-        quantize: Annotated[float, Field(
-            description="Optional grid (bars) to snap note starts to before writing: 0.0625=1/16, 0.125=1/8, 0=off.",
-        )] = 0.0,
+        notes: list[PianoRollNote],
+        mode: Annotated[
+            str,
+            Field(
+                description="'replace' clears the pattern first; 'append' adds to it.",
+            ),
+        ] = "replace",
+        quantize: Annotated[
+            float,
+            Field(
+                description=(
+                    "Optional grid (bars) to snap note starts to before writing: "
+                    "0.0625=1/16, 0.125=1/8, 0=off."
+                )
+            ),
+        ] = 0.0,
     ) -> dict:
         """Write notes into the currently-open FL Piano roll.
 
@@ -58,18 +68,28 @@ def register(mcp: FastMCP) -> None:
             arr = quantize_notes(arr, float(quantize))
         bridge = get_bridge()
         return safety.safe_piano_roll_write(
-            bridge, tool="write_piano_roll_notes",
+            bridge,
+            tool="write_piano_roll_notes",
             params={"notes": arr, "mode": mode, "quantize": quantize},
-            apply=lambda: bridge.apply_notes(arr, mode))
+            apply=lambda: bridge.apply_notes(arr, mode),
+        )
 
-    @mcp.tool(annotations={
-        "title": "Quantize piano-roll notes",
-        "readOnlyHint": False, "destructiveHint": False,
-        "idempotentHint": False, "openWorldHint": True,
-    })
+    @mcp.tool(
+        annotations={
+            "title": "Quantize piano-roll notes",
+            "readOnlyHint": False,
+            "destructiveHint": False,
+            "idempotentHint": False,
+            "openWorldHint": True,
+        }
+    )
     def fl_quantize_pattern(
-        grid_bars: Annotated[float, Field(gt=0, description="Snap grid in bars: 0.0625=1/16, 0.125=1/8, 0.25=1/4.")] = 0.0625,
-        snap_ends: Annotated[bool, Field(description="Also snap note lengths to the grid.")] = False,
+        grid_bars: Annotated[
+            float, Field(gt=0, description="Snap grid in bars: 0.0625=1/16, 0.125=1/8, 0.25=1/4.")
+        ] = 0.0625,
+        snap_ends: Annotated[
+            bool, Field(description="Also snap note lengths to the grid.")
+        ] = False,
     ) -> dict:
         """Quantize the notes ALREADY in the open Piano roll: reads the score,
         snaps note starts (and optionally lengths) to the grid, rewrites -- via
@@ -77,7 +97,10 @@ def register(mcp: FastMCP) -> None:
         armed once this session (same setup as note writing)."""
         bridge = get_bridge()
         return safety.safe_piano_roll_write(
-            bridge, tool="quantize_pattern",
+            bridge,
+            tool="quantize_pattern",
             params={"grid_bars": float(grid_bars), "snap_ends": bool(snap_ends)},
             apply=lambda: bridge.apply_notes(
-                [], trigger=True, quantize=float(grid_bars), snap_ends=snap_ends))
+                [], trigger=True, quantize=float(grid_bars), snap_ends=snap_ends
+            ),
+        )

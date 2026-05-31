@@ -24,6 +24,7 @@ loopMIDI RX/TX up. Honours FLSTUDIO_MCP_TRANSPORT: set it to "tcp" to route
 through a running daemon (no need to stop it); leave it unset for a direct
 FLBridge (needs the TX port free -- stop the daemon first).
 """
+
 from __future__ import annotations
 
 import sys
@@ -32,16 +33,16 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
 from fl_studio_mcp.connection import (  # noqa: E402
-    get_bridge,
+    FLCommandFailed,
     FLNotRunning,
     FLPortMissing,
     FLTimeout,
-    FLCommandFailed,
     fetch_all_pages,
+    get_bridge,
 )
 from fl_studio_mcp.protocol import (  # noqa: E402
-    CMD_PLUGIN_LIST,
     CMD_PLUGIN_GET_PARAMS,
+    CMD_PLUGIN_LIST,
     CMD_PLUGIN_SET_PARAM,
 )
 
@@ -53,16 +54,14 @@ def dump_slot(bridge, track, slot):
     name = first.get("plugin")
     total = first.get("total")
     print("\n--- track %d slot %d : %r ---" % (track, slot, name))
-    print("    reported param total = %s" % total)
+    print(f"    reported param total = {total}")
 
-    full = fetch_all_pages(
-        bridge, CMD_PLUGIN_GET_PARAMS, "params", {"track": track, "slot": slot}
-    )
+    full = fetch_all_pages(bridge, CMD_PLUGIN_GET_PARAMS, "params", {"track": track, "slot": slot})
     params = full["params"]
-    print("    named params returned = %d" % len(params))
+    print(f"    named params returned = {len(params)}")
     for prm in params:
         sval = prm.get("s") or ""
-        sval = ("  [%s]" % sval) if sval else ""
+        sval = (f"  [{sval}]") if sval else ""
         print("      [%4d] %-30s = %s%s" % (prm["i"], prm["name"], prm["v"], sval))
     return params
 
@@ -75,8 +74,10 @@ def main(argv) -> int:
     if hasattr(bridge, "wait_for_heartbeat"):
         bridge.wait_for_heartbeat()
     if not bridge.is_alive():
-        print("Bridge not alive -- check FL open, controller loaded, and "
-              "(if FLSTUDIO_MCP_TRANSPORT=tcp) the daemon is running.")
+        print(
+            "Bridge not alive -- check FL open, controller loaded, and "
+            "(if FLSTUDIO_MCP_TRANSPORT=tcp) the daemon is running."
+        )
         return 1
     print("Heartbeat age:", bridge.heartbeat_age())
 
@@ -84,7 +85,7 @@ def main(argv) -> int:
     try:
         listing = bridge.call(CMD_PLUGIN_LIST, {"track": track})
     except (FLNotRunning, FLPortMissing, FLTimeout, FLCommandFailed) as e:
-        print("plugin_list FAILED: %s" % e)
+        print(f"plugin_list FAILED: {e}")
         return 1
     slots = listing.get("slots", [])
     print("\nplugin_list(track=%d): %d filled slot(s)" % (track, len(slots)))
@@ -110,29 +111,32 @@ def main(argv) -> int:
         print("\nNo named params on slot %d -- skipping set/rollback." % target_slot)
         return 0
 
-    prm = params[0]                      # first named param is fine for a round-trip
+    prm = params[0]  # first named param is fine for a round-trip
     idx = prm["i"]
     original = prm["v"]
     # nudge within [0,1] -- plugin params are normalised on the FL API.
     target = round(original + 0.1, 4) if original <= 0.5 else round(original - 0.1, 4)
     target = max(0.0, min(1.0, target))
 
-    print("\n=== set/readback/rollback : slot %d param [%d] %r ==="
-          % (target_slot, idx, prm["name"]))
-    print("    original value      = %s" % original)
+    print(
+        "\n=== set/readback/rollback : slot %d param [%d] %r ===" % (target_slot, idx, prm["name"])
+    )
+    print(f"    original value      = {original}")
 
-    setres = bridge.call(CMD_PLUGIN_SET_PARAM,
-                         {"track": track, "slot": target_slot, "param": idx, "value": target})
-    print("    after set(%s)        = %s  [%s]" % (target, setres["v"], setres.get("s") or ""))
+    setres = bridge.call(
+        CMD_PLUGIN_SET_PARAM, {"track": track, "slot": target_slot, "param": idx, "value": target}
+    )
+    print(f"    after set({target})        = {setres['v']}  [{setres.get('s') or ''}]")
 
     moved = abs(setres["v"] - target) < 0.02
-    print("    set landed on target = %s" % ("YES" if moved else "NO (param may be stepped/locked)"))
+    print(f"    set landed on target = {'YES' if moved else 'NO (param may be stepped/locked)'}")
 
-    rb = bridge.call(CMD_PLUGIN_SET_PARAM,
-                    {"track": track, "slot": target_slot, "param": idx, "value": original})
-    print("    after rollback       = %s  [%s]" % (rb["v"], rb.get("s") or ""))
+    rb = bridge.call(
+        CMD_PLUGIN_SET_PARAM, {"track": track, "slot": target_slot, "param": idx, "value": original}
+    )
+    print(f"    after rollback       = {rb['v']}  [{rb.get('s') or ''}]")
     restored = abs(rb["v"] - original) < 0.02
-    print("    rolled back cleanly  = %s" % ("YES" if restored else "NO"))
+    print(f"    rolled back cleanly  = {'YES' if restored else 'NO'}")
 
     print("\nDone.")
     return 0

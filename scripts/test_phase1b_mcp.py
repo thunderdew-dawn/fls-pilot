@@ -10,6 +10,7 @@ back to the original.
     set FLSTUDIO_MCP_TRANSPORT=tcp
     python scripts/test_phase1b_mcp.py
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -45,25 +46,34 @@ def main() -> int:
     dump = asyncio.run(call("fl_plugin_get_params", {"track": 2, "slot": 1}))
     total = dump.get("total")
     params = dump.get("params", [])
-    print("fl_plugin_get_params(2,1): total=%s named=%d" % (total, len(params)))
+    print(f"fl_plugin_get_params(2,1): total={total} named={len(params)}")
 
     # 2. set BY NAME through the real tool, then rollback ---------------------
     name = "Dry level"
-    setres = asyncio.run(call("fl_plugin_set_param",
-                              {"track": 2, "slot": 1, "param": name, "value": 0.7}))
+    setres = asyncio.run(
+        call("fl_plugin_set_param", {"track": 2, "slot": 1, "param": name, "value": 0.7})
+    )
     resolved = setres.get("resolved_param")
     after_v = setres.get("after", {}).get("v")
     before_v = setres.get("before", {}).get("v")
-    print("fl_plugin_set_param(name=%r): resolved=%s before=%s after=%s"
-          % (name, resolved, before_v, after_v))
+    print(
+        f"fl_plugin_set_param(name={name!r}): resolved={resolved} before={before_v} after={after_v}"
+    )
 
     rb = asyncio.run(call("fl_rollback_last_change", {}))
-    print("fl_rollback_last_change:", rb.get("rolled_back"),
-          "restored_v=", (rb.get("restored") or {}).get("v"))
+    print(
+        "fl_rollback_last_change:",
+        rb.get("rolled_back"),
+        "restored_v=",
+        (rb.get("restored") or {}).get("v"),
+    )
 
-    ok = (resolved and abs(after_v - 0.7) < 0.02
-          and (rb.get("restored") or {}).get("v") is not None
-          and abs(rb["restored"]["v"] - before_v) < 0.02)
+    ok = (
+        resolved
+        and abs(after_v - 0.7) < 0.02
+        and (rb.get("restored") or {}).get("v") is not None
+        and abs(rb["restored"]["v"] - before_v) < 0.02
+    )
     print("\nEND-TO-END MCP PATH:", "PASS" if ok else "FAIL")
     return 0 if ok else 1
 
@@ -71,9 +81,8 @@ def main() -> int:
 if __name__ == "__main__":
     try:
         sys.exit(main())
-    except Exception as e:                       # noqa: BLE001
+    except Exception as e:  # noqa: BLE001
         # call_tool's surface drifts between FastMCP versions; the underlying
         # logic is already proven by test_phase1b_tools.py (7/7).
-        print("in-process MCP call path not exercised (%s: %s)"
-              % (type(e).__name__, e))
+        print(f"in-process MCP call path not exercised ({type(e).__name__}: {e})")
         sys.exit(2)

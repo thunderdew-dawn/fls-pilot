@@ -9,6 +9,7 @@ Writes one note via the bridge with ZERO manual setup. Expect:
     set FLSTUDIO_MCP_TRANSPORT=tcp
     python scripts/test_autoopen.py
 """
+
 from __future__ import annotations
 
 import json
@@ -17,7 +18,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from fl_studio_mcp.connection import get_bridge           # noqa: E402
+from fl_studio_mcp.connection import get_bridge  # noqa: E402
 
 _PITCH = int(sys.argv[1]) if len(sys.argv) > 1 else 60
 NOTE = [{"pitch": _PITCH, "time_bars": 0.0, "length_bars": 1.0, "velocity": 0.787}]

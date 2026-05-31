@@ -8,6 +8,7 @@ Sources (read-only directory listings; never file contents):
 FL still can't LOAD a preset via the API -- this is suggestion-only (the user
 loads the named preset; then Claude tweaks params via the existing plugin tools).
 """
+
 from __future__ import annotations
 
 import os
@@ -40,8 +41,7 @@ def _fl_studio_dirs():
     home = Path.home()
     for r in (home / "Documents" / "Image-Line", home / "Image-Line"):
         if r.is_dir():
-            for fl in sorted(r.glob("FL Studio*"), reverse=True):
-                yield fl
+            yield from sorted(r.glob("FL Studio*"), reverse=True)
 
 
 def find_fl_presets():
@@ -98,8 +98,7 @@ def list_presets(plugin_filter=None):
     serum/channel/mixer counts). With plugin_filter -> that plugin's full list."""
     fl, serum_dir = find_fl_presets(), find_serum_presets()
     if not fl and not serum_dir:
-        return {"found": False,
-                "error": "no preset folders found; set %s / %s." % (_ENV_FL, _ENV_SERUM)}
+        return {"found": False, "error": f"no preset folders found; set {_ENV_FL} / {_ENV_SERUM}."}
     pp = plugin_presets(fl) if fl else {}
     serum = serum_presets()
 
@@ -108,13 +107,22 @@ def list_presets(plugin_filter=None):
         out = {k: v for k, v in pp.items() if f in k.lower()}
         if "serum" in f and serum:
             out["Serum 2 (Xfer)"] = serum
-        return {"found": True, "filter": plugin_filter,
-                "fl_presets_path": fl, "serum_path": serum_dir,
-                "presets": out, "count": sum(len(v) for v in out.values())}
+        return {
+            "found": True,
+            "filter": plugin_filter,
+            "fl_presets_path": fl,
+            "serum_path": serum_dir,
+            "presets": out,
+            "count": sum(len(v) for v in out.values()),
+        }
 
-    summary = {"found": True, "fl_presets_path": fl, "serum_path": serum_dir,
-               "plugins_with_presets": {k: len(v) for k, v in pp.items()},
-               "serum_preset_count": len(serum)}
+    summary = {
+        "found": True,
+        "fl_presets_path": fl,
+        "serum_path": serum_dir,
+        "plugins_with_presets": {k: len(v) for k, v in pp.items()},
+        "serum_preset_count": len(serum),
+    }
     for sub, key in (("Channel presets", "channel_presets"), ("Mixer presets", "mixer_presets")):
         names = _names(os.path.join(fl, sub), ".fst") if fl else []
         if names:

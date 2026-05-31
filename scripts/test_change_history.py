@@ -4,6 +4,7 @@
 No FL Studio connection is needed. The fake bridge records restore calls so we
 can verify safety semantics without mutating a project.
 """
+
 from __future__ import annotations
 
 import json
@@ -45,24 +46,32 @@ def main() -> int:
             log = safety.ChangeLog(path=path, max_entries=10)
             safety._log = log
 
-            e1 = log.append({
-                "tool": "first_write",
-                "scope": "mixer_track:1",
-                "restore": {"command": "restore_first", "params": {"value": 1}},
-            })
-            e2 = log.append({
-                "tool": "second_write",
-                "scope": "mixer_track:2",
-                "restore": {"command": "restore_second", "params": {"value": 2}},
-            })
+            e1 = log.append(
+                {
+                    "tool": "first_write",
+                    "scope": "mixer_track:1",
+                    "restore": {"command": "restore_first", "params": {"value": 1}},
+                }
+            )
+            e2 = log.append(
+                {
+                    "tool": "second_write",
+                    "scope": "mixer_track:2",
+                    "restore": {"command": "restore_second", "params": {"value": 2}},
+                }
+            )
 
-            check("change ids are generated",
-                  e1["change_id"].startswith("chg_") and e2["change_id"].startswith("chg_"))
+            check(
+                "change ids are generated",
+                e1["change_id"].startswith("chg_") and e2["change_id"].startswith("chg_"),
+            )
             check("change ids are unique", e1["change_id"] != e2["change_id"])
 
             summaries = log.recent(2)
-            check("recent summaries omit restore payload",
-                  "restore" not in summaries[0] and summaries[0]["tool"] == "first_write")
+            check(
+                "recent summaries omit restore payload",
+                "restore" not in summaries[0] and summaries[0]["tool"] == "first_write",
+            )
             payload = log.recent(1, include_payload=True)
             check(
                 "payload view includes restore",
@@ -72,41 +81,56 @@ def main() -> int:
             export_path = Path(tmp) / "export.json"
             exported = log.export(str(export_path), include_payload=False)
             exported_json = json.loads(export_path.read_text(encoding="utf-8"))
-            check("export writes requested JSON file",
-                  exported["path"] == str(export_path) and exported_json["count"] == 2)
+            check(
+                "export writes requested JSON file",
+                exported["path"] == str(export_path) and exported_json["count"] == 2,
+            )
 
             bridge = FakeBridge()
             non_lifo = safety.rollback_change(bridge, e1["change_id"])
-            check("rollback by id refuses older non-LIFO entry",
-                  non_lifo["ok"] is False and "non-LIFO" in non_lifo["error"])
+            check(
+                "rollback by id refuses older non-LIFO entry",
+                non_lifo["ok"] is False and "non-LIFO" in non_lifo["error"],
+            )
             check("non-LIFO refusal does not call bridge", bridge.calls == [])
 
             latest = safety.rollback_change(bridge, e2["change_id"])
-            check("rollback by id accepts latest entry",
-                  latest["ok"] is True and latest["change_id"] == e2["change_id"])
-            check("latest rollback replays restore",
-                  bridge.calls[-1] == ("restore_second", {"value": 2}))
+            check(
+                "rollback by id accepts latest entry",
+                latest["ok"] is True and latest["change_id"] == e2["change_id"],
+            )
+            check(
+                "latest rollback replays restore",
+                bridge.calls[-1] == ("restore_second", {"value": 2}),
+            )
 
             last = safety.rollback_last_change(bridge)
-            check("rollback last handles remaining legacy path",
-                  last["ok"] is True and last["change_id"] == e1["change_id"])
+            check(
+                "rollback last handles remaining legacy path",
+                last["ok"] is True and last["change_id"] == e1["change_id"],
+            )
 
-            group = log.append({
-                "tool": "group_write",
-                "scope": "mixer:bulk",
-                "group": True,
-                "restores": [
-                    {"command": "restore_first_in_group", "params": {"order": 1}},
-                    {"command": "restore_second_in_group", "params": {"order": 2}},
-                ],
-            })
+            group = log.append(
+                {
+                    "tool": "group_write",
+                    "scope": "mixer:bulk",
+                    "group": True,
+                    "restores": [
+                        {"command": "restore_first_in_group", "params": {"order": 1}},
+                        {"command": "restore_second_in_group", "params": {"order": 2}},
+                    ],
+                }
+            )
             group_result = safety.rollback_change(bridge, group["change_id"])
             check("group rollback succeeds", group_result["ok"] is True)
-            check("group rollback replays restores in reverse order",
-                  bridge.calls[-2:] == [
-                      ("restore_second_in_group", {"order": 2}),
-                      ("restore_first_in_group", {"order": 1}),
-                  ])
+            check(
+                "group rollback replays restores in reverse order",
+                bridge.calls[-2:]
+                == [
+                    ("restore_second_in_group", {"order": 2}),
+                    ("restore_first_in_group", {"order": 1}),
+                ],
+            )
     finally:
         safety._log = original_log
 

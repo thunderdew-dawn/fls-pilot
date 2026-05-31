@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """Offline test: analyze_bands on SYNTHETIC low/high sine WAVs (no FL).
 
-    python scripts/test_reference_match.py
+python scripts/test_reference_match.py
 """
+
 from __future__ import annotations
 
 import sys
@@ -11,10 +12,10 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-import numpy as np                                       # noqa: E402
-import soundfile as sf                                   # noqa: E402
+import numpy as np  # noqa: E402
+import soundfile as sf  # noqa: E402
 
-from fl_studio_mcp.tools.audio import analyze_bands      # noqa: E402
+from fl_studio_mcp.tools.audio import analyze_bands  # noqa: E402
 
 SR = 22050
 _P = _F = 0
@@ -24,7 +25,7 @@ def check(label, cond, detail=""):
     global _P, _F
     _P += 1 if cond else 0
     _F += 0 if cond else 1
-    print("  [%s] %s%s" % ("PASS" if cond else "FAIL", label, ("  -- " + detail) if detail else ""))
+    print(f"  [{'PASS' if cond else 'FAIL'}] {label}{'  -- ' + detail if detail else ''}")
 
 
 def sine(freq, secs=2.0):
@@ -35,8 +36,8 @@ def sine(freq, secs=2.0):
 def main() -> int:
     d = Path(tempfile.mkdtemp(prefix="flmcp_ref_"))
     low, high = d / "low.wav", d / "high.wav"
-    sf.write(str(low), sine(80), SR)        # 80 Hz -> low band (<250)
-    sf.write(str(high), sine(8000), SR)     # 8 kHz -> high band (>4000)
+    sf.write(str(low), sine(80), SR)  # 80 Hz -> low band (<250)
+    sf.write(str(high), sine(8000), SR)  # 8 kHz -> high band (>4000)
 
     rl, rh = analyze_bands(str(low)), analyze_bands(str(high))
     print("low.wav  bands:", rl["bands_pct"], " peak_db", rl["peak_db"])

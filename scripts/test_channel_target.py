@@ -12,6 +12,7 @@ Pick two MELODIC/synth channels (not audio-sample channels).
     set FLSTUDIO_MCP_TRANSPORT=tcp
     python scripts/test_channel_target.py [chA] [chB]    # default 10 4
 """
+
 from __future__ import annotations
 
 import sys
@@ -20,15 +21,17 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from fl_studio_mcp import protocol                       # noqa: E402
+from fl_studio_mcp import protocol  # noqa: E402
 from fl_studio_mcp.connection import fetch_all_pages, get_bridge  # noqa: E402
 
-CH_A = int(sys.argv[1]) if len(sys.argv) > 1 else 10     # e.g. Serum
-CH_B = int(sys.argv[2]) if len(sys.argv) > 2 else 4      # e.g. a FLEX
-CHORD = [{"pitch": p, "time_bars": 0.0, "length_bars": 1.0, "velocity": 0.787}
-         for p in (60, 64, 67)]            # C-E-G (mid)
-BASS = [{"pitch": p, "time_bars": 0.0, "length_bars": 1.0, "velocity": 0.787}
-        for p in (36, 43)]                 # C2-G2 (low)
+CH_A = int(sys.argv[1]) if len(sys.argv) > 1 else 10  # e.g. Serum
+CH_B = int(sys.argv[2]) if len(sys.argv) > 2 else 4  # e.g. a FLEX
+CHORD = [
+    {"pitch": p, "time_bars": 0.0, "length_bars": 1.0, "velocity": 0.787} for p in (60, 64, 67)
+]  # C-E-G (mid)
+BASS = [
+    {"pitch": p, "time_bars": 0.0, "length_bars": 1.0, "velocity": 0.787} for p in (36, 43)
+]  # C2-G2 (low)
 SETTLE = 1.5
 
 

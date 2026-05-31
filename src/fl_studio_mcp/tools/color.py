@@ -7,9 +7,10 @@ bulk tools) so "color my drums red" / "bass blue" hit families or name
 substrings. Every write goes through safe_write_group as ONE rollback unit, so
 fl_rollback_last_change restores the previous colors in a single step.
 """
+
 from __future__ import annotations
 
-from typing import Annotated, List, Optional, Union
+from typing import Annotated
 
 from fastmcp import FastMCP
 from pydantic import Field
@@ -17,7 +18,6 @@ from pydantic import Field
 from .. import protocol, safety
 from ..connection import fetch_all_pages, get_bridge
 from .bulk import resolve_targets
-
 
 # A small, clear palette -- (R, G, B), 0-255. Lowercased name -> rgb. Anything
 # not here can still be given as a hex string.
@@ -62,7 +62,9 @@ def parse_color(spec):
 
 
 def _mixer_tracks(bridge):
-    raw = (fetch_all_pages(bridge, protocol.CMD_MIXER_LIST_TRACKS, "tracks") or {}).get("tracks", [])
+    raw = (fetch_all_pages(bridge, protocol.CMD_MIXER_LIST_TRACKS, "tracks") or {}).get(
+        "tracks", []
+    )
     return [{"index": t.get("i", t.get("index")), "name": t.get("name") or ""} for t in raw]
 
 
@@ -76,7 +78,7 @@ def _resolve_channels(chans, specs):
     (Channel 0 is a real channel -- unlike Master on the mixer -- so nothing is
     excluded.)"""
     out = set()
-    for spec in (specs or []):
+    for spec in specs or []:
         if isinstance(spec, int):
             out.add(spec)
         else:
@@ -92,14 +94,38 @@ def _before_int(before):
 
 
 def register(mcp: FastMCP) -> None:
-    _WR = {"readOnlyHint": False, "destructiveHint": False,
-           "idempotentHint": False, "openWorldHint": True}
+    _WR = {
+        "readOnlyHint": False,
+        "destructiveHint": False,
+        "idempotentHint": False,
+        "openWorldHint": True,
+    }
 
     @mcp.tool(annotations={"title": "Color mixer tracks", **_WR})
     def fl_set_track_color(
-        color: Annotated[str, Field(description="Color name (red, orange, amber, yellow, lime, green, teal, cyan, blue, indigo, purple, violet, magenta, pink, brown, gray, white, black) or a hex like '#33A1FF'.")],
-        category: Annotated[Optional[str], Field(description="Group to color: 'drums', 'vocals', 'bass', 'synth', 'guitar' (or any mixer-track name substring).")] = None,
-        tracks: Annotated[Optional[List[Union[int, str]]], Field(description="Explicit mixer-track indices or name substrings.")] = None,
+        color: Annotated[
+            str,
+            Field(
+                description=(
+                    "Color name (red, orange, amber, yellow, lime, green, teal, cyan, "
+                    "blue, indigo, purple, violet, magenta, pink, brown, gray, white, "
+                    "black) or a hex like '#33A1FF'."
+                )
+            ),
+        ],
+        category: Annotated[
+            str | None,
+            Field(
+                description=(
+                    "Group to color: 'drums', 'vocals', 'bass', 'synth', 'guitar' "
+                    "(or any mixer-track name substring)."
+                )
+            ),
+        ] = None,
+        tracks: Annotated[
+            list[int | str] | None,
+            Field(description="Explicit mixer-track indices or name substrings."),
+        ] = None,
     ) -> dict:
         """Set the color of mixer tracks. Pick targets by category ('drums',
         'bass', ...) or an explicit tracks list; choose a color by name or hex.
@@ -107,43 +133,74 @@ def register(mcp: FastMCP) -> None:
         (Master is never colored.)"""
         rgb = parse_color(color)
         if rgb is None:
-            return {"ok": False, "error": "unknown color %r" % color,
-                    "valid_names": sorted(COLOR_NAMES), "hint": "or pass a hex like '#33A1FF'"}
+            return {
+                "ok": False,
+                "error": f"unknown color {color!r}",
+                "valid_names": sorted(COLOR_NAMES),
+                "hint": "or pass a hex like '#33A1FF'",
+            }
         if not category and not tracks:
             return {"ok": False, "error": "give a category (e.g. 'drums') or a tracks list"}
         b = get_bridge()
         targets = sorted(resolve_targets(_mixer_tracks(b), category, tracks))
         if not targets:
-            return {"ok": False, "error": "no tracks matched", "category": category, "tracks": tracks}
+            return {
+                "ok": False,
+                "error": "no tracks matched",
+                "category": category,
+                "tracks": tracks,
+            }
         r, g, bl = rgb
-        writes = [{
-            "snap_scope": "mixer_track:%d" % i,
-            "command": protocol.CMD_MIXER_SET_COLOR,
-            "params": {"track": i, "r": r, "g": g, "b": bl},
-            "restore": (lambda before, i=i: {
+        writes = [
+            {
+                "snap_scope": f"mixer_track:{i}",
                 "command": protocol.CMD_MIXER_SET_COLOR,
-                "params": {"track": i, "color": _before_int(before)},
-            }),
-        } for i in targets]
+                "params": {"track": i, "r": r, "g": g, "b": bl},
+                "restore": (
+                    lambda before, i=i: {
+                        "command": protocol.CMD_MIXER_SET_COLOR,
+                        "params": {"track": i, "color": _before_int(before)},
+                    }
+                ),
+            }
+            for i in targets
+        ]
         try:
-            res = safety.safe_write_group(b, tool="set_track_color", scope="mixer:color", writes=writes)
+            res = safety.safe_write_group(
+                b, tool="set_track_color", scope="mixer:color", writes=writes
+            )
         except Exception as e:
-            return {"ok": False, "error": "%s: %s" % (type(e).__name__, e)}
-        return {"ok": True, "color": color, "rgb": list(rgb), "tracks": targets,
-                "result": res, "undo": "fl_rollback_last_change"}
+            return {"ok": False, "error": f"{type(e).__name__}: {e}"}
+        return {
+            "ok": True,
+            "color": color,
+            "rgb": list(rgb),
+            "tracks": targets,
+            "result": res,
+            "undo": "fl_rollback_last_change",
+        }
 
     @mcp.tool(annotations={"title": "Color channels", **_WR})
     def fl_set_channel_color(
-        color: Annotated[str, Field(description="Color name or hex (same set as fl_set_track_color).")],
-        channels: Annotated[Optional[List[Union[int, str]]], Field(description="Channel-rack indices or name substrings to color.")] = None,
+        color: Annotated[
+            str, Field(description="Color name or hex (same set as fl_set_track_color).")
+        ],
+        channels: Annotated[
+            list[int | str] | None,
+            Field(description="Channel-rack indices or name substrings to color."),
+        ] = None,
     ) -> dict:
         """Set the color of channel-rack channels (separate from mixer-track
         color). Target by index or name substring. ONE rollback unit --
         fl_rollback_last_change reverts it."""
         rgb = parse_color(color)
         if rgb is None:
-            return {"ok": False, "error": "unknown color %r" % color,
-                    "valid_names": sorted(COLOR_NAMES), "hint": "or pass a hex like '#33A1FF'"}
+            return {
+                "ok": False,
+                "error": f"unknown color {color!r}",
+                "valid_names": sorted(COLOR_NAMES),
+                "hint": "or pass a hex like '#33A1FF'",
+            }
         if not channels:
             return {"ok": False, "error": "give a channels list (indices or name substrings)"}
         b = get_bridge()
@@ -151,18 +208,31 @@ def register(mcp: FastMCP) -> None:
         if not targets:
             return {"ok": False, "error": "no channels matched", "channels": channels}
         r, g, bl = rgb
-        writes = [{
-            "snap_scope": "channel:%d" % i,
-            "command": protocol.CMD_CHANNEL_SET_COLOR,
-            "params": {"channel": i, "r": r, "g": g, "b": bl},
-            "restore": (lambda before, i=i: {
+        writes = [
+            {
+                "snap_scope": f"channel:{i}",
                 "command": protocol.CMD_CHANNEL_SET_COLOR,
-                "params": {"channel": i, "color": _before_int(before)},
-            }),
-        } for i in targets]
+                "params": {"channel": i, "r": r, "g": g, "b": bl},
+                "restore": (
+                    lambda before, i=i: {
+                        "command": protocol.CMD_CHANNEL_SET_COLOR,
+                        "params": {"channel": i, "color": _before_int(before)},
+                    }
+                ),
+            }
+            for i in targets
+        ]
         try:
-            res = safety.safe_write_group(b, tool="set_channel_color", scope="channels:color", writes=writes)
+            res = safety.safe_write_group(
+                b, tool="set_channel_color", scope="channels:color", writes=writes
+            )
         except Exception as e:
-            return {"ok": False, "error": "%s: %s" % (type(e).__name__, e)}
-        return {"ok": True, "color": color, "rgb": list(rgb), "channels": targets,
-                "result": res, "undo": "fl_rollback_last_change"}
+            return {"ok": False, "error": f"{type(e).__name__}: {e}"}
+        return {
+            "ok": True,
+            "color": color,
+            "rgb": list(rgb),
+            "channels": targets,
+            "result": res,
+            "undo": "fl_rollback_last_change",
+        }

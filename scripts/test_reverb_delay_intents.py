@@ -10,6 +10,7 @@ everything back and assert both plugins' full param dumps match pre-state.
 
 Auto-detects the reverb + delay slots by name on the target track.
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -19,10 +20,10 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from fl_studio_mcp import protocol                       # noqa: E402
-from fl_studio_mcp.connection import get_bridge           # noqa: E402
+from fl_studio_mcp import protocol  # noqa: E402
+from fl_studio_mcp.connection import get_bridge  # noqa: E402
 from fl_studio_mcp.music import reverb_delay_curves as rd  # noqa: E402
-from fl_studio_mcp.server import build_server             # noqa: E402
+from fl_studio_mcp.server import build_server  # noqa: E402
 
 TRACK = int(sys.argv[1]) if len(sys.argv) > 1 else 2
 _P = _F = 0
@@ -34,7 +35,7 @@ def check(label, cond, detail=""):
         _P += 1
     else:
         _F += 1
-    print("  [%s] %s%s" % ("PASS" if cond else "FAIL", label, ("  -- " + detail) if detail else ""))
+    print(f"  [{'PASS' if cond else 'FAIL'}] {label}{'  -- ' + detail if detail else ''}")
 
 
 def approx(a, b, tol):
@@ -78,9 +79,14 @@ def unit_tests():
     check("cutoff norm 0.0 = 270 Hz", approx(rd.norm_to_cutoff_hz(0.0), 270, 1))
     check("cutoff norm 1.0 = 21985 Hz", approx(rd.norm_to_cutoff_hz(1.0), 21985, 1))
     check("cutoff norm 0.5 ~ 1299.6", approx(rd.norm_to_cutoff_hz(0.5), 1299.6, 1))
-    check("cutoff_hz_to_norm(1299.6) ~ 0.5 (round-trip)", approx(rd.cutoff_hz_to_norm(1299.6), 0.5, 0.002))
+    check(
+        "cutoff_hz_to_norm(1299.6) ~ 0.5 (round-trip)",
+        approx(rd.cutoff_hz_to_norm(1299.6), 0.5, 0.002),
+    )
     check("division_norm('1/4') = 0.25", approx(rd.division_norm("1/4"), 0.25, 1e-9))
-    check("nearest_division(0.249) = 1/4", rd.DIVISIONS[rd.nearest_division_index(0.249)][0] == "1/4")
+    check(
+        "nearest_division(0.249) = 1/4", rd.DIVISIONS[rd.nearest_division_index(0.249)][0] == "1/4"
+    )
     check("step_division(0.25,+1) = 1/2", rd.step_division(0.25, 1) == ("1/2", 0.5))
     check("step_division(1.0,+1) clamps to 1/1", rd.step_division(1.0, 1)[0] == "1/1")
 
@@ -96,10 +102,14 @@ def main() -> int:
 
     listing = bridge.call(protocol.CMD_PLUGIN_LIST, {"track": TRACK})
     slots = {s["slot"]: s["name"] for s in listing.get("slots", [])}
-    rev_slot = next((sl for sl, nm in slots.items() if "reeverb" in nm.lower() or "reverb" in nm.lower()), None)
+    rev_slot = next(
+        (sl for sl, nm in slots.items() if "reeverb" in nm.lower() or "reverb" in nm.lower()), None
+    )
     dly_slot = next((sl for sl, nm in slots.items() if "delay" in nm.lower()), None)
-    print("\n[2] intents end-to-end -- track %d: reverb slot=%s, delay slot=%s"
-          % (TRACK, rev_slot, dly_slot))
+    print(
+        "\n[2] intents end-to-end -- track %d: reverb slot=%s, delay slot=%s"
+        % (TRACK, rev_slot, dly_slot)
+    )
     if rev_slot is None or dly_slot is None:
         print("  Need both a reverb and a delay on track %d." % TRACK)
         return 1
@@ -115,44 +125,71 @@ def main() -> int:
     pre_rev, pre_dly = dump(rev_slot), dump(dly_slot)
 
     # --- reverb ---
-    r = call("fl_apply_reverb_intent", {"track": TRACK, "slot": rev_slot, "intent": "more_space", "intensity": 0.6})
+    r = call(
+        "fl_apply_reverb_intent",
+        {"track": TRACK, "slot": rev_slot, "intent": "more_space", "intensity": 0.6},
+    )
     print("  more_space(0.6):", r.get("set"), r.get("readback"))
     dsec = _num(r.get("readback", {}).get("Decay time"))
     wet = _num(r.get("readback", {}).get("Wet level"))
-    check("more_space decay longer (3-5s)", approx(dsec, 4.0, 1.0), "decay=%s" % dsec)
-    check("more_space wet up (>50%)", wet is not None and wet > 50, "wet=%s" % wet)
+    check("more_space decay longer (3-5s)", approx(dsec, 4.0, 1.0), f"decay={dsec}")
+    check("more_space wet up (>50%)", wet is not None and wet > 50, f"wet={wet}")
 
-    r = call("fl_apply_reverb_intent", {"track": TRACK, "slot": rev_slot, "intent": "tighten_reverb", "intensity": 0.5})
+    r = call(
+        "fl_apply_reverb_intent",
+        {"track": TRACK, "slot": rev_slot, "intent": "tighten_reverb", "intensity": 0.5},
+    )
     print("  tighten_reverb(0.5):", r.get("set"), r.get("readback"))
     dsec = _num(r.get("readback", {}).get("Decay time"))
-    check("tighten decay shorter (<1.5s)", dsec is not None and dsec < 1.5, "decay=%s" % dsec)
+    check("tighten decay shorter (<1.5s)", dsec is not None and dsec < 1.5, f"decay={dsec}")
 
-    r = call("fl_apply_reverb_intent", {"track": TRACK, "slot": rev_slot, "intent": "darker_reverb", "intensity": 0.5})
+    r = call(
+        "fl_apply_reverb_intent",
+        {"track": TRACK, "slot": rev_slot, "intent": "darker_reverb", "intensity": 0.5},
+    )
     print("  darker_reverb(0.5):", r.get("set"), r.get("readback"))
     hc = r.get("readback", {}).get("High cut")
-    check("darker high-cut is a real Hz, not Off", "off" not in str(hc).lower() and p_hz(hc) is not None, "hc=%r" % hc)
-    check("darker high-cut moved DOWN (<4000 Hz)", approx(p_hz(hc), 3000, 1200), "hc=%r" % hc)
+    check(
+        "darker high-cut is a real Hz, not Off",
+        "off" not in str(hc).lower() and p_hz(hc) is not None,
+        f"hc={hc!r}",
+    )
+    check("darker high-cut moved DOWN (<4000 Hz)", approx(p_hz(hc), 3000, 1200), f"hc={hc!r}")
 
     # --- delay ---
     r = call("fl_apply_delay_intent", {"track": TRACK, "slot": dly_slot, "intent": "longer_delay"})
     print("  longer_delay:", r.get("set"), r.get("readback"))
-    check("longer_delay stepped 1/4 -> 1/2",
-          r.get("set", {}).get("division_before") == "1/4" and r.get("set", {}).get("division_after") == "1/2",
-          str(r.get("set")))
+    check(
+        "longer_delay stepped 1/4 -> 1/2",
+        r.get("set", {}).get("division_before") == "1/4"
+        and r.get("set", {}).get("division_after") == "1/2",
+        str(r.get("set")),
+    )
 
-    r = call("fl_apply_delay_intent", {"track": TRACK, "slot": dly_slot, "intent": "more_feedback", "intensity": 0.5})
+    r = call(
+        "fl_apply_delay_intent",
+        {"track": TRACK, "slot": dly_slot, "intent": "more_feedback", "intensity": 0.5},
+    )
     print("  more_feedback(0.5):", r.get("set"), r.get("readback"), "warn=", r.get("warning"))
     fb = _num(r.get("readback", {}).get("Feedback level"))
-    check("more_feedback up (>62.5%) and <=100%", fb is not None and 62.5 < fb <= 100.0, "fb=%s" % fb)
+    check("more_feedback up (>62.5%) and <=100%", fb is not None and 62.5 < fb <= 100.0, f"fb={fb}")
     check("no self-oscillation warning at intensity 0.5", r.get("warning") is None)
 
     # --- rollback all 5, verify both plugins restored ---
     rolled = [call("fl_rollback_last_change", {}).get("rolled_back") for _ in range(5)]
     print("  rollbacks (LIFO):", rolled)
-    check("5 rollbacks all reverted intents",
-          rolled == ["apply_delay_intent", "apply_delay_intent",
-                     "apply_reverb_intent", "apply_reverb_intent", "apply_reverb_intent"],
-          str(rolled))
+    check(
+        "5 rollbacks all reverted intents",
+        rolled
+        == [
+            "apply_delay_intent",
+            "apply_delay_intent",
+            "apply_reverb_intent",
+            "apply_reverb_intent",
+            "apply_reverb_intent",
+        ],
+        str(rolled),
+    )
 
     post_rev, post_dly = dump(rev_slot), dump(dly_slot)
     check("reverb full dump restored to pre-state", post_rev.get("params") == pre_rev.get("params"))

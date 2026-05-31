@@ -13,6 +13,7 @@ in a finally block, so Pro-C is left exactly as set.
     set FLSTUDIO_MCP_TRANSPORT=tcp
     python scripts/calibrate_proc3.py [track] [slot]   # default auto-detect / 8,4
 """
+
 from __future__ import annotations
 
 import re
@@ -21,8 +22,8 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
-from fl_studio_mcp import protocol, safety              # noqa: E402
-from fl_studio_mcp.connection import get_bridge           # noqa: E402
+from fl_studio_mcp import protocol, safety  # noqa: E402
+from fl_studio_mcp.connection import get_bridge  # noqa: E402
 
 STEPS = [round(i * 0.05, 4) for i in range(21)]
 MATCH = ("pro-c", "pro c", "fabfilter")
@@ -35,7 +36,7 @@ def _num(s):
 
 
 def p_db(s):
-    return _num(s) if "db" in str(s).lower() else None     # "-INF dB" -> None (raw shown)
+    return _num(s) if "db" in str(s).lower() else None  # "-INF dB" -> None (raw shown)
 
 
 def p_ms(s):
@@ -48,7 +49,7 @@ def p_pct(s):
 
 def p_ratio(s):
     t = str(s)
-    return _num(t.partition(":")[0]) if ":" in t else _num(s)   # X in "X:1"
+    return _num(t.partition(":")[0]) if ":" in t else _num(s)  # X in "X:1"
 
 
 def p_raw(_s):
@@ -70,8 +71,11 @@ CORE = [
 def build_name_map(bridge, track, slot, cap=256):
     m, start = {}, 0
     while start < cap:
-        page = bridge.call(protocol.CMD_PLUGIN_GET_PARAMS,
-                           {"track": track, "slot": slot, "start": start}, timeout=15.0)
+        page = bridge.call(
+            protocol.CMD_PLUGIN_GET_PARAMS,
+            {"track": track, "slot": slot, "start": start},
+            timeout=15.0,
+        )
         for p in page.get("params", []):
             m.setdefault(p["name"], p["i"])
         nxt = page.get("next_start")
@@ -84,18 +88,22 @@ def build_name_map(bridge, track, slot, cap=256):
 def sweep_and_print(bridge, track, slot, idx, name, parser, unit, restores):
     snap = safety.take_snapshot(bridge, "plugin_param:%d:%d:%d" % (track, slot, idx))
     restores.append((idx, snap["v"]))
-    print("\n=== %s  (idx %d)   orig=%s [%s] ==="
-          % (name, idx, snap["v"], (snap.get("s") or "").strip()))
-    print("  set_norm  raw_string            parsed (%s)" % unit)
+    print(
+        "\n=== %s  (idx %d)   orig=%s [%s] ==="
+        % (name, idx, snap["v"], (snap.get("s") or "").strip())
+    )
+    print(f"  set_norm  raw_string            parsed ({unit})")
     print("  --------  -------------------  ----------------")
     rows = []
     for norm in STEPS:
-        res = bridge.call(protocol.CMD_PLUGIN_SET_PARAM,
-                          {"track": track, "slot": slot, "param": idx, "value": norm})
+        res = bridge.call(
+            protocol.CMD_PLUGIN_SET_PARAM,
+            {"track": track, "slot": slot, "param": idx, "value": norm},
+        )
         s = (res.get("s") or "").strip()
         parsed = parser(s)
         rows.append((norm, s, parsed))
-        print("  %8.2f  %-19s  %s" % (norm, repr(s), "" if parsed is None else "%g" % parsed))
+        print(f"  {norm:8.2f}  {repr(s):19}  {('' if parsed is None else f'{parsed:g}')}")
     return rows
 
 
@@ -105,11 +113,11 @@ def print_style_groups(rows):
     for norm, s, _ in rows:
         if s != cur:
             if cur is not None:
-                print("    %.2f .. %.2f  ->  %r" % (lo, hi, cur))
+                print(f"    {lo:.2f} .. {hi:.2f}  ->  {cur!r}")
             cur, lo = s, norm
         hi = norm
     if cur is not None:
-        print("    %.2f .. %.2f  ->  %r" % (lo, hi, cur))
+        print(f"    {lo:.2f} .. {hi:.2f}  ->  {cur!r}")
 
 
 def main(argv) -> int:
@@ -126,8 +134,14 @@ def main(argv) -> int:
         st = bridge.call(protocol.CMD_GET_PROJECT_STATE)
         for t in range(int(st.get("mixer_track_count", 30)) + 1):
             sl = bridge.call(protocol.CMD_PLUGIN_LIST, {"track": t})
-            hit = next((s for s in sl.get("slots", [])
-                        if any(m in (s["name"] or "").lower() for m in MATCH)), None)
+            hit = next(
+                (
+                    s
+                    for s in sl.get("slots", [])
+                    if any(m in (s["name"] or "").lower() for m in MATCH)
+                ),
+                None,
+            )
             if hit:
                 track, slot = t, hit["slot"]
                 break
@@ -142,7 +156,9 @@ def main(argv) -> int:
     for nm in ("Auto Gain", "Auto Release", "Auto Threshold"):
         i = nmap.get(nm)
         if i is not None:
-            g = bridge.call(protocol.CMD_PLUGIN_GET_PARAM, {"track": track, "slot": slot, "param": i})
+            g = bridge.call(
+                protocol.CMD_PLUGIN_GET_PARAM, {"track": track, "slot": slot, "param": i}
+            )
             print("  %-16s (idx %d) = %r" % (nm, i, (g.get("s") or "").strip()))
 
     restores = []
@@ -150,22 +166,27 @@ def main(argv) -> int:
         for name, parser, unit in CORE:
             idx = nmap.get(name)
             if idx is None:
-                print("\n  -- %r not found, skipping --" % name)
+                print(f"\n  -- {name!r} not found, skipping --")
                 continue
             sweep_and_print(bridge, track, slot, idx, name, parser, unit, restores)
 
         if "Style" in nmap:
-            rows = sweep_and_print(bridge, track, slot, nmap["Style"], "Style", p_raw, "raw", restores)
+            rows = sweep_and_print(
+                bridge, track, slot, nmap["Style"], "Style", p_raw, "raw", restores
+            )
             print_style_groups(rows)
     finally:
-        print("\n--- restoring %d params to originals ---" % len(restores))
+        print(f"\n--- restoring {len(restores)} params to originals ---")
         for idx, orig in restores:
-            bridge.call(protocol.CMD_PLUGIN_SET_PARAM,
-                        {"track": track, "slot": slot, "param": idx, "value": orig})
+            bridge.call(
+                protocol.CMD_PLUGIN_SET_PARAM,
+                {"track": track, "slot": slot, "param": idx, "value": orig},
+            )
         bad = 0
         for idx, orig in restores:
-            gv = bridge.call(protocol.CMD_PLUGIN_GET_PARAM,
-                             {"track": track, "slot": slot, "param": idx}).get("v")
+            gv = bridge.call(
+                protocol.CMD_PLUGIN_GET_PARAM, {"track": track, "slot": slot, "param": idx}
+            ).get("v")
             if not (gv is not None and abs(gv - orig) < 0.005):
                 bad += 1
                 print("  !! idx %d not restored (v=%s orig=%s)" % (idx, gv, orig))

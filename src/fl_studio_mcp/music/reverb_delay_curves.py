@@ -19,6 +19,7 @@ Fruity Delay 3:
 
 These are SPECIFIC to these two plugins. Pure functions -- no I/O.
 """
+
 from __future__ import annotations
 
 
@@ -35,8 +36,8 @@ def _lerp(a: float, b: float, t: float) -> float:
 # ===========================================================================
 DECAY_MIN_S, DECAY_MAX_S = 0.1, 20.0
 WET_MAX_PCT = 125.0
-HIGHCUT_HZ_AT_0, HIGHCUT_SPAN_HZ = 500.0, 21580.0   # norm 1.0 == OFF
-LOWCUT_HZ_AT_MIN, LOWCUT_SPAN_HZ = 168.0, 2981.0    # at norm 0.05; norm 0.0 == OFF
+HIGHCUT_HZ_AT_0, HIGHCUT_SPAN_HZ = 500.0, 21580.0  # norm 1.0 == OFF
+LOWCUT_HZ_AT_MIN, LOWCUT_SPAN_HZ = 168.0, 2981.0  # at norm 0.05; norm 0.0 == OFF
 LOWCUT_MIN_NORM = 0.05
 
 
@@ -125,11 +126,27 @@ def norm_to_feedback(n: float) -> float:
 
 # Feedback cutoff: measured (norm, Hz) points -> piecewise-linear interpolation.
 _CUTOFF_PTS = [
-    (0.00, 270.0), (0.05, 312.0), (0.10, 354.0), (0.15, 396.0), (0.20, 438.0),
-    (0.25, 479.9), (0.30, 643.8), (0.35, 807.7), (0.40, 971.7), (0.45, 1135.6),
-    (0.50, 1299.6), (0.55, 2436.9), (0.60, 3576.6), (0.65, 4716.3), (0.70, 5856.0),
-    (0.75, 6995.7), (0.80, 9988.0), (0.85, 12987.3), (0.90, 15986.5),
-    (0.95, 18985.8), (1.00, 21985.0),
+    (0.00, 270.0),
+    (0.05, 312.0),
+    (0.10, 354.0),
+    (0.15, 396.0),
+    (0.20, 438.0),
+    (0.25, 479.9),
+    (0.30, 643.8),
+    (0.35, 807.7),
+    (0.40, 971.7),
+    (0.45, 1135.6),
+    (0.50, 1299.6),
+    (0.55, 2436.9),
+    (0.60, 3576.6),
+    (0.65, 4716.3),
+    (0.70, 5856.0),
+    (0.75, 6995.7),
+    (0.80, 9988.0),
+    (0.85, 12987.3),
+    (0.90, 15986.5),
+    (0.95, 18985.8),
+    (1.00, 21985.0),
 ]
 
 
@@ -159,7 +176,7 @@ def cutoff_hz_to_norm(hz: float) -> float:
 
 
 # Time: tempo-synced musical divisions. steps = 16*norm, 1 step = 1/16 note.
-DIVISIONS = [           # ascending; (label, norm)
+DIVISIONS = [  # ascending; (label, norm)
     ("1/16", 1 / 16),
     ("1/8", 2 / 16),
     ("1/4", 4 / 16),
@@ -172,8 +189,7 @@ def division_norm(label: str) -> float:
     for nm, n in DIVISIONS:
         if nm == label:
             return n
-    raise ValueError("unknown division %r; known: %s"
-                     % (label, [d[0] for d in DIVISIONS]))
+    raise ValueError(f"unknown division {label!r}; known: {[d[0] for d in DIVISIONS]}")
 
 
 # Spec alias.

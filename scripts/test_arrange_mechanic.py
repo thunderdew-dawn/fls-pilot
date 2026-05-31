@@ -17,6 +17,7 @@ Ctrl+Alt+Y targets the note bridge.
     set FLSTUDIO_MCP_TRANSPORT=tcp
     python scripts/test_arrange_mechanic.py
 """
+
 from __future__ import annotations
 
 import sys
@@ -25,14 +26,16 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from fl_studio_mcp import protocol                       # noqa: E402
-from fl_studio_mcp.connection import get_bridge           # noqa: E402
+from fl_studio_mcp import protocol  # noqa: E402
+from fl_studio_mcp.connection import get_bridge  # noqa: E402
 
-C_MAJOR = [{"pitch": p, "time_bars": 0.0, "length_bars": 1.0, "velocity": 0.787}
-           for p in (60, 64, 67)]            # C E G
-A_MINOR = [{"pitch": p, "time_bars": 0.0, "length_bars": 1.0, "velocity": 0.787}
-           for p in (57, 60, 64)]            # A C E
-SETTLE = 1.5                                 # let the note bridge finish before next jump
+C_MAJOR = [
+    {"pitch": p, "time_bars": 0.0, "length_bars": 1.0, "velocity": 0.787} for p in (60, 64, 67)
+]  # C E G
+A_MINOR = [
+    {"pitch": p, "time_bars": 0.0, "length_bars": 1.0, "velocity": 0.787} for p in (57, 60, 64)
+]  # A C E
+SETTLE = 1.5  # let the note bridge finish before next jump
 
 
 def main() -> int:
@@ -57,8 +60,9 @@ def main() -> int:
     time.sleep(SETTLE)
 
     print("\n[3] clone VERSE -> VERSE2 (should copy A minor)")
-    p3 = b.call(protocol.CMD_ARRANGE_CLONE_PATTERN,
-                {"src": p2.get("index"), "new_name": "ARRTEST_VERSE2"})
+    p3 = b.call(
+        protocol.CMD_ARRANGE_CLONE_PATTERN, {"src": p2.get("index"), "new_name": "ARRTEST_VERSE2"}
+    )
     print("   ", p3)
 
     print("\n[4] markers")
@@ -68,10 +72,12 @@ def main() -> int:
     print("   ", m2)
 
     print("\n--- result ---")
-    print("patterns created: INTRO=%s VERSE=%s VERSE2=%s"
-          % (p1.get("index"), p2.get("index"), p3.get("new_index")))
-    print("markers: %s @bar1, %s @bar5"
-          % (m1.get("ok") and "INTRO", m2.get("ok") and "VERSE"))
+    print(
+        "patterns created: INTRO={} VERSE={} VERSE2={}".format(
+            p1.get("index"), p2.get("index"), p3.get("new_index")
+        )
+    )
+    print(f"markers: {m1.get('ok') and 'INTRO'} @bar1, {m2.get('ok') and 'VERSE'} @bar5")
     print("\nWATCH FL + report:")
     print("  - 3 distinct named patterns (ARRTEST_INTRO / VERSE / VERSE2)?")
     print("  - INTRO has C-E-G, VERSE has A-C-E (DIFFERENT notes per pattern)?")

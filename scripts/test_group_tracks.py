@@ -9,6 +9,7 @@ grouping back with a single fl_rollback_last_change and confirms pre == post.
     set FLSTUDIO_MCP_TRANSPORT=tcp
     python scripts/test_group_tracks.py
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -17,9 +18,9 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from fl_studio_mcp import protocol                       # noqa: E402
-from fl_studio_mcp.connection import get_bridge           # noqa: E402
-from fl_studio_mcp.server import build_server             # noqa: E402
+from fl_studio_mcp import protocol  # noqa: E402
+from fl_studio_mcp.connection import get_bridge  # noqa: E402
+from fl_studio_mcp.server import build_server  # noqa: E402
 
 SOURCES = [9, 10]
 BUS = 11
@@ -33,7 +34,7 @@ def check(label, cond, detail=""):
         _P += 1
     else:
         _F += 1
-    print("  [%s] %s%s" % ("PASS" if cond else "FAIL", label, ("  -- " + detail) if detail else ""))
+    print(f"  [{'PASS' if cond else 'FAIL'}] {label}{'  -- ' + detail if detail else ''}")
 
 
 def unwrap(result):
@@ -74,9 +75,17 @@ def main() -> int:
 
     for s in SOURCES:
         rt = routes_of(bridge, s)
-        check("source %d -> bus %d ONLY (exclusive)" % (s, BUS), rt == [BUS], "routes=%s" % rt)
-    check("bus %d -> Master(0) ON" % BUS, 0 in routes_of(bridge, BUS), "routes=%s" % routes_of(bridge, BUS))
-    check("bus %d renamed to %r" % (BUS, NEW_NAME), name_of(bridge, BUS) == NEW_NAME, "name=%r" % name_of(bridge, BUS))
+        check("source %d -> bus %d ONLY (exclusive)" % (s, BUS), rt == [BUS], f"routes={rt}")
+    check(
+        "bus %d -> Master(0) ON" % BUS,
+        0 in routes_of(bridge, BUS),
+        f"routes={routes_of(bridge, BUS)}",
+    )
+    check(
+        "bus %d renamed to %r" % (BUS, NEW_NAME),
+        name_of(bridge, BUS) == NEW_NAME,
+        f"name={name_of(bridge, BUS)!r}",
+    )
 
     rb = call("fl_rollback_last_change", {})
     print("rollback ->", rb.get("rolled_back"))
@@ -85,8 +94,8 @@ def main() -> int:
     post = {t: routes_of(bridge, t) for t in SOURCES + [BUS]}
     post_busname = name_of(bridge, BUS)
     print("post routes:", post, "| bus name:", repr(post_busname))
-    check("routes restored (pre == post)", post == pre, "pre=%s post=%s" % (pre, post))
-    check("bus name restored", post_busname == pre_busname, "%r vs %r" % (post_busname, pre_busname))
+    check("routes restored (pre == post)", post == pre, f"pre={pre} post={post}")
+    check("bus name restored", post_busname == pre_busname, f"{post_busname!r} vs {pre_busname!r}")
 
     print("\n%d passed, %d failed" % (_P, _F))
     return 0 if _F == 0 else 1

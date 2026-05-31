@@ -15,6 +15,7 @@ them, even if the run errors.
     set FLSTUDIO_MCP_TRANSPORT=tcp
     python scripts/calibrate_reverb_delay.py [track]      # default track 2
 """
+
 from __future__ import annotations
 
 import re
@@ -23,7 +24,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
-from fl_studio_mcp import protocol, safety              # noqa: E402
+from fl_studio_mcp import protocol, safety  # noqa: E402
 from fl_studio_mcp.connection import fetch_all_pages, get_bridge  # noqa: E402
 
 STEPS = [round(i * 0.05, 4) for i in range(21)]
@@ -65,7 +66,7 @@ def p_num(s):
 
 
 def p_raw(_s):
-    return None                       # discrete / musical -> show raw only
+    return None  # discrete / musical -> show raw only
 
 
 # (param name, parser, unit label). Names resolved against the live dump.
@@ -98,32 +99,39 @@ def sweep_and_print(bridge, track, slot, idx, name, parser, unit, restores):
     snap = safety.take_snapshot(bridge, "plugin_param:%d:%d:%d" % (track, slot, idx))
     restores.append((slot, idx, snap["v"]))
 
-    print("\n=== %s  (slot %d, idx %d)   orig=%s [%s] ==="
-          % (name, slot, idx, snap["v"], snap.get("s")))
-    print("  set_norm  raw_string            parsed (%s)" % unit)
+    print(
+        "\n=== %s  (slot %d, idx %d)   orig=%s [%s] ==="
+        % (name, slot, idx, snap["v"], snap.get("s"))
+    )
+    print(f"  set_norm  raw_string            parsed ({unit})")
     print("  --------  -------------------  ----------------")
     rows = []
     for norm in STEPS:
-        res = bridge.call(protocol.CMD_PLUGIN_SET_PARAM,
-                          {"track": track, "slot": slot, "param": idx, "value": norm})
+        res = bridge.call(
+            protocol.CMD_PLUGIN_SET_PARAM,
+            {"track": track, "slot": slot, "param": idx, "value": norm},
+        )
         s = res.get("s", "")
         parsed = parser(s)
         rows.append((norm, s, parsed))
-        ps = "" if parsed is None else ("%g" % parsed)
-        print("  %8.2f  %-19s  %s" % (norm, repr(s), ps))
+        ps = "" if parsed is None else (f"{parsed:g}")
+        print(f"  {norm:8.2f}  {repr(s):19}  {ps}")
     return rows
 
 
 def calibrate_plugin(bridge, track, slot, label, targets, restores):
-    dump = fetch_all_pages(bridge, protocol.CMD_PLUGIN_GET_PARAMS, "params",
-                           {"track": track, "slot": slot})
+    dump = fetch_all_pages(
+        bridge, protocol.CMD_PLUGIN_GET_PARAMS, "params", {"track": track, "slot": slot}
+    )
     name_to_idx = {p["name"]: p["i"] for p in dump.get("params", [])}
-    print("\n##################  %s  (slot %d, %d params)  ##################"
-          % (label, slot, dump.get("total")))
+    print(
+        "\n##################  %s  (slot %d, %d params)  ##################"
+        % (label, slot, dump.get("total"))
+    )
     for name, parser, unit in targets:
         idx = name_to_idx.get(name)
         if idx is None:
-            print("\n  -- %r not found on this plugin, skipping --" % name)
+            print(f"\n  -- {name!r} not found on this plugin, skipping --")
             continue
         sweep_and_print(bridge, track, slot, idx, name, parser, unit, restores)
 
@@ -164,17 +172,22 @@ def main(argv) -> int:
         else:
             print("\nNo delay found on track %d." % track)
     finally:
-        print("\n--- restoring %d params to originals ---" % len(restores))
+        print(f"\n--- restoring {len(restores)} params to originals ---")
         for slot, idx, orig in restores:
-            bridge.call(protocol.CMD_PLUGIN_SET_PARAM,
-                        {"track": track, "slot": slot, "param": idx, "value": orig})
+            bridge.call(
+                protocol.CMD_PLUGIN_SET_PARAM,
+                {"track": track, "slot": slot, "param": idx, "value": orig},
+            )
         for slot, idx, orig in restores:
-            got = bridge.call(protocol.CMD_PLUGIN_GET_PARAM,
-                              {"track": track, "slot": slot, "param": idx})
+            got = bridge.call(
+                protocol.CMD_PLUGIN_GET_PARAM, {"track": track, "slot": slot, "param": idx}
+            )
             gv = got.get("v")
             ok = gv is not None and abs(gv - orig) < 0.005
-            print("  slot %d idx %2d -> v=%s s=%r (orig %s)  %s"
-                  % (slot, idx, got.get("v"), got.get("s"), orig, "OK" if ok else "!! MISMATCH"))
+            print(
+                "  slot %d idx %2d -> v=%s s=%r (orig %s)  %s"
+                % (slot, idx, got.get("v"), got.get("s"), orig, "OK" if ok else "!! MISMATCH")
+            )
 
     print("\nDone -- calibration data above, both plugins restored.")
     return 0

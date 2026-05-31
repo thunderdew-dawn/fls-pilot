@@ -18,6 +18,7 @@ The script will:
 
 Exits non-zero if any step fails.
 """
+
 from __future__ import annotations
 
 import sys
@@ -29,10 +30,10 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
 from fl_studio_mcp.connection import (  # noqa: E402
     FLBridge,
+    FLCommandFailed,
     FLNotRunning,
     FLPortMissing,
     FLTimeout,
-    FLCommandFailed,
 )
 from fl_studio_mcp.protocol import (  # noqa: E402
     CMD_GET_PLAY_STATE,
@@ -122,20 +123,23 @@ def main() -> int:
     all_ok &= ok
     if tg1 is not None and tg2 is not None:
         flipped = bool(tg1.get("playing")) != bool(tg2.get("playing"))
-        print("      play state %s -> %s (flipped=%s)"
-              % (tg1.get("playing"), tg2.get("playing"), flipped))
+        print(
+            "      play state {} -> {} (flipped={})".format(
+                tg1.get("playing"), tg2.get("playing"), flipped
+            )
+        )
 
     _, ok = step("get_song_position", lambda: bridge.call(CMD_GET_SONG_POS))
     all_ok &= ok
 
-    _, ok = step("set_song_position beats=4.0",
-                 lambda: bridge.call(CMD_SET_SONG_POS, {"beats": 4.0}))
+    _, ok = step(
+        "set_song_position beats=4.0", lambda: bridge.call(CMD_SET_SONG_POS, {"beats": 4.0})
+    )
     all_ok &= ok
-    pos, ok = step("get_song_position (after move)",
-                   lambda: bridge.call(CMD_GET_SONG_POS))
+    pos, ok = step("get_song_position (after move)", lambda: bridge.call(CMD_GET_SONG_POS))
     all_ok &= ok
     if pos is not None:
-        print("      position_beats now: %s" % pos.get("position_beats"))
+        print(f"      position_beats now: {pos.get('position_beats')}")
 
     # record LAST: transport.record() can pop FL's modal "What would you like
     # to record?" dialog, which blocks the script thread and freezes the
@@ -143,11 +147,11 @@ def main() -> int:
     rec1, ok = step("record (1st -> arm)", lambda: bridge.call(CMD_RECORD))
     all_ok &= ok
     if rec1 is not None:
-        print("      after 1st record: %s" % rec1)
+        print(f"      after 1st record: {rec1}")
     rec2, ok = step("record (2nd -> disarm)", lambda: bridge.call(CMD_RECORD))
     all_ok &= ok
     if rec2 is not None:
-        print("      after 2nd record: %s" % rec2)
+        print(f"      after 2nd record: {rec2}")
 
     # ----- cleanup: never leave playback running or record armed -----
     try:
@@ -157,9 +161,9 @@ def main() -> int:
             bridge.call(CMD_RECORD)
             state = bridge.call(CMD_GET_PLAY_STATE)
         bridge.call(CMD_SET_SONG_POS, {"beats": 0.0})
-        print("  cleanup (stopped / disarmed / pos reset): %s" % state)
+        print(f"  cleanup (stopped / disarmed / pos reset): {state}")
     except Exception as e:  # pragma: no cover
-        print("  cleanup warning: %s" % e)
+        print(f"  cleanup warning: {e}")
 
     print()
     print("All checks passed." if all_ok else "Some checks failed.")

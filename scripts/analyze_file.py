@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """CLI: analyze an audio file's tempo + key (offline, no FL).
 
-    python scripts/analyze_file.py <path-to-wav-or-mp3>
+python scripts/analyze_file.py <path-to-wav-or-mp3>
 """
+
 from __future__ import annotations
 
 import json

@@ -10,13 +10,14 @@ the request id. A background callback dispatches incoming SysEx messages.
 
 from __future__ import annotations
 
+import contextlib
 import json
 import logging
 import os
 import socket
 import threading
 import time
-from typing import Any, Dict, Optional
+from typing import Any
 
 try:
     import mido
@@ -34,7 +35,6 @@ from .protocol import (
     DIR_RESPONSE,
     HEARTBEAT_STALE_SECONDS,
 )
-
 
 logger = logging.getLogger(__name__)
 
@@ -67,27 +67,29 @@ class FLPortMissing(FLBridgeError):
 # Pending-request slot
 # ---------------------------------------------------------------------------
 
+
 class _Slot:
     __slots__ = ("event", "payload")
 
     def __init__(self) -> None:
         self.event = threading.Event()
-        self.payload: Optional[dict] = None
+        self.payload: dict | None = None
 
 
 # ---------------------------------------------------------------------------
 # Port discovery
 # ---------------------------------------------------------------------------
 
+
 def _ensure_mido() -> None:
     if mido is None:
         raise FLPortMissing(
             "mido is not installed. Run: pip install mido python-rtmidi  "
-            "(original error: %s)" % _mido_import_error
+            f"(original error: {_mido_import_error})"
         )
 
 
-def _find_port(pattern: str, names: list[str]) -> Optional[str]:
+def _find_port(pattern: str, names: list[str]) -> str | None:
     """Case-insensitive substring match. Returns the first match or None."""
     needle = pattern.lower()
     for name in names:
@@ -109,13 +111,14 @@ def list_ports() -> dict:
 # The bridge
 # ---------------------------------------------------------------------------
 
+
 class FLBridge:
     """Holds open MIDI ports for the lifetime of the MCP server process."""
 
     def __init__(
         self,
-        port_to_fl: Optional[str] = None,
-        port_from_fl: Optional[str] = None,
+        port_to_fl: str | None = None,
+        port_from_fl: str | None = None,
         *,
         default_timeout: float = DEFAULT_TIMEOUT_SECONDS,
     ):
@@ -125,9 +128,9 @@ class FLBridge:
         self.default_timeout = default_timeout
 
         self._lock = threading.Lock()
-        self._pending: Dict[str, _Slot] = {}
+        self._pending: dict[str, _Slot] = {}
         self._last_heartbeat: float = 0.0
-        self._heartbeat_payload: Optional[dict] = None
+        self._heartbeat_payload: dict | None = None
 
         self._out_port = None
         self._in_port = None
@@ -144,17 +147,17 @@ class FLBridge:
         in_match = _find_port(self._port_from_fl_pattern, in_names)
         if out_match is None:
             raise FLPortMissing(
-                "No OUTPUT MIDI port matching %r. Available: %s. "
+                f"No OUTPUT MIDI port matching {self._port_to_fl_pattern!r}. "
+                f"Available: {out_names}. "
                 "Create the port in loopMIDI (Windows) or IAC Driver (macOS), "
                 "or set FLSTUDIO_MCP_PORT_TO_FL to an existing port name."
-                % (self._port_to_fl_pattern, out_names)
             )
         if in_match is None:
             raise FLPortMissing(
-                "No INPUT MIDI port matching %r. Available: %s. "
+                f"No INPUT MIDI port matching {self._port_from_fl_pattern!r}. "
+                f"Available: {in_names}. "
                 "Create the port in loopMIDI (Windows) or IAC Driver (macOS), "
                 "or set FLSTUDIO_MCP_PORT_FROM_FL to an existing port name."
-                % (self._port_from_fl_pattern, in_names)
             )
         logger.info("Opening MIDI ports: out=%r, in=%r", out_match, in_match)
         self._out_port = mido.open_output(out_match)
@@ -163,22 +166,18 @@ class FLBridge:
 
     def close(self) -> None:
         if self._in_port is not None:
-            try:
+            with contextlib.suppress(Exception):
                 self._in_port.close()
-            except Exception:  # pragma: no cover
-                pass
         if self._out_port is not None:
-            try:
+            with contextlib.suppress(Exception):
                 self._out_port.close()
-            except Exception:  # pragma: no cover
-                pass
         self._in_port = None
         self._out_port = None
         self._opened = False
 
     # -- health --------------------------------------------------------------
 
-    def heartbeat_age(self) -> Optional[float]:
+    def heartbeat_age(self) -> float | None:
         if self._last_heartbeat == 0.0:
             return None
         return max(0.0, time.monotonic() - self._last_heartbeat)
@@ -218,9 +217,9 @@ class FLBridge:
     def call(
         self,
         command: str,
-        params: Optional[dict] = None,
+        params: dict | None = None,
         *,
-        timeout: Optional[float] = None,
+        timeout: float | None = None,
     ) -> Any:
         self.check_alive()
 
@@ -237,8 +236,8 @@ class FLBridge:
             self._out_port.send(msg)
             if not slot.event.wait(timeout or self.default_timeout):
                 raise FLTimeout(
-                    "FL Studio did not respond to %r within %.1fs."
-                    % (command, timeout or self.default_timeout)
+                    f"FL Studio did not respond to {command!r} within "
+                    f"{timeout or self.default_timeout:.1f}s."
                 )
             resp = slot.payload or {}
             if resp.get("ok"):
@@ -257,12 +256,13 @@ class FLBridge:
         roll first so the trigger has a target. ``quantize`` (grid in bars)
         instead snaps existing notes to that grid."""
         from .pianoroll import apply_notes as _apply
+
         ensured = None
         if trigger:
             try:
                 ensured = self.call(protocol.CMD_ENSURE_PIANO_ROLL, {}, timeout=5.0)
             except Exception as e:
-                ensured = {"ok": False, "error": "%s: %s" % (type(e).__name__, e)}
+                ensured = {"ok": False, "error": f"{type(e).__name__}: {e}"}
         res = _apply(notes, mode, trigger=trigger, quantize=quantize, snap_ends=snap_ends)
         if isinstance(res, dict) and ensured is not None:
             res["piano_roll_ensured"] = ensured
@@ -320,8 +320,8 @@ class TCPBridge:
 
     def __init__(
         self,
-        host: Optional[str] = None,
-        port: Optional[int] = None,
+        host: str | None = None,
+        port: int | None = None,
         *,
         default_timeout: float = DEFAULT_TIMEOUT_SECONDS,
     ):
@@ -333,31 +333,29 @@ class TCPBridge:
     # -- transport -----------------------------------------------------------
 
     def _rpc(self, req: dict, timeout: float) -> dict:
-        with self._lock:
-            with socket.create_connection((self.host, self.port), timeout=timeout) as s:
-                s.settimeout(timeout)
-                s.sendall((json.dumps(req) + "\n").encode("utf-8"))
-                buf = b""
-                while b"\n" not in buf:
-                    chunk = s.recv(4096)
-                    if not chunk:
-                        break
-                    buf += chunk
+        with self._lock, socket.create_connection((self.host, self.port), timeout=timeout) as s:
+            s.settimeout(timeout)
+            s.sendall((json.dumps(req) + "\n").encode("utf-8"))
+            buf = b""
+            while b"\n" not in buf:
+                chunk = s.recv(4096)
+                if not chunk:
+                    break
+                buf += chunk
         if not buf:
             raise FLBridgeError("daemon closed the connection without replying")
         return json.loads(buf.split(b"\n", 1)[0].decode("utf-8"))
 
-    def _daemon_unreachable(self, exc: Exception) -> "FLPortMissing":
+    def _daemon_unreachable(self, exc: Exception) -> FLPortMissing:
         return FLPortMissing(
-            "Cannot reach the fl-studio-mcp daemon at %s:%d. Start it (run "
-            "`fl-studio-mcp-daemon` in a normal terminal / on login) so MIDI "
-            "works regardless of which app launched the MCP server. (%s)"
-            % (self.host, self.port, exc)
+            f"Cannot reach the fl-studio-mcp daemon at {self.host}:{self.port}. "
+            "Start it (run `fl-studio-mcp-daemon` in a normal terminal / on login) "
+            f"so MIDI works regardless of which app launched the MCP server. ({exc})"
         )
 
     # -- health --------------------------------------------------------------
 
-    def heartbeat_age(self) -> Optional[float]:
+    def heartbeat_age(self) -> float | None:
         try:
             resp = self._rpc({"op": "health"}, timeout=5.0)
         except OSError:
@@ -377,9 +375,9 @@ class TCPBridge:
     def call(
         self,
         command: str,
-        params: Optional[dict] = None,
+        params: dict | None = None,
         *,
-        timeout: Optional[float] = None,
+        timeout: float | None = None,
     ) -> Any:
         t = timeout or self.default_timeout
         try:
@@ -388,7 +386,7 @@ class TCPBridge:
                 timeout=t + 5.0,
             )
         except OSError as e:
-            raise self._daemon_unreachable(e)
+            raise self._daemon_unreachable(e) from e
         if resp.get("ok"):
             return resp.get("data")
         exc = resp.get("exc")
@@ -409,12 +407,18 @@ class TCPBridge:
         existing notes."""
         try:
             return self._rpc(
-                {"op": "apply_notes", "notes": notes, "mode": mode, "trigger": trigger,
-                 "quantize": quantize, "snap_ends": snap_ends},
+                {
+                    "op": "apply_notes",
+                    "notes": notes,
+                    "mode": mode,
+                    "trigger": trigger,
+                    "quantize": quantize,
+                    "snap_ends": snap_ends,
+                },
                 timeout=30.0,
             )
         except OSError as e:
-            raise self._daemon_unreachable(e)
+            raise self._daemon_unreachable(e) from e
 
     def open(self) -> None:  # pragma: no cover - parity with FLBridge
         return None
@@ -424,10 +428,10 @@ class TCPBridge:
 
 
 # Module-level singleton.
-_bridge: Optional["FLBridge | TCPBridge"] = None
+_bridge: FLBridge | TCPBridge | None = None
 
 
-def get_bridge() -> "FLBridge | TCPBridge":
+def get_bridge() -> FLBridge | TCPBridge:
     """Return the process-wide bridge.
 
     ``FLSTUDIO_MCP_TRANSPORT=tcp`` selects the daemon-backed :class:`TCPBridge`
@@ -458,6 +462,7 @@ def reset_bridge() -> None:
 # Budget-paginated list helper
 # ---------------------------------------------------------------------------
 
+
 def fetch_all_pages(bridge, command, list_key, params=None, *, max_pages=500):
     """Drive a payload-budget-paginated list command to completion.
 
@@ -482,7 +487,7 @@ def fetch_all_pages(bridge, command, list_key, params=None, *, max_pages=500):
         total = resp.get("total", total)
         items.extend(resp.get(list_key) or [])
         nxt = resp.get("next_start")
-        if nxt is None or int(nxt) <= start:   # done, or no forward progress
+        if nxt is None or int(nxt) <= start:  # done, or no forward progress
             break
         start = int(nxt)
     return {"total": total, list_key: items}

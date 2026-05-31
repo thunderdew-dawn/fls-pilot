@@ -11,6 +11,7 @@ fl_rollback_last_change) in-process -- the same path Claude Desktop uses.
 Target: mixer track 2, slot 0 (Fruity Parametric EQ 2 on VOX). Restores the
 EQ via rollback at the end; asserts the full param dump matches pre-state.
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -20,13 +21,14 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from fl_studio_mcp import protocol                       # noqa: E402
-from fl_studio_mcp.connection import get_bridge           # noqa: E402
-from fl_studio_mcp.music import eq_curves as eq           # noqa: E402
-from fl_studio_mcp.music.eq_curves import (               # noqa: E402
-    eq2_band_param_index, norm_to_db,
+from fl_studio_mcp import protocol  # noqa: E402
+from fl_studio_mcp.connection import get_bridge  # noqa: E402
+from fl_studio_mcp.music import eq_curves as eq  # noqa: E402
+from fl_studio_mcp.music.eq_curves import (  # noqa: E402
+    eq2_band_param_index,
+    norm_to_db,
 )
-from fl_studio_mcp.server import build_server             # noqa: E402
+from fl_studio_mcp.server import build_server  # noqa: E402
 
 # Target a track/slot holding a Fruity Parametric EQ 2. Override on the CLI:
 #   python scripts/test_mixing_intents.py <track> <slot>
@@ -41,8 +43,7 @@ def check(label, cond, detail=""):
         _P += 1
     else:
         _F += 1
-    print("  [%s] %s%s" % ("PASS" if cond else "FAIL", label,
-                           ("  -- " + detail) if detail else ""))
+    print(f"  [{'PASS' if cond else 'FAIL'}] {label}{'  -- ' + detail if detail else ''}")
 
 
 def approx(a, b, tol):
@@ -92,10 +93,14 @@ def unit_tests():
 def band_summary(bridge):
     out = {}
     for b in range(1, 8):
-        t = bridge.call(protocol.CMD_PLUGIN_GET_PARAM,
-                        {"track": TRACK, "slot": SLOT, "param": eq2_band_param_index(b, "type")})
-        lv = bridge.call(protocol.CMD_PLUGIN_GET_PARAM,
-                         {"track": TRACK, "slot": SLOT, "param": eq2_band_param_index(b, "level")})
+        t = bridge.call(
+            protocol.CMD_PLUGIN_GET_PARAM,
+            {"track": TRACK, "slot": SLOT, "param": eq2_band_param_index(b, "type")},
+        )
+        lv = bridge.call(
+            protocol.CMD_PLUGIN_GET_PARAM,
+            {"track": TRACK, "slot": SLOT, "param": eq2_band_param_index(b, "level")},
+        )
         out[b] = (t.get("s"), round(norm_to_db(lv.get("v") if lv.get("v") is not None else 0.5), 1))
     return out
 
@@ -119,23 +124,32 @@ def main() -> int:
     print("  pre-state bands:", band_summary(bridge))
 
     # remove_mud @ 0.5 -> expect Peaking / ~250Hz / -3.0dB ---------------------
-    r1 = call("fl_apply_eq_intent",
-              {"track": TRACK, "slot": SLOT, "intent": "remove_mud", "intensity": 0.5})
+    r1 = call(
+        "fl_apply_eq_intent",
+        {"track": TRACK, "slot": SLOT, "intent": "remove_mud", "intensity": 0.5},
+    )
     print("  remove_mud(0.5):", r1.get("band"), r1.get("set"), r1.get("readback"))
     b1, rb1 = r1.get("band"), r1.get("readback", {})
-    check("remove_mud -> Peaking",
-          (rb1.get("Band %d type" % b1) or "").strip().lower() == "peaking", str(rb1))
+    check(
+        "remove_mud -> Peaking",
+        (rb1.get("Band %d type" % b1) or "").strip().lower() == "peaking",
+        str(rb1),
+    )
     check("remove_mud -> ~250 Hz", approx(parse_hz(rb1.get("Band %d freq" % b1)), 250, 8))
     check("remove_mud -> -3.0 dB", approx(parse_db(rb1.get("Band %d level" % b1)), -3.0, 0.15))
 
     # add_air @ 0.7 -> expect High shelf / ~12kHz / +4.2dB, different band ------
-    r2 = call("fl_apply_eq_intent",
-              {"track": TRACK, "slot": SLOT, "intent": "add_air", "intensity": 0.7})
+    r2 = call(
+        "fl_apply_eq_intent", {"track": TRACK, "slot": SLOT, "intent": "add_air", "intensity": 0.7}
+    )
     print("  add_air(0.7):", r2.get("band"), r2.get("set"), r2.get("readback"))
     b2, rb2 = r2.get("band"), r2.get("readback", {})
-    check("add_air uses a different band", b2 != b1, "b1=%s b2=%s" % (b1, b2))
-    check("add_air -> High shelf",
-          (rb2.get("Band %d type" % b2) or "").strip().lower() == "high shelf", str(rb2))
+    check("add_air uses a different band", b2 != b1, f"b1={b1} b2={b2}")
+    check(
+        "add_air -> High shelf",
+        (rb2.get("Band %d type" % b2) or "").strip().lower() == "high shelf",
+        str(rb2),
+    )
     check("add_air -> ~12 kHz", approx(parse_hz(rb2.get("Band %d freq" % b2)), 12000, 400))
     check("add_air -> +4.2 dB", approx(parse_db(rb2.get("Band %d level" % b2)), 4.2, 0.15))
 
@@ -145,13 +159,18 @@ def main() -> int:
     rbk1 = call("fl_rollback_last_change", {})
     rbk2 = call("fl_rollback_last_change", {})
     print("  rollback1:", rbk1.get("rolled_back"), "| rollback2:", rbk2.get("rolled_back"))
-    check("both rollbacks reverted apply_eq_intent",
-          rbk1.get("rolled_back") == "apply_eq_intent" and rbk2.get("rolled_back") == "apply_eq_intent")
+    check(
+        "both rollbacks reverted apply_eq_intent",
+        rbk1.get("rolled_back") == "apply_eq_intent"
+        and rbk2.get("rolled_back") == "apply_eq_intent",
+    )
 
     post_dump = call("fl_plugin_get_params", {"track": TRACK, "slot": SLOT})
     print("  post-rollback bands:", band_summary(bridge))
-    check("full EQ param dump restored to pre-state",
-          post_dump.get("params") == pre_dump.get("params"))
+    check(
+        "full EQ param dump restored to pre-state",
+        post_dump.get("params") == pre_dump.get("params"),
+    )
 
     print("\n%d passed, %d failed" % (_P, _F))
     return 0 if _F == 0 else 1

@@ -10,9 +10,10 @@ happens HERE on the server (plain Python, no sandbox loop limit), aggregating
 several cheap controller reads -- instead of asking the controller to scan
 everything in a single OnSysEx tick (which stalls FL).
 """
+
 from __future__ import annotations
 
-from typing import Annotated, List, Optional
+from typing import Annotated
 
 from fastmcp import FastMCP
 from pydantic import Field
@@ -24,23 +25,26 @@ from ..connection import fetch_all_pages, get_bridge
 def _route_write_entry(src: int, dst: int, enabled: bool) -> dict:
     """One safe_write_group entry that sets a route and restores its prior state."""
     return {
-        "snap_scope": "route:%d:%d" % (src, dst),
+        "snap_scope": f"route:{src}:{dst}",
         "command": protocol.CMD_MIXER_SET_ROUTE,
         "params": {"src": src, "dst": dst, "enabled": enabled},
-        "restore": lambda b: {"command": protocol.CMD_MIXER_SET_ROUTE,
-                              "params": {"src": b["src"], "dst": b["dst"],
-                                         "enabled": b["enabled"]}},
+        "restore": lambda b: {
+            "command": protocol.CMD_MIXER_SET_ROUTE,
+            "params": {"src": b["src"], "dst": b["dst"], "enabled": b["enabled"]},
+        },
     }
 
 
 def _bus_rename_entry(bus: int, name: str) -> dict:
     """One safe_write_group entry that renames a track and restores its old name."""
     return {
-        "snap_scope": "mixer_track:%d" % bus,
+        "snap_scope": f"mixer_track:{bus}",
         "command": protocol.CMD_MIXER_SET_NAME,
         "params": {"track": bus, "name": name},
-        "restore": lambda b: {"command": protocol.CMD_MIXER_SET_NAME,
-                              "params": {"track": bus, "name": b["name"]}},
+        "restore": lambda b: {
+            "command": protocol.CMD_MIXER_SET_NAME,
+            "params": {"track": bus, "name": b["name"]},
+        },
     }
 
 
@@ -55,7 +59,7 @@ def _is_default_mixer_name(i, name) -> bool:
     name = name or ""
     if i == 0:
         return name in ("", "Master")
-    return name in ("", "Insert %d" % i)
+    return name in ("", f"Insert {i}")
 
 
 def detect_cleanup(bridge, *, max_plugin_checks: int = 60) -> dict:
@@ -84,48 +88,59 @@ def detect_cleanup(bridge, *, max_plugin_checks: int = 60) -> dict:
         for d in r.get("routes_to", []):
             incoming.setdefault(d.get("dst"), []).append(r.get("i"))
 
-    empty = [{"channel": c.get("channel"), "name": c.get("name")}
-             for c in chans.get("channels", [])
-             if _looks_default_channel_name(c.get("name"))]
+    empty = [
+        {"channel": c.get("channel"), "name": c.get("name")}
+        for c in chans.get("channels", [])
+        if _looks_default_channel_name(c.get("name"))
+    ]
 
     unused = []
     checks = 0
     truncated = False
     for r in tracks:
         i = r.get("i")
-        if i == 0 or i in targeted:                 # Master, or a channel feeds it
+        if i == 0 or i in targeted:  # Master, or a channel feeds it
             continue
         if not _is_default_mixer_name(i, r.get("name")):
-            continue                                # named -> intentional
-        if incoming.get(i):                         # a send feeds it -> a bus
+            continue  # named -> intentional
+        if incoming.get(i):  # a send feeds it -> a bus
             continue
         if checks >= max_plugin_checks:
             truncated = True
             break
         checks += 1
         if bridge.call(protocol.CMD_PLUGIN_LIST, {"track": i}).get("slots"):
-            continue                                # has a plugin -> in use
+            continue  # has a plugin -> in use
         unused.append({"track": i, "name": r.get("name")})
 
     return {
         "channel_emptiness_reliable": False,
-        "empty_channel_criteria": ["default-looking name "
-                                   "(NAME heuristic -- clip/piano-roll content NOT checked)"],
+        "empty_channel_criteria": [
+            "default-looking name (NAME heuristic -- clip/piano-roll content NOT checked)"
+        ],
         "empty_channel_candidates": empty,
-        "unused_mixer_track_criteria": ["no channel linked", "default name",
-                                        "no sends routed in", "no plugins"],
+        "unused_mixer_track_criteria": [
+            "no channel linked",
+            "default name",
+            "no sends routed in",
+            "no plugins",
+        ],
         "unused_mixer_tracks": unused,
         "unused_mixer_track_truncated": truncated,
         "note": "READ-ONLY. Judgement done server-side from cheap controller "
-                "reads. Unused tracks reliable; channel emptiness is a name "
-                "heuristic. Verify before any delete (Slice 2).",
+        "reads. Unused tracks reliable; channel emptiness is a name "
+        "heuristic. Verify before any delete (Slice 2).",
     }
 
 
 def register(mcp: FastMCP) -> None:
     _RO = {"readOnlyHint": True, "idempotentHint": True, "openWorldHint": True}
-    _WR = {"readOnlyHint": False, "destructiveHint": False,
-           "idempotentHint": True, "openWorldHint": True}
+    _WR = {
+        "readOnlyHint": False,
+        "destructiveHint": False,
+        "idempotentHint": True,
+        "openWorldHint": True,
+    }
 
     @mcp.tool(annotations={"title": "Get mixer track routing", **_RO})
     def fl_get_routing(
@@ -163,18 +178,27 @@ def register(mcp: FastMCP) -> None:
         """Enable/disable a send from src -> dst (calls afterRoutingChanged on the
         FL side). Snapshot + readback; undo with fl_rollback_last_change."""
         return safety.safe_write(
-            get_bridge(), tool="mixer_set_route", scope="route:%d:%d" % (src, dst),
+            get_bridge(),
+            tool="mixer_set_route",
+            scope=f"route:{src}:{dst}",
             command=protocol.CMD_MIXER_SET_ROUTE,
             params={"src": src, "dst": dst, "enabled": enabled},
             verify=("enabled", enabled),
-            build_restore=lambda b: {"command": protocol.CMD_MIXER_SET_ROUTE,
-                                     "params": {"src": src, "dst": dst, "enabled": b["enabled"]}})
+            build_restore=lambda b: {
+                "command": protocol.CMD_MIXER_SET_ROUTE,
+                "params": {"src": src, "dst": dst, "enabled": b["enabled"]},
+            },
+        )
 
     @mcp.tool(annotations={"title": "Group tracks into a bus", **_WR})
     def fl_group_tracks(
-        sources: Annotated[List[int], Field(description="Source mixer tracks to route into the bus.")],
+        sources: Annotated[
+            list[int], Field(description="Source mixer tracks to route into the bus.")
+        ],
         bus: Annotated[int, Field(ge=1, description="Destination bus mixer track (not Master).")],
-        name: Annotated[Optional[str], Field(description="Optional new name for the bus track.")] = None,
+        name: Annotated[
+            str | None, Field(description="Optional new name for the bus track.")
+        ] = None,
     ) -> dict:
         """Group sources into a bus, EXCLUSIVELY: each source -> bus ON and its
         direct -> Master OFF; bus -> Master ON; optional bus rename. Applied as
@@ -183,17 +207,17 @@ def register(mcp: FastMCP) -> None:
         srcs = [int(s) for s in sources if int(s) not in (bus, 0)]
         writes = []
         for s in srcs:
-            writes.append(_route_write_entry(s, bus, True))    # source -> bus ON
-            writes.append(_route_write_entry(s, 0, False))     # source -> Master OFF
-        writes.append(_route_write_entry(bus, 0, True))        # bus -> Master ON
+            writes.append(_route_write_entry(s, bus, True))  # source -> bus ON
+            writes.append(_route_write_entry(s, 0, False))  # source -> Master OFF
+        writes.append(_route_write_entry(bus, 0, True))  # bus -> Master ON
         if name:
             writes.append(_bus_rename_entry(bus, name))
         if not srcs:
             return {"ok": False, "error": "no valid source tracks (excluding bus and Master)"}
-        res = safety.safe_write_group(bridge, tool="group_tracks",
-                                      scope="group:bus%d" % bus, writes=writes)
+        res = safety.safe_write_group(
+            bridge, tool="group_tracks", scope=f"group:bus{bus}", writes=writes
+        )
         if res.get("dry_run"):
             res.update({"sources": srcs, "bus": bus, "name": name})
             return res
-        return {"ok": True, "sources": srcs, "bus": bus, "name": name,
-                "applied": res.get("after")}
+        return {"ok": True, "sources": srcs, "bus": bus, "name": name, "applied": res.get("after")}

@@ -15,6 +15,7 @@ the run errors.
 
 Target: mixer track 2, slot 0 (Fruity Parametric EQ 2 on VOX).
 """
+
 from __future__ import annotations
 
 import re
@@ -23,13 +24,13 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
-from fl_studio_mcp import protocol, safety              # noqa: E402
-from fl_studio_mcp.connection import get_bridge          # noqa: E402
+from fl_studio_mcp import protocol, safety  # noqa: E402
+from fl_studio_mcp.connection import get_bridge  # noqa: E402
 from fl_studio_mcp.tools.plugin import resolve_param_index  # noqa: E402
 
 TRACK = 2
 SLOT = 0
-STEPS = [round(i * 0.05, 4) for i in range(21)]          # 0.00 .. 1.00
+STEPS = [round(i * 0.05, 4) for i in range(21)]  # 0.00 .. 1.00
 
 _NUM = re.compile(r"[-+]?\d*\.?\d+")
 
@@ -70,22 +71,25 @@ def sweep(bridge, idx, parser):
     (set_norm, readback_v, raw_string, parsed)."""
     rows = []
     for norm in STEPS:
-        bridge.call(protocol.CMD_PLUGIN_SET_PARAM,
-                    {"track": TRACK, "slot": SLOT, "param": idx, "value": norm})
-        got = bridge.call(protocol.CMD_PLUGIN_GET_PARAM,
-                          {"track": TRACK, "slot": SLOT, "param": idx})
+        bridge.call(
+            protocol.CMD_PLUGIN_SET_PARAM,
+            {"track": TRACK, "slot": SLOT, "param": idx, "value": norm},
+        )
+        got = bridge.call(
+            protocol.CMD_PLUGIN_GET_PARAM, {"track": TRACK, "slot": SLOT, "param": idx}
+        )
         s = got.get("s", "")
         rows.append((norm, got.get("v"), s, parser(s) if parser else None))
     return rows
 
 
 def print_table(title, rows, parsed_label):
-    print("\n=== %s ===" % title)
-    print("  set_norm  readback_v  raw_string          %s" % parsed_label)
+    print(f"\n=== {title} ===")
+    print(f"  set_norm  readback_v  raw_string          {parsed_label}")
     print("  --------  ----------  ------------------  --------")
     for norm, v, s, parsed in rows:
-        vs = "%.4f" % v if isinstance(v, (int, float)) else "?"
-        ps = "" if parsed is None else ("%g" % parsed)
+        vs = f"{v:.4f}" if isinstance(v, (int, float)) else "?"
+        ps = "" if parsed is None else (f"{parsed:g}")
         print("  %8.2f  %10s  %-18s  %s" % (norm, vs, repr(s), ps))
 
 
@@ -97,11 +101,11 @@ def print_type_groups(rows):
     for norm, _v, s, _p in rows:
         if s != cur:
             if cur is not None:
-                print("    %.2f .. %.2f  ->  %r" % (lo, hi, cur))
+                print(f"    {lo:.2f} .. {hi:.2f}  ->  {cur!r}")
             cur, lo = s, norm
         hi = norm
     if cur is not None:
-        print("    %.2f .. %.2f  ->  %r" % (lo, hi, cur))
+        print(f"    {lo:.2f} .. {hi:.2f}  ->  {cur!r}")
 
 
 def main() -> int:
@@ -112,8 +116,12 @@ def main() -> int:
         return 1
     print("Heartbeat age:", bridge.heartbeat_age())
 
-    names = {"freq": "Band 1 freq", "level": "Band 1 level",
-             "type": "Band 1 type", "width": "Band 1 width"}
+    names = {
+        "freq": "Band 1 freq",
+        "level": "Band 1 level",
+        "type": "Band 1 type",
+        "width": "Band 1 width",
+    }
     idx = {}
     for key, nm in names.items():
         i, resolved = resolve_param_index(bridge, TRACK, SLOT, nm)
@@ -128,29 +136,38 @@ def main() -> int:
     print("\noriginals (normalized):", {k: orig[k] for k in idx})
 
     try:
-        print_table("Band 1 FREQ (idx %d)" % idx["freq"],
-                    sweep(bridge, idx["freq"], parse_hz), "parsed_Hz")
-        print_table("Band 1 LEVEL (idx %d)" % idx["level"],
-                    sweep(bridge, idx["level"], parse_db), "parsed_dB")
+        print_table(
+            "Band 1 FREQ (idx %d)" % idx["freq"], sweep(bridge, idx["freq"], parse_hz), "parsed_Hz"
+        )
+        print_table(
+            "Band 1 LEVEL (idx %d)" % idx["level"],
+            sweep(bridge, idx["level"], parse_db),
+            "parsed_dB",
+        )
         type_rows = sweep(bridge, idx["type"], None)
         print_table("Band 1 TYPE (idx %d)" % idx["type"], type_rows, "(raw)")
         print_type_groups(type_rows)
-        print_table("Band 1 WIDTH (idx %d)" % idx["width"],
-                    sweep(bridge, idx["width"], parse_pct), "parsed")
+        print_table(
+            "Band 1 WIDTH (idx %d)" % idx["width"], sweep(bridge, idx["width"], parse_pct), "parsed"
+        )
     finally:
         # ALWAYS restore Band 1 to its captured originals.
         print("\n--- restoring Band 1 to originals ---")
         for key, i in idx.items():
-            bridge.call(protocol.CMD_PLUGIN_SET_PARAM,
-                        {"track": TRACK, "slot": SLOT, "param": i, "value": orig[key]})
+            bridge.call(
+                protocol.CMD_PLUGIN_SET_PARAM,
+                {"track": TRACK, "slot": SLOT, "param": i, "value": orig[key]},
+            )
         for key, i in idx.items():
-            got = bridge.call(protocol.CMD_PLUGIN_GET_PARAM,
-                              {"track": TRACK, "slot": SLOT, "param": i})
+            got = bridge.call(
+                protocol.CMD_PLUGIN_GET_PARAM, {"track": TRACK, "slot": SLOT, "param": i}
+            )
             gv = got.get("v")
             ok = gv is not None and abs(gv - orig[key]) < 0.005
-            print("  %-6s idx %2d -> v=%s s=%r  (orig %s)  %s"
-                  % (key, i, got.get("v"), got.get("s"), orig[key],
-                     "OK" if ok else "!! MISMATCH"))
+            print(
+                "  %-6s idx %2d -> v=%s s=%r  (orig %s)  %s"
+                % (key, i, got.get("v"), got.get("s"), orig[key], "OK" if ok else "!! MISMATCH")
+            )
 
     print("\nDone -- calibration data above, Band 1 restored.")
     return 0

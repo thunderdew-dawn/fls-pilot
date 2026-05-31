@@ -70,7 +70,7 @@ except Exception:
 PROTOCOL_VERSION = 2
 
 SYSEX_MANUFACTURER = 0x7D
-SYSEX_MAGIC = (0x4D, 0x43, 0x50)   # ASCII "MCP"
+SYSEX_MAGIC = (0x4D, 0x43, 0x50)  # ASCII "MCP"
 
 DIR_REQUEST = 0x01
 DIR_RESPONSE = 0x02
@@ -98,6 +98,7 @@ _send_sysex_fn = None
 # FL Studio lifecycle callbacks
 # ---------------------------------------------------------------------------
 
+
 def OnInit():
     global _fl_version, _send_sysex_fn
     try:
@@ -110,11 +111,14 @@ def OnInit():
     if _send_sysex_fn is None:
         _send_sysex_fn = getattr(device, "midiOutSysEx", None)
 
-    print("[FLStudioMCP] Ready. FL " + str(_fl_version)
-          + ", protocol v" + str(PROTOCOL_VERSION) + ".")
+    print(
+        "[FLStudioMCP] Ready. FL " + str(_fl_version) + ", protocol v" + str(PROTOCOL_VERSION) + "."
+    )
     if _send_sysex_fn is None:
-        print("[FLStudioMCP] WARNING: device.midiOutSysex not available -- "
-              "responses cannot be sent back to the MCP server.")
+        print(
+            "[FLStudioMCP] WARNING: device.midiOutSysex not available -- "
+            "responses cannot be sent back to the MCP server."
+        )
     # Send a heartbeat immediately so the server doesn't have to wait.
     _emit_heartbeat()
     return
@@ -178,7 +182,7 @@ def _handle_request_sysex(event, source):
         payload = {
             "v": PROTOCOL_VERSION,
             "ok": False,
-            "error": "%s: %s" % (type(e).__name__, e),
+            "error": f"{type(e).__name__}: {e}",
             "code": "internal_error",
         }
 
@@ -203,6 +207,7 @@ def OnRefresh(flags):
 # ---------------------------------------------------------------------------
 # SysEx encode / decode -- mirrors src/fl_studio_mcp/protocol.py
 # ---------------------------------------------------------------------------
+
 
 def _encode_message(direction, request_id, payload):
     # Returns the SysEx bytes WITHOUT F0/F7 framing (caller adds them).
@@ -231,7 +236,7 @@ def _decode_message(data):
         return None
     direction = data[4]
     try:
-        request_id = data[5:5 + REQUEST_ID_LEN].decode("ascii", errors="replace")
+        request_id = data[5 : 5 + REQUEST_ID_LEN].decode("ascii", errors="replace")
     except Exception:
         return None
     body = data[_HEADER_LEN:]
@@ -251,7 +256,7 @@ def _send_message(direction, request_id, payload):
     try:
         _send_sysex_fn(framed)
     except Exception as e:
-        print("[FLStudioMCP] midiOutSysex failed: %s" % e)
+        print(f"[FLStudioMCP] midiOutSysex failed: {e}")
 
 
 def _emit_heartbeat():
@@ -270,8 +275,10 @@ def _emit_heartbeat():
 # Command dispatcher
 # ---------------------------------------------------------------------------
 
+
 class _ClientError(Exception):
     """Raised by handlers for bad input. Mapped to ok=false with code=client."""
+
     def __init__(self, message, code="client"):
         Exception.__init__(self, message)
         self.code = code
@@ -280,11 +287,12 @@ class _ClientError(Exception):
 def _dispatch(command, params):
     handler = _HANDLERS.get(command)
     if handler is None:
-        raise _ClientError("Unknown command: %s" % command, code="unknown_command")
+        raise _ClientError(f"Unknown command: {command}", code="unknown_command")
     return handler(params)
 
 
 # -- transport handlers ------------------------------------------------------
+
 
 def _h_ping(params):
     return {
@@ -321,7 +329,7 @@ def _h_general_undo(params):
         general.undoUp()
         return {"ok": True, "undid": True}
     except Exception as e:
-        return {"ok": False, "error": "undoUp: %s" % e}
+        return {"ok": False, "error": f"undoUp: {e}"}
 
 
 def _is_playing():
@@ -403,8 +411,8 @@ def _h_set_song_pos(params):
 # page never exceeds the safe size no matter how long the names are. Full
 # untruncated names stay available via the single-item gets.
 
-_LIST_BUDGET = 600   # max bytes of 'data' JSON/page -> ~843 B wire (< safe 1000)
-_NAME_CAP = 24       # name length in LIST responses only
+_LIST_BUDGET = 600  # max bytes of 'data' JSON/page -> ~843 B wire (< safe 1000)
+_NAME_CAP = 24  # name length in LIST responses only
 
 
 def _truncate_name(name):
@@ -419,14 +427,16 @@ def _paginate(total, start, entry_fn, key):
         out.append(entry_fn(i))
         i += 1
         nxt = i if i < total else None
-        size = len(json.dumps({"total": total, "start": start, "next_start": nxt, key: out},
-                              separators=(",", ":")))
+        size = len(
+            json.dumps(
+                {"total": total, "start": start, "next_start": nxt, key: out}, separators=(",", ":")
+            )
+        )
         if size > _LIST_BUDGET and len(out) > 1:
-            out.pop()           # this entry overflowed the page -> next page
+            out.pop()  # this entry overflowed the page -> next page
             i -= 1
             break
-    return {"total": total, "start": start,
-            "next_start": (i if i < total else None), key: out}
+    return {"total": total, "start": start, "next_start": (i if i < total else None), key: out}
 
 
 def _h_get_project_state(params):
@@ -460,9 +470,14 @@ def _mixer_track_dict(i):
 
 def _mixer_list_entry(i):
     name, cut = _truncate_name(mixer.getTrackName(i))
-    e = {"i": i, "name": name, "pan": round(mixer.getTrackPan(i), 4),
-         "mute": bool(mixer.isTrackMuted(i)), "solo": bool(mixer.isTrackSolo(i)),
-         **_vol_out(mixer.getTrackVolume(i))}
+    e = {
+        "i": i,
+        "name": name,
+        "pan": round(mixer.getTrackPan(i), 4),
+        "mute": bool(mixer.isTrackMuted(i)),
+        "solo": bool(mixer.isTrackSolo(i)),
+        **_vol_out(mixer.getTrackVolume(i)),
+    }
     if cut:
         e["trunc"] = True
     return e
@@ -482,8 +497,14 @@ def _channel_type(i):
     except Exception:
         return {"code": None, "label": None}
     names = (
-        "CT_Sampler", "CT_Hybrid", "CT_GenPlug", "CT_AudioClip",
-        "CT_AutoClip", "CT_Layer", "CT_Envelope", "CT_MIDIOut",
+        "CT_Sampler",
+        "CT_Hybrid",
+        "CT_GenPlug",
+        "CT_AudioClip",
+        "CT_AutoClip",
+        "CT_Layer",
+        "CT_Envelope",
+        "CT_MIDIOut",
     )
     for name in names:
         if hasattr(midi, name):
@@ -523,17 +544,23 @@ def _channel_dict(i):
 
 def _channel_list_entry(i):
     name, cut = _truncate_name(channels.getChannelName(i))
-    e = {"i": i, "name": name, "pan": round(channels.getChannelPan(i), 4),
-         "mute": bool(channels.isChannelMuted(i)),
-         "solo": bool(channels.isChannelSolo(i)),
-         **_vol_out(channels.getChannelVolume(i))}
+    e = {
+        "i": i,
+        "name": name,
+        "pan": round(channels.getChannelPan(i), 4),
+        "mute": bool(channels.isChannelMuted(i)),
+        "solo": bool(channels.isChannelSolo(i)),
+        **_vol_out(channels.getChannelVolume(i)),
+    }
     if cut:
         e["trunc"] = True
     return e
 
 
 def _h_channel_list(params):
-    return _paginate(channels.channelCount(), params.get("start", 0), _channel_list_entry, "channels")
+    return _paginate(
+        channels.channelCount(), params.get("start", 0), _channel_list_entry, "channels"
+    )
 
 
 def _h_channel_get(params):
@@ -567,7 +594,7 @@ def _resolve_vol(p):
 
 
 def _clamp_pan(v):
-    return max(-1.0, min(1.0, float(v)))   # FL pan range is -1..+1
+    return max(-1.0, min(1.0, float(v)))  # FL pan range is -1..+1
 
 
 def _h_mixer_set_volume(p):
@@ -657,6 +684,7 @@ def _h_channel_set_target(p):
 # prefer utils.RGBToColor so FL builds the int in its own byte order; rollback
 # instead sends the exact "color" int we read back (order-agnostic).
 
+
 def _rgb_to_int(r, g, b):
     r = max(0, min(255, int(r)))
     g = max(0, min(255, int(g)))
@@ -671,12 +699,17 @@ def _rgb_to_int(r, g, b):
 
 def _color_out(color):
     c = int(color) & 0xFFFFFF
-    return {"int": c, "hex": "#%06X" % c,
-            "r": (c >> 16) & 0xFF, "g": (c >> 8) & 0xFF, "b": c & 0xFF}
+    return {
+        "int": c,
+        "hex": f"#{c:06X}",
+        "r": (c >> 16) & 0xFF,
+        "g": (c >> 8) & 0xFF,
+        "b": c & 0xFF,
+    }
 
 
 def _resolve_color(p):
-    if p.get("color") is not None:           # explicit int (rollback path)
+    if p.get("color") is not None:  # explicit int (rollback path)
         return int(p["color"]) & 0xFFFFFF
     return _rgb_to_int(p.get("r", 0), p.get("g", 0), p.get("b", 0))
 
@@ -723,10 +756,11 @@ def _h_channel_set_color(p):
 # getParamValue(paramIndex, index, slot), setParamValue(value, paramIndex,
 # index, slot). For a mixer-track effect, index=mixer track, slot>=0.
 
+
 def _h_plugin_list(p):
     track = int(p["track"])
     slots = []
-    for s in range(10):              # 10 mixer effect slots
+    for s in range(10):  # 10 mixer effect slots
         try:
             if plugins.isValid(track, s):
                 slots.append({"slot": s, "name": plugins.getPluginName(track, s)})
@@ -739,30 +773,36 @@ def _h_plugin_get_params(p):
     track = int(p["track"])
     slot = int(p["slot"])
     if not plugins.isValid(track, slot):
-        raise _ClientError("no plugin at track %d slot %d" % (track, slot))
+        raise _ClientError(f"no plugin at track {track} slot {slot}")
     total = plugins.getParamCount(track, slot)
     start = max(0, int(p.get("start", 0)))
     out = []
     i = start
     scanned = 0
-    while i < total and scanned < 150:        # cap scan/page (bounds VST 4240 cost)
+    while i < total and scanned < 150:  # cap scan/page (bounds VST 4240 cost)
         nm = plugins.getParamName(i, track, slot)
         cur = i
         i += 1
         scanned += 1
-        if nm:                                 # skip empty-name slots (unused VST)
-            out.append({
-                "i": cur,
-                "name": nm[:30],
-                "v": round(plugins.getParamValue(cur, track, slot), 4),
-                "s": (plugins.getParamValueString(cur, track, slot) or "")[:16],
-            })
+        if nm:  # skip empty-name slots (unused VST)
+            out.append(
+                {
+                    "i": cur,
+                    "name": nm[:30],
+                    "v": round(plugins.getParamValue(cur, track, slot), 4),
+                    "s": (plugins.getParamValueString(cur, track, slot) or "")[:16],
+                }
+            )
             if len(json.dumps(out, separators=(",", ":"))) > 480:
                 break
     return {
-        "track": track, "slot": slot, "plugin": plugins.getPluginName(track, slot),
-        "total": total, "start": start,
-        "next_start": (i if i < total else None), "params": out,
+        "track": track,
+        "slot": slot,
+        "plugin": plugins.getPluginName(track, slot),
+        "total": total,
+        "start": start,
+        "next_start": (i if i < total else None),
+        "params": out,
     }
 
 
@@ -771,9 +811,11 @@ def _h_plugin_get_param(p):
     slot = int(p["slot"])
     idx = int(p["param"])
     if not plugins.isValid(track, slot):
-        raise _ClientError("no plugin at track %d slot %d" % (track, slot))
+        raise _ClientError(f"no plugin at track {track} slot {slot}")
     return {
-        "track": track, "slot": slot, "param": idx,
+        "track": track,
+        "slot": slot,
+        "param": idx,
         "name": plugins.getParamName(idx, track, slot),
         "v": round(plugins.getParamValue(idx, track, slot), 4),
         "s": (plugins.getParamValueString(idx, track, slot) or ""),
@@ -786,10 +828,12 @@ def _h_plugin_set_param(p):
     idx = int(p["param"])
     val = float(p["value"])
     if not plugins.isValid(track, slot):
-        raise _ClientError("no plugin at track %d slot %d" % (track, slot))
+        raise _ClientError(f"no plugin at track {track} slot {slot}")
     plugins.setParamValue(val, idx, track, slot)
     return {
-        "track": track, "slot": slot, "param": idx,
+        "track": track,
+        "slot": slot,
+        "param": idx,
         "name": plugins.getParamName(idx, track, slot),
         "v": round(plugins.getParamValue(idx, track, slot), 4),
         "s": (plugins.getParamValueString(idx, track, slot) or ""),
@@ -797,6 +841,7 @@ def _h_plugin_set_param(p):
 
 
 # -- Routing / grouping / cleanup READ surface (Slice 1, read-only) ----------
+
 
 def _route_level(src, dst):
     fn = getattr(mixer, "getRouteToLevel", None) or getattr(mixer, "getRouteSendLevel", None)
@@ -851,8 +896,12 @@ def _channel_route_entry(i):
         tgt = None
     cname, cut = _truncate_name(channels.getChannelName(i))
     valid = isinstance(tgt, int) and 0 <= tgt < mixer.trackCount()
-    e = {"channel": i, "name": cname, "target_mixer_track": tgt,
-         "target_name": (mixer.getTrackName(tgt) if valid else None)}
+    e = {
+        "channel": i,
+        "name": cname,
+        "target_mixer_track": tgt,
+        "target_name": (mixer.getTrackName(tgt) if valid else None),
+    }
     if cut:
         e["trunc"] = True
     return e
@@ -864,6 +913,7 @@ def _h_channel_routing_summary(p):
 
 # -- Routing WRITE surface (Slice 2) -----------------------------------------
 
+
 def _h_mixer_set_route(p):
     """Enable/disable a send from src -> dst. Thin: one setRouteTo + the
     required afterRoutingChanged(), then read back the active state."""
@@ -872,11 +922,11 @@ def _h_mixer_set_route(p):
     on = bool(p.get("enabled", True))
     mixer.setRouteTo(src, dst, 1 if on else 0)
     mixer.afterRoutingChanged()
-    return {"src": src, "dst": dst,
-            "enabled": bool(mixer.getRouteSendActive(src, dst))}
+    return {"src": src, "dst": dst, "enabled": bool(mixer.getRouteSendActive(src, dst))}
 
 
 # -- Level awareness READ surface (peaks; meaningful only while playing) -----
+
 
 def _h_mixer_get_peaks(p):
     """Meter peaks for a mixer track. mode 0=L, 1=R, 2=max(LR). Linear values
@@ -893,6 +943,7 @@ def _h_mixer_get_peaks(p):
 
 # -- Plugin preset navigate/read (op: info | next | prev) --------------------
 
+
 def _h_plugin_preset(p):
     """Navigate/read a plugin's presets. For a channel generator pass slot=-1.
     op 'next'/'prev' step the preset first, then everything reports the CURRENT
@@ -907,12 +958,12 @@ def _h_plugin_preset(p):
         try:
             plugins.nextPreset(track, slot)
         except Exception as e:
-            out["nav_error"] = "nextPreset: %s" % e
+            out["nav_error"] = f"nextPreset: {e}"
     elif op == "prev":
         try:
             plugins.prevPreset(track, slot)
         except Exception as e:
-            out["nav_error"] = "prevPreset: %s" % e
+            out["nav_error"] = f"prevPreset: {e}"
     try:
         out["preset_count"] = plugins.getPresetCount(track, slot)
     except Exception as e:
@@ -932,24 +983,33 @@ def _h_plugin_preset(p):
 
 # -- API introspection / arrangement probe -----------------------------------
 
+
 def _h_api_probe(p):
     """op:
-      dir    -> {module, names}: public names of one FL module (per-module to
-                stay under the SysEx size limit).
-      ppq    -> {ppq, pattern_count, pattern_number}
-      marker_add -> arrangement.addAutoTimeMarker(time, name)
-      undo   -> general.undoUp() (best-effort, to remove a test marker)
+    dir    -> {module, names}: public names of one FL module (per-module to
+              stay under the SysEx size limit).
+    ppq    -> {ppq, pattern_count, pattern_number}
+    marker_add -> arrangement.addAutoTimeMarker(time, name)
+    undo   -> general.undoUp() (best-effort, to remove a test marker)
     """
     op = p.get("op", "dir")
     if op == "dir":
-        mods = {"playlist": playlist, "arrangement": arrangement, "patterns": patterns,
-                "general": general, "transport": transport, "ui": ui, "midi": midi,
-                "mixer": mixer, "channels": channels}
+        mods = {
+            "playlist": playlist,
+            "arrangement": arrangement,
+            "patterns": patterns,
+            "general": general,
+            "transport": transport,
+            "ui": ui,
+            "midi": midi,
+            "mixer": mixer,
+            "channels": channels,
+        }
         mod = mods.get(p.get("module", "playlist"))
         if mod is None:
             return {"module": p.get("module"), "error": "module not available"}
         names = [n for n in dir(mod) if not n.startswith("_")]
-        start = max(0, int(p.get("start", 0)))      # budget-paginate (dir is large)
+        start = max(0, int(p.get("start", 0)))  # budget-paginate (dir is large)
         out, i = [], start
         while i < len(names):
             out.append(names[i])
@@ -958,13 +1018,20 @@ def _h_api_probe(p):
                 out.pop()
                 i -= 1
                 break
-        return {"module": p.get("module", "playlist"), "total": len(names),
-                "start": start, "next_start": (i if i < len(names) else None), "names": out}
+        return {
+            "module": p.get("module", "playlist"),
+            "total": len(names),
+            "start": start,
+            "next_start": (i if i < len(names) else None),
+            "names": out,
+        }
     if op == "ppq":
         out = {}
-        for key, fn in (("ppq", lambda: general.getRecPPQ()),
-                        ("pattern_count", lambda: patterns.patternCount()),
-                        ("pattern_number", lambda: patterns.patternNumber())):
+        for key, fn in (
+            ("ppq", lambda: general.getRecPPQ()),
+            ("pattern_count", lambda: patterns.patternCount()),
+            ("pattern_number", lambda: patterns.patternNumber()),
+        ):
             try:
                 out[key] = fn()
             except Exception as e:
@@ -979,27 +1046,30 @@ def _h_api_probe(p):
             arrangement.addAutoTimeMarker(t, name)
             return {"ok": True, "added": name, "time": t}
         except Exception as e:
-            return {"ok": False, "error": "addAutoTimeMarker: %s" % e}
+            return {"ok": False, "error": f"addAutoTimeMarker: {e}"}
     if op == "undo":
         try:
             general.undoUp()
             return {"ok": True, "undid": True}
         except Exception as e:
-            return {"ok": False, "error": "undoUp: %s" % e}
-    return {"error": "unknown op: %s" % op}
+            return {"ok": False, "error": f"undoUp: {e}"}
+    return {"error": f"unknown op: {op}"}
 
 
 # -- Arrangement primitives (Slice 1): pattern create/clone + markers --------
 
+
 def _h_pattern_list(p):
     """Budget-paginated pattern list: {pattern (1-based), name}. Thin read."""
+
     def entry(i):
-        pn = i + 1                       # FL patterns are 1-based
+        pn = i + 1  # FL patterns are 1-based
         name, cut = _truncate_name(patterns.getPatternName(pn))
         e = {"pattern": pn, "name": name}
         if cut:
             e["trunc"] = True
         return e
+
     return _paginate(patterns.patternCount(), p.get("start", 0), entry, "patterns")
 
 
@@ -1017,9 +1087,14 @@ def _h_arrange_new_pattern(p):
     try:
         patterns.setPatternName(idx, name)
     except Exception as e:
-        return {"ok": False, "error": "setPatternName: %s" % e, "index": idx}
-    return {"ok": True, "index": idx, "name": patterns.getPatternName(idx),
-            "count": patterns.patternCount(), "selected": patterns.patternNumber()}
+        return {"ok": False, "error": f"setPatternName: {e}", "index": idx}
+    return {
+        "ok": True,
+        "index": idx,
+        "name": patterns.getPatternName(idx),
+        "count": patterns.patternCount(),
+        "selected": patterns.patternNumber(),
+    }
 
 
 def _h_arrange_clone_pattern(p):
@@ -1035,16 +1110,21 @@ def _h_arrange_clone_pattern(p):
         try:
             patterns.clonePattern()
         except Exception as e:
-            return {"ok": False, "error": "clonePattern: %s" % e}
+            return {"ok": False, "error": f"clonePattern: {e}"}
     new_idx = patterns.patternNumber()
     after = patterns.patternCount()
     try:
         patterns.setPatternName(new_idx, new_name)
     except Exception as e:
-        return {"ok": False, "error": "setPatternName: %s" % e, "new_index": new_idx}
-    return {"ok": True, "src": src, "new_index": new_idx,
-            "new_name": patterns.getPatternName(new_idx),
-            "count_before": before, "count_after": after}
+        return {"ok": False, "error": f"setPatternName: {e}", "new_index": new_idx}
+    return {
+        "ok": True,
+        "src": src,
+        "new_index": new_idx,
+        "new_name": patterns.getPatternName(new_idx),
+        "count_before": before,
+        "count_after": after,
+    }
 
 
 def _h_ensure_piano_roll(p):
@@ -1068,7 +1148,7 @@ def _h_ensure_piano_roll(p):
         out["method"] = "ui.showWindow(widPianoRoll)"
     except Exception as e:
         out["ok"] = False
-        out["error"] = "showWindow: %s" % e
+        out["error"] = f"showWindow: {e}"
     return out
 
 
@@ -1079,9 +1159,13 @@ def _h_channel_select(p):
     try:
         channels.selectOneChannel(idx)
     except Exception as e:
-        return {"ok": False, "error": "selectOneChannel: %s" % e}
-    return {"ok": True, "channel": idx, "name": channels.getChannelName(idx),
-            "selected": channels.channelNumber()}
+        return {"ok": False, "error": f"selectOneChannel: {e}"}
+    return {
+        "ok": True,
+        "channel": idx,
+        "name": channels.getChannelName(idx),
+        "selected": channels.channelNumber(),
+    }
 
 
 def _h_channel_selected(p):
@@ -1104,12 +1188,12 @@ def _h_arrange_add_marker(p):
             ppb = 4 * general.getRecPPQ()
         except Exception:
             ppb = 384
-    t = int((bar - 1) * ppb)            # bar 1 -> tick 0
+    t = int((bar - 1) * ppb)  # bar 1 -> tick 0
     try:
         arrangement.addAutoTimeMarker(t, name)
         return {"ok": True, "bar": bar, "name": name, "time": t, "ppb": ppb}
     except Exception as e:
-        return {"ok": False, "error": "addAutoTimeMarker: %s" % e}
+        return {"ok": False, "error": f"addAutoTimeMarker: {e}"}
 
 
 _HANDLERS = {

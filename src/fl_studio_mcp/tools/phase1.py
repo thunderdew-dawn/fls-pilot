@@ -21,8 +21,12 @@ from ..connection import fetch_all_pages, get_bridge
 
 def register(mcp: FastMCP) -> None:
     _RO = {"readOnlyHint": True, "idempotentHint": True, "openWorldHint": True}
-    _WR = {"readOnlyHint": False, "destructiveHint": False,
-           "idempotentHint": True, "openWorldHint": True}
+    _WR = {
+        "readOnlyHint": False,
+        "destructiveHint": False,
+        "idempotentHint": True,
+        "openWorldHint": True,
+    }
 
     # ---- reads ----------------------------------------------------------
     @mcp.tool(annotations={"title": "Get project state", **_RO})
@@ -50,13 +54,16 @@ def register(mcp: FastMCP) -> None:
     ) -> dict:
         """Set a mixer track volume. unit='db' uses 0.8=unity (0 dB)."""
         return safety.safe_write(
-            get_bridge(), tool="mixer_set_volume", scope="mixer_track:%d" % track,
+            get_bridge(),
+            tool="mixer_set_volume",
+            scope=f"mixer_track:{track}",
             command=protocol.CMD_MIXER_SET_VOLUME,
             params={"track": track, "value": value, "unit": unit},
-            build_restore=lambda b: {"command": protocol.CMD_MIXER_SET_VOLUME,
-                                     "params": {"track": track,
-                                                "value": b["vol_norm"],
-                                                "unit": "normalized"}})
+            build_restore=lambda b: {
+                "command": protocol.CMD_MIXER_SET_VOLUME,
+                "params": {"track": track, "value": b["vol_norm"], "unit": "normalized"},
+            },
+        )
 
     @mcp.tool(annotations={"title": "Set mixer track pan", **_WR})
     def fl_set_mixer_pan(
@@ -65,39 +72,63 @@ def register(mcp: FastMCP) -> None:
     ) -> dict:
         """Set a mixer track's pan position (-1 left .. +1 right)."""
         return safety.safe_write(
-            get_bridge(), tool="mixer_set_pan", scope="mixer_track:%d" % track,
-            command=protocol.CMD_MIXER_SET_PAN, params={"track": track, "value": value},
-            build_restore=lambda b: {"command": protocol.CMD_MIXER_SET_PAN,
-                                     "params": {"track": track, "value": b["pan"]}})
+            get_bridge(),
+            tool="mixer_set_pan",
+            scope=f"mixer_track:{track}",
+            command=protocol.CMD_MIXER_SET_PAN,
+            params={"track": track, "value": value},
+            build_restore=lambda b: {
+                "command": protocol.CMD_MIXER_SET_PAN,
+                "params": {"track": track, "value": b["pan"]},
+            },
+        )
 
     @mcp.tool(annotations={"title": "Set mixer track mute", **_WR})
     def fl_set_mixer_mute(track: Annotated[int, Field(ge=0)], state: bool) -> dict:
         """Mute or unmute a mixer track (state=True mutes)."""
         return safety.safe_write(
-            get_bridge(), tool="mixer_set_mute", scope="mixer_track:%d" % track,
-            command=protocol.CMD_MIXER_SET_MUTE, params={"track": track, "state": state},
+            get_bridge(),
+            tool="mixer_set_mute",
+            scope=f"mixer_track:{track}",
+            command=protocol.CMD_MIXER_SET_MUTE,
+            params={"track": track, "state": state},
             verify=("mute", state),
-            build_restore=lambda b: {"command": protocol.CMD_MIXER_SET_MUTE,
-                                     "params": {"track": track, "state": b["mute"]}})
+            build_restore=lambda b: {
+                "command": protocol.CMD_MIXER_SET_MUTE,
+                "params": {"track": track, "state": b["mute"]},
+            },
+        )
 
     @mcp.tool(annotations={"title": "Set mixer track solo", **_WR})
     def fl_set_mixer_solo(track: Annotated[int, Field(ge=0)], state: bool) -> dict:
         """Solo or unsolo a mixer track (state=True solos)."""
         return safety.safe_write(
-            get_bridge(), tool="mixer_set_solo", scope="mixer_track:%d" % track,
-            command=protocol.CMD_MIXER_SET_SOLO, params={"track": track, "state": state},
+            get_bridge(),
+            tool="mixer_set_solo",
+            scope=f"mixer_track:{track}",
+            command=protocol.CMD_MIXER_SET_SOLO,
+            params={"track": track, "state": state},
             verify=("solo", state),
-            build_restore=lambda b: {"command": protocol.CMD_MIXER_SET_SOLO,
-                                     "params": {"track": track, "state": b["solo"]}})
+            build_restore=lambda b: {
+                "command": protocol.CMD_MIXER_SET_SOLO,
+                "params": {"track": track, "state": b["solo"]},
+            },
+        )
 
     @mcp.tool(annotations={"title": "Set mixer track name", **_WR})
     def fl_set_mixer_name(track: Annotated[int, Field(ge=0)], name: str) -> dict:
         """Rename a mixer track."""
         return safety.safe_write(
-            get_bridge(), tool="mixer_set_name", scope="mixer_track:%d" % track,
-            command=protocol.CMD_MIXER_SET_NAME, params={"track": track, "name": name},
-            build_restore=lambda b: {"command": protocol.CMD_MIXER_SET_NAME,
-                                     "params": {"track": track, "name": b["name"]}})
+            get_bridge(),
+            tool="mixer_set_name",
+            scope=f"mixer_track:{track}",
+            command=protocol.CMD_MIXER_SET_NAME,
+            params={"track": track, "name": name},
+            build_restore=lambda b: {
+                "command": protocol.CMD_MIXER_SET_NAME,
+                "params": {"track": track, "name": b["name"]},
+            },
+        )
 
     # ---- channel writes -------------------------------------------------
     @mcp.tool(annotations={"title": "Set channel volume", **_WR})
@@ -108,13 +139,16 @@ def register(mcp: FastMCP) -> None:
     ) -> dict:
         """Set a channel-rack channel's volume. unit='db' uses 0.8=unity (0 dB)."""
         return safety.safe_write(
-            get_bridge(), tool="channel_set_volume", scope="channel:%d" % channel,
+            get_bridge(),
+            tool="channel_set_volume",
+            scope=f"channel:{channel}",
             command=protocol.CMD_CHANNEL_SET_VOLUME,
             params={"channel": channel, "value": value, "unit": unit},
-            build_restore=lambda b: {"command": protocol.CMD_CHANNEL_SET_VOLUME,
-                                     "params": {"channel": channel,
-                                                "value": b["vol_norm"],
-                                                "unit": "normalized"}})
+            build_restore=lambda b: {
+                "command": protocol.CMD_CHANNEL_SET_VOLUME,
+                "params": {"channel": channel, "value": b["vol_norm"], "unit": "normalized"},
+            },
+        )
 
     @mcp.tool(annotations={"title": "Set channel pan", **_WR})
     def fl_set_channel_pan(
@@ -123,30 +157,48 @@ def register(mcp: FastMCP) -> None:
     ) -> dict:
         """Set a channel-rack channel's pan position (-1 left .. +1 right)."""
         return safety.safe_write(
-            get_bridge(), tool="channel_set_pan", scope="channel:%d" % channel,
-            command=protocol.CMD_CHANNEL_SET_PAN, params={"channel": channel, "value": value},
-            build_restore=lambda b: {"command": protocol.CMD_CHANNEL_SET_PAN,
-                                     "params": {"channel": channel, "value": b["pan"]}})
+            get_bridge(),
+            tool="channel_set_pan",
+            scope=f"channel:{channel}",
+            command=protocol.CMD_CHANNEL_SET_PAN,
+            params={"channel": channel, "value": value},
+            build_restore=lambda b: {
+                "command": protocol.CMD_CHANNEL_SET_PAN,
+                "params": {"channel": channel, "value": b["pan"]},
+            },
+        )
 
     @mcp.tool(annotations={"title": "Set channel mute", **_WR})
     def fl_set_channel_mute(channel: Annotated[int, Field(ge=0)], state: bool) -> dict:
         """Mute or unmute a channel-rack channel (state=True mutes)."""
         return safety.safe_write(
-            get_bridge(), tool="channel_set_mute", scope="channel:%d" % channel,
-            command=protocol.CMD_CHANNEL_SET_MUTE, params={"channel": channel, "state": state},
+            get_bridge(),
+            tool="channel_set_mute",
+            scope=f"channel:{channel}",
+            command=protocol.CMD_CHANNEL_SET_MUTE,
+            params={"channel": channel, "state": state},
             verify=("mute", state),
-            build_restore=lambda b: {"command": protocol.CMD_CHANNEL_SET_MUTE,
-                                     "params": {"channel": channel, "state": b["mute"]}})
+            build_restore=lambda b: {
+                "command": protocol.CMD_CHANNEL_SET_MUTE,
+                "params": {"channel": channel, "state": b["mute"]},
+            },
+        )
 
     @mcp.tool(annotations={"title": "Set channel solo", **_WR})
     def fl_set_channel_solo(channel: Annotated[int, Field(ge=0)], state: bool) -> dict:
         """Solo or unsolo a channel-rack channel (state=True solos)."""
         return safety.safe_write(
-            get_bridge(), tool="channel_set_solo", scope="channel:%d" % channel,
-            command=protocol.CMD_CHANNEL_SET_SOLO, params={"channel": channel, "state": state},
+            get_bridge(),
+            tool="channel_set_solo",
+            scope=f"channel:{channel}",
+            command=protocol.CMD_CHANNEL_SET_SOLO,
+            params={"channel": channel, "state": state},
             verify=("solo", state),
-            build_restore=lambda b: {"command": protocol.CMD_CHANNEL_SET_SOLO,
-                                     "params": {"channel": channel, "state": b["solo"]}})
+            build_restore=lambda b: {
+                "command": protocol.CMD_CHANNEL_SET_SOLO,
+                "params": {"channel": channel, "state": b["solo"]},
+            },
+        )
 
     # ---- safety ---------------------------------------------------------
     @mcp.tool(annotations={"title": "Take snapshot", **_RO})
@@ -173,9 +225,15 @@ def register(mcp: FastMCP) -> None:
         """Return recent MCP-managed changes. Read-only; does not touch FL."""
         return safety.change_history(limit, include_payload=include_payload)
 
-    @mcp.tool(annotations={"title": "Export change log",
-                           "readOnlyHint": False, "destructiveHint": False,
-                           "idempotentHint": False, "openWorldHint": True})
+    @mcp.tool(
+        annotations={
+            "title": "Export change log",
+            "readOnlyHint": False,
+            "destructiveHint": False,
+            "idempotentHint": False,
+            "openWorldHint": True,
+        }
+    )
     def fl_export_change_log(
         output_path: Annotated[
             str | None,
@@ -191,16 +249,28 @@ def register(mcp: FastMCP) -> None:
         """Export or locate the server-side MCP changelog. Does not touch FL."""
         return safety.export_change_log(output_path, include_payload=include_payload)
 
-    @mcp.tool(annotations={"title": "Rollback last change",
-                           "readOnlyHint": False, "destructiveHint": True,
-                           "idempotentHint": False, "openWorldHint": True})
+    @mcp.tool(
+        annotations={
+            "title": "Rollback last change",
+            "readOnlyHint": False,
+            "destructiveHint": True,
+            "idempotentHint": False,
+            "openWorldHint": True,
+        }
+    )
     def fl_rollback_last_change() -> dict:
         """Undo the most recent write by replaying its pre-change snapshot."""
         return safety.rollback_last_change(get_bridge())
 
-    @mcp.tool(annotations={"title": "Rollback change by id",
-                           "readOnlyHint": False, "destructiveHint": True,
-                           "idempotentHint": False, "openWorldHint": True})
+    @mcp.tool(
+        annotations={
+            "title": "Rollback change by id",
+            "readOnlyHint": False,
+            "destructiveHint": True,
+            "idempotentHint": False,
+            "openWorldHint": True,
+        }
+    )
     def fl_rollback_change(
         change_id: Annotated[str, Field(description="Change id from fl_get_change_history.")],
     ) -> dict:
@@ -210,9 +280,15 @@ def register(mcp: FastMCP) -> None:
         """
         return safety.rollback_change(get_bridge(), change_id)
 
-    @mcp.tool(annotations={"title": "Set dry-run mode",
-                           "readOnlyHint": False, "destructiveHint": False,
-                           "idempotentHint": True, "openWorldHint": True})
+    @mcp.tool(
+        annotations={
+            "title": "Set dry-run mode",
+            "readOnlyHint": False,
+            "destructiveHint": False,
+            "idempotentHint": True,
+            "openWorldHint": True,
+        }
+    )
     def fl_set_dry_run(enabled: bool) -> dict:
         """When on, write tools return a 'planned' preview without changing FL."""
         return safety.set_dry_run(enabled)

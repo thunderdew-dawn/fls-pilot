@@ -18,7 +18,6 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-
 ROOT = Path(__file__).resolve().parents[1]
 TOOLS_DIR = ROOT / "src" / "fl_studio_mcp" / "tools"
 PROTOCOL = ROOT / "src" / "fl_studio_mcp" / "protocol.py"
@@ -125,7 +124,7 @@ def _dict_from_ast(node: ast.AST, known_dicts: dict[str, dict[str, Any]]) -> dic
     if not isinstance(node, ast.Dict):
         return {}
     out: dict[str, Any] = {}
-    for key, value in zip(node.keys, node.values):
+    for key, value in zip(node.keys, node.values, strict=False):
         if key is None:
             if isinstance(value, ast.Name):
                 out.update(known_dicts.get(value.id, {}))
@@ -215,10 +214,12 @@ class FunctionEffects:
 def _function_effects(fn: ast.FunctionDef) -> FunctionEffects:
     calls = [_call_name(n) for n in ast.walk(fn) if isinstance(n, ast.Call)]
     constants = _protocol_constants(fn)
-    has_safe = any(name.endswith(("safety.safe_write",
-                                  "safety.safe_write_group",
-                                  "safety.safe_piano_roll_write"))
-                   for name in calls)
+    has_safe = any(
+        name.endswith(
+            ("safety.safe_write", "safety.safe_write_group", "safety.safe_piano_roll_write")
+        )
+        for name in calls
+    )
     has_apply_notes = any(name.endswith("apply_notes") for name in calls)
     return FunctionEffects(has_safe, has_apply_notes, constants)
 
@@ -238,24 +239,25 @@ def _classify_tool(
     classes = {_constant_class(c) for c in constants}
 
     has_safe = effects.uses_safe or any(helper_effects[name].uses_safe for name in helper_calls)
-    has_apply_notes = (
-        effects.uses_apply_notes
-        or any(helper_effects[name].uses_apply_notes for name in helper_calls)
+    has_apply_notes = effects.uses_apply_notes or any(
+        helper_effects[name].uses_apply_notes for name in helper_calls
     )
 
     evidence_bits: list[str] = []
     if annotations:
-        evidence_bits.append("annotation readOnlyHint=%r destructiveHint=%r"
-                             % (annotations.get("readOnlyHint"),
-                                annotations.get("destructiveHint")))
+        evidence_bits.append(
+            "annotation readOnlyHint={!r} destructiveHint={!r}".format(
+                annotations.get("readOnlyHint"), annotations.get("destructiveHint")
+            )
+        )
     if constants:
-        evidence_bits.append("protocol=%s" % ",".join(sorted(constants)))
+        evidence_bits.append(f"protocol={','.join(sorted(constants))}")
     if has_safe:
         evidence_bits.append("uses safety layer")
     if has_apply_notes:
         evidence_bits.append("uses piano-roll apply_notes")
     if helper_calls:
-        evidence_bits.append("helper_calls=%s" % ",".join(sorted(helper_calls)))
+        evidence_bits.append(f"helper_calls={','.join(sorted(helper_calls))}")
 
     if fn.name in SERVER_STATE_TOOLS:
         return "server-state", "; ".join(evidence_bits) or "server-only state"
@@ -296,16 +298,18 @@ def audit_file(path: Path) -> list[ToolAudit]:
             continue
         annotations = _tool_annotations(decos[0], known_dicts)
         status, evidence = _classify_tool(node, annotations, helper_effects)
-        audits.append(ToolAudit(
-            name=node.name,
-            title=str(annotations.get("title") or ""),
-            path=path,
-            line=node.lineno,
-            read_only_hint=annotations.get("readOnlyHint"),
-            destructive_hint=annotations.get("destructiveHint"),
-            status=status,
-            evidence=evidence,
-        ))
+        audits.append(
+            ToolAudit(
+                name=node.name,
+                title=str(annotations.get("title") or ""),
+                path=path,
+                line=node.lineno,
+                read_only_hint=annotations.get("readOnlyHint"),
+                destructive_hint=annotations.get("destructiveHint"),
+                status=status,
+                evidence=evidence,
+            )
+        )
     return audits
 
 
@@ -340,21 +344,27 @@ def count_by_status(audits: list[ToolAudit]) -> dict[str, int]:
 def print_json(audits: list[ToolAudit]) -> None:
     payload = {
         "summary": count_by_status(audits),
-        "tools": [audit.to_dict() for audit in sorted(
-            audits, key=lambda a: (_rel(a.path), a.line)
-        )],
+        "tools": [
+            audit.to_dict() for audit in sorted(audits, key=lambda a: (_rel(a.path), a.line))
+        ],
     }
     print(json.dumps(payload, indent=2, sort_keys=True))
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--fail-on-gaps", action="store_true",
-                        help="Exit non-zero if write gaps are found.")
-    parser.add_argument("--max-write-gaps", type=int,
-                        help="Exit non-zero if write gaps exceed this baseline.")
-    parser.add_argument("--format", choices=("markdown", "json"), default="markdown",
-                        help="Output format. Default: markdown.")
+    parser.add_argument(
+        "--fail-on-gaps", action="store_true", help="Exit non-zero if write gaps are found."
+    )
+    parser.add_argument(
+        "--max-write-gaps", type=int, help="Exit non-zero if write gaps exceed this baseline."
+    )
+    parser.add_argument(
+        "--format",
+        choices=("markdown", "json"),
+        default="markdown",
+        help="Output format. Default: markdown.",
+    )
     args = parser.parse_args()
 
     audits: list[ToolAudit] = []

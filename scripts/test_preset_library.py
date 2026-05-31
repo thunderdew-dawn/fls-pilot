@@ -4,6 +4,7 @@
 
     python scripts/test_preset_library.py
 """
+
 from __future__ import annotations
 
 import os
@@ -22,7 +23,7 @@ def check(label, cond, detail=""):
     global _P, _F
     _P += 1 if cond else 0
     _F += 0 if cond else 1
-    print("  [%s] %s%s" % ("PASS" if cond else "FAIL", label, ("  -- " + detail) if detail else ""))
+    print(f"  [{'PASS' if cond else 'FAIL'}] {label}{'  -- ' + detail if detail else ''}")
 
 
 def touch(p):
@@ -47,21 +48,34 @@ def main() -> int:
 
     # summary
     s = pre.list_presets()
-    check("summary lists plugins with presets",
-          s["plugins_with_presets"].get("Fruity Parametric EQ 2") == 2, str(s.get("plugins_with_presets")))
-    check("summary counts serum presets", s["serum_preset_count"] == 3, str(s.get("serum_preset_count")))
+    check(
+        "summary lists plugins with presets",
+        s["plugins_with_presets"].get("Fruity Parametric EQ 2") == 2,
+        str(s.get("plugins_with_presets")),
+    )
+    check(
+        "summary counts serum presets",
+        s["serum_preset_count"] == 3,
+        str(s.get("serum_preset_count")),
+    )
     check("summary has channel presets", s.get("channel_presets", {}).get("count") == 1)
 
     # filtered: Serum
     f = pre.list_presets(plugin_filter="Serum")
     serum_names = f["presets"].get("Serum 2 (Xfer)", [])
-    check("Serum filter returns the .serumpreset names",
-          set(serum_names) == {"Vintage Bass", "BA Growl", "LD Saw"}, str(serum_names))
+    check(
+        "Serum filter returns the .serumpreset names",
+        set(serum_names) == {"Vintage Bass", "BA Growl", "LD Saw"},
+        str(serum_names),
+    )
 
     # filtered: a specific FL plugin
     f2 = pre.list_presets(plugin_filter="Parametric EQ")
-    check("plugin filter narrows to that plugin",
-          "Bright Vocal" in f2["presets"].get("Fruity Parametric EQ 2", []), str(f2.get("presets")))
+    check(
+        "plugin filter narrows to that plugin",
+        "Bright Vocal" in f2["presets"].get("Fruity Parametric EQ 2", []),
+        str(f2.get("presets")),
+    )
 
     # score_presets
     m = pre.score_presets(serum_names, "vintage bass")
@@ -73,9 +87,14 @@ def main() -> int:
     del os.environ["FLSTUDIO_MCP_PRESETS"]
     del os.environ["FLSTUDIO_MCP_SERUM_PRESETS"]
     real = pre.list_presets()
-    print("\nREAL read: found=%s | plugins_with_presets=%d | serum=%s" % (
-        real.get("found"), len(real.get("plugins_with_presets", {})),
-        real.get("serum_preset_count")))
+    print(
+        "\nREAL read: found=%s | plugins_with_presets=%d | serum=%s"
+        % (
+            real.get("found"),
+            len(real.get("plugins_with_presets", {})),
+            real.get("serum_preset_count"),
+        )
+    )
 
     print("\n%d passed, %d failed" % (_P, _F))
     return 0 if _F == 0 else 1

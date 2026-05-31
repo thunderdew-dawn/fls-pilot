@@ -4,6 +4,7 @@ This module contains channel-level organization primitives that are higher
 level than the Phase 1 volume/pan/mute/solo setters but still small enough to
 be audited and rolled back individually.
 """
+
 from __future__ import annotations
 
 from typing import Annotated
@@ -73,8 +74,12 @@ def _find_free_mixer_track(bridge, *, start_track: int = 1) -> int | None:
 
 def register(mcp: FastMCP) -> None:
     _RO = {"readOnlyHint": True, "idempotentHint": True, "openWorldHint": True}
-    _WR = {"readOnlyHint": False, "destructiveHint": False,
-           "idempotentHint": True, "openWorldHint": True}
+    _WR = {
+        "readOnlyHint": False,
+        "destructiveHint": False,
+        "idempotentHint": True,
+        "openWorldHint": True,
+    }
 
     @mcp.tool(annotations={"title": "Get channel details", **_RO})
     def fl_get_channel_details(
@@ -107,7 +112,9 @@ def register(mcp: FastMCP) -> None:
     ) -> dict:
         """Rename a channel. Snapshot + readback; rollback restores the prior name."""
         return safety.safe_write(
-            get_bridge(), tool="channel_set_name", scope=f"channel:{channel}",
+            get_bridge(),
+            tool="channel_set_name",
+            scope=f"channel:{channel}",
             command=protocol.CMD_CHANNEL_SET_NAME,
             params={"channel": channel, "name": name},
             build_restore=lambda b: {
@@ -123,7 +130,9 @@ def register(mcp: FastMCP) -> None:
     ) -> dict:
         """Route a channel to a mixer track. Rollback restores the previous target."""
         return safety.safe_write(
-            get_bridge(), tool="channel_set_target", scope=f"channel:{channel}",
+            get_bridge(),
+            tool="channel_set_target",
+            scope=f"channel:{channel}",
             command=protocol.CMD_CHANNEL_SET_TARGET,
             params={"channel": channel, "track": mixer_track},
             verify=("target_fx_track", mixer_track),
@@ -145,7 +154,9 @@ def register(mcp: FastMCP) -> None:
         if track is None:
             return {"ok": False, "error": "no default empty mixer track found"}
         result = safety.safe_write(
-            bridge, tool="channel_assign_free_mixer_track", scope=f"channel:{channel}",
+            bridge,
+            tool="channel_assign_free_mixer_track",
+            scope=f"channel:{channel}",
             command=protocol.CMD_CHANNEL_SET_TARGET,
             params={"channel": channel, "track": track},
             verify=("target_fx_track", track),

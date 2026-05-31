@@ -4,6 +4,7 @@ effects_by_role, against a SYNTHETIC temp 'Installed' tree (no FL).
 
     python scripts/test_plugin_library.py
 """
+
 from __future__ import annotations
 
 import sys
@@ -21,7 +22,7 @@ def check(label, cond, detail=""):
     global _P, _F
     _P += 1 if cond else 0
     _F += 0 if cond else 1
-    print("  [%s] %s%s" % ("PASS" if cond else "FAIL", label, ("  -- " + detail) if detail else ""))
+    print(f"  [{'PASS' if cond else 'FAIL'}] {label}{'  -- ' + detail if detail else ''}")
 
 
 def touch(base, rel):
@@ -38,26 +39,40 @@ def main() -> int:
     touch(base, "Effects/VST3/FabFilter Pro-C 3.fst")
     touch(base, "Effects/New/FabFilter Pro-C 3.fst")
     touch(base, "Effects/VST3/Ozone 12 Equalizer.fst")
-    touch(base, "Effects/VST3/Frequency Splitter.fst")    # must NOT bucket as eq
+    touch(base, "Effects/VST3/Frequency Splitter.fst")  # must NOT bucket as eq
     touch(base, "Generators/Fruity/Sytrus.fst")
     touch(base, "Generators/VST3/Serum 2.fst")
 
     lib = pl.list_installed(str(base))
     check("found the Installed tree", lib.get("found") is True, str(lib.get("error")))
-    check("effects de-duped (Pro-C 3 once)",
-          lib["effects"].count("FabFilter Pro-C 3") == 1, str(lib["effects"]))
+    check(
+        "effects de-duped (Pro-C 3 once)",
+        lib["effects"].count("FabFilter Pro-C 3") == 1,
+        str(lib["effects"]),
+    )
     check("effects count = 4 unique", lib["counts"]["effects"] == 4, str(lib["counts"]))
-    check("generators = Serum 2 + Sytrus", set(lib["generators"]) == {"Serum 2", "Sytrus"},
-          str(lib["generators"]))
+    check(
+        "generators = Serum 2 + Sytrus",
+        set(lib["generators"]) == {"Serum 2", "Sytrus"},
+        str(lib["generators"]),
+    )
 
     roles = pl.effects_by_role(lib["effects"])
-    check("comp bucket has both compressors",
-          set(roles.get("compressor", [])) == {"FabFilter Pro-C 3", "Fruity Compressor"},
-          str(roles.get("compressor")))
-    check("eq bucket has Ozone Equalizer", "Ozone 12 Equalizer" in roles.get("eq", []),
-          str(roles.get("eq")))
-    check("'Frequency Splitter' NOT mis-bucketed as eq",
-          "Frequency Splitter" not in roles.get("eq", []), str(roles.get("eq")))
+    check(
+        "comp bucket has both compressors",
+        set(roles.get("compressor", [])) == {"FabFilter Pro-C 3", "Fruity Compressor"},
+        str(roles.get("compressor")),
+    )
+    check(
+        "eq bucket has Ozone Equalizer",
+        "Ozone 12 Equalizer" in roles.get("eq", []),
+        str(roles.get("eq")),
+    )
+    check(
+        "'Frequency Splitter' NOT mis-bucketed as eq",
+        "Frequency Splitter" not in roles.get("eq", []),
+        str(roles.get("eq")),
+    )
 
     # missing tree -> graceful
     miss = pl.list_installed(str(d / "nope"))

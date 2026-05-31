@@ -28,8 +28,13 @@ def apply_notes(notes, mode="replace", trigger=True, quantize=None, snap_ends=Fa
     """
     if quantize is not None:
         path = write_quantize_script(float(quantize), snap_ends)
-        result = {"ok": True, "action": "quantize", "grid_bars": float(quantize),
-                  "snap_ends": bool(snap_ends), "script": path}
+        result = {
+            "ok": True,
+            "action": "quantize",
+            "grid_bars": float(quantize),
+            "snap_ends": bool(snap_ends),
+            "script": path,
+        }
     else:
         path = write_apply_script(notes, mode)
         result = {"ok": True, "count": len(notes), "script": path, "mode": mode}
@@ -40,6 +45,7 @@ def apply_notes(notes, mode="replace", trigger=True, quantize=None, snap_ends=Fa
 
     try:
         from .pyscript_trigger import trigger_run_last_script
+
         trig = trigger_run_last_script()
         result["triggered"] = True
         result["focused"] = trig.get("focused", False)
@@ -47,16 +53,21 @@ def apply_notes(notes, mode="replace", trigger=True, quantize=None, snap_ends=Fa
         # auto-opened by the caller, but Ctrl+Alt+Y only fires OUR script if
         # MCP_Apply was run once this FL session (no API to arm it). So if notes
         # don't appear, that one-time arm is the cause.
-        result["setup"] = ("If notes did not appear: run 'MCP Apply' ONCE from the "
-                           "Piano roll Scripting menu this FL session (the only "
-                           "manual step -- arms Ctrl+Alt+Y; no FL API to automate it).")
+        result["setup"] = (
+            "If notes did not appear: run 'MCP Apply' ONCE from the "
+            "Piano roll Scripting menu this FL session (the only "
+            "manual step -- arms Ctrl+Alt+Y; no FL API to automate it)."
+        )
         if not trig.get("focused"):
-            result["hint"] = ("Could not focus FL automatically -- click the FL "
-                              "Piano roll and press Ctrl+Alt+Y.")
+            result["hint"] = (
+                "Could not focus FL automatically -- click the FL Piano roll and press Ctrl+Alt+Y."
+            )
     except Exception as e:
         # Script is written regardless; trigger is best-effort.
         result["triggered"] = False
-        result["error"] = "%s: %s" % (type(e).__name__, e)
-        result["hint"] = ("Notes written but auto-trigger failed (%s). Click the "
-                          "FL Piano roll and press Ctrl+Alt+Y to apply." % e)
+        result["error"] = f"{type(e).__name__}: {e}"
+        result["hint"] = (
+            f"Notes written but auto-trigger failed ({e}). Click the "
+            "FL Piano roll and press Ctrl+Alt+Y to apply."
+        )
     return result

@@ -8,6 +8,7 @@ roll everything back and assert the COMP params return to their defaults.
     set FLSTUDIO_MCP_TRANSPORT=tcp
     python scripts/test_compression_intents.py [track] [slot]
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -17,10 +18,9 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from fl_studio_mcp import protocol                       # noqa: E402
-from fl_studio_mcp.connection import get_bridge           # noqa: E402
-from fl_studio_mcp.music import limiter_curves as lc      # noqa: E402
-from fl_studio_mcp.server import build_server             # noqa: E402
+from fl_studio_mcp.connection import get_bridge  # noqa: E402
+from fl_studio_mcp.music import limiter_curves as lc  # noqa: E402
+from fl_studio_mcp.server import build_server  # noqa: E402
 
 TRACK = int(sys.argv[1]) if len(sys.argv) > 1 else 9
 SLOT = int(sys.argv[2]) if len(sys.argv) > 2 else 4
@@ -33,7 +33,7 @@ def check(label, cond, detail=""):
         _P += 1
     else:
         _F += 1
-    print("  [%s] %s%s" % ("PASS" if cond else "FAIL", label, ("  -- " + detail) if detail else ""))
+    print(f"  [{'PASS' if cond else 'FAIL'}] {label}{'  -- ' + detail if detail else ''}")
 
 
 def approx(a, b, tol):
@@ -78,7 +78,10 @@ def unit_tests():
     check("norm_to_ratio(0.5) = 1.0", lc.norm_to_ratio(0.5) == 1.0)
     check("threshold_to_norm(-6) ~ 0.71", approx(lc.threshold_to_norm(-6), 0.71, 0.02))
     check("attack round-trip 50ms", approx(lc.norm_to_attack_ms(lc.attack_ms_to_norm(50)), 50, 2))
-    check("release round-trip 200ms", approx(lc.norm_to_release_ms(lc.release_ms_to_norm(200)), 200, 5))
+    check(
+        "release round-trip 200ms",
+        approx(lc.norm_to_release_ms(lc.release_ms_to_norm(200)), 200, 5),
+    )
     check("knee 0% = norm 0.5", lc.knee_pct_to_norm(0) == 0.5 and lc.norm_to_knee_pct(0.5) == 0)
     check("makeup 0dB = norm 0.5", lc.makeup_db_to_norm(0) == 0.5)
 
@@ -104,38 +107,64 @@ def main() -> int:
     print("\n[2] compression intents end-to-end (track %d slot %d)" % (TRACK, SLOT))
 
     # glue_drums(0.5) -> ~3:1, threshold lowered, attack/release set, makeup up ---
-    r = call("fl_apply_compression_intent",
-             {"track": TRACK, "slot": SLOT, "intent": "glue_drums", "intensity": 0.5})
+    r = call(
+        "fl_apply_compression_intent",
+        {"track": TRACK, "slot": SLOT, "intent": "glue_drums", "intensity": 0.5},
+    )
     print("  glue_drums(0.5):", r.get("set"), "| readback:", r.get("readback"))
     rb = r.get("readback", {})
     x, down = parse_ratio(rb.get("Comp ratio"))
-    check("glue ratio is X:1 (downward, not 1:X)", down is True, "ratio=%r" % rb.get("Comp ratio"))
-    check("glue ratio ~3:1", approx(x, 3.0, 0.6), "X=%s" % x)
-    check("glue threshold lowered (<-3dB)", (_num(rb.get("Comp threshold")) or 0) < -3, rb.get("Comp threshold"))
-    check("glue attack ~30ms", approx(_num(rb.get("Comp attack time")), 30, 8), rb.get("Comp attack time"))
+    check(
+        "glue ratio is X:1 (downward, not 1:X)",
+        down is True,
+        f"ratio={rb.get('Comp ratio')!r}",
+    )
+    check("glue ratio ~3:1", approx(x, 3.0, 0.6), f"X={x}")
+    check(
+        "glue threshold lowered (<-3dB)",
+        (_num(rb.get("Comp threshold")) or 0) < -3,
+        rb.get("Comp threshold"),
+    )
+    check(
+        "glue attack ~30ms",
+        approx(_num(rb.get("Comp attack time")), 30, 8),
+        rb.get("Comp attack time"),
+    )
     check("glue makeup up (>0dB)", (_num(rb.get("Gain")) or 0) > 0, rb.get("Gain"))
 
     # heavy_vocal_compression(0.7) -> ratio ~6-7:1, threshold ~-12dB -------------
-    r = call("fl_apply_compression_intent",
-             {"track": TRACK, "slot": SLOT, "intent": "heavy_vocal_compression", "intensity": 0.7})
+    r = call(
+        "fl_apply_compression_intent",
+        {"track": TRACK, "slot": SLOT, "intent": "heavy_vocal_compression", "intensity": 0.7},
+    )
     print("  heavy_vocal(0.7):", r.get("set"), "| readback:", r.get("readback"))
     rb = r.get("readback", {})
     x, down = parse_ratio(rb.get("Comp ratio"))
-    check("heavy ratio is X:1 (downward)", down is True, "ratio=%r" % rb.get("Comp ratio"))
-    check("heavy ratio ~6-7:1", x is not None and 5.5 <= x <= 8.0, "X=%s" % x)
-    check("heavy threshold ~-12dB", approx(_num(rb.get("Comp threshold")), -11.6, 1.5), rb.get("Comp threshold"))
+    check("heavy ratio is X:1 (downward)", down is True, f"ratio={rb.get('Comp ratio')!r}")
+    check("heavy ratio ~6-7:1", x is not None and 5.5 <= x <= 8.0, f"X={x}")
+    check(
+        "heavy threshold ~-12dB",
+        approx(_num(rb.get("Comp threshold")), -11.6, 1.5),
+        rb.get("Comp threshold"),
+    )
 
     # rollback both -> defaults ---------------------------------------------------
     rb1 = call("fl_rollback_last_change", {}).get("rolled_back")
     rb2 = call("fl_rollback_last_change", {}).get("rolled_back")
     print("  rollbacks:", rb1, rb2)
-    check("both reverted apply_compression_intent",
-          rb1 == "apply_compression_intent" and rb2 == "apply_compression_intent")
+    check(
+        "both reverted apply_compression_intent",
+        rb1 == "apply_compression_intent" and rb2 == "apply_compression_intent",
+    )
 
     post = dump()
     pd = {p["name"]: p["s"] for p in post.get("params", [])}
     check("Comp ratio back to 1:1.0", pd.get("Comp ratio") == "1:1.0", pd.get("Comp ratio"))
-    check("Comp threshold back to 0.0dB", pd.get("Comp threshold") == "0.0dB", pd.get("Comp threshold"))
+    check(
+        "Comp threshold back to 0.0dB",
+        pd.get("Comp threshold") == "0.0dB",
+        pd.get("Comp threshold"),
+    )
     check("full Limiter dump restored to pre-state", post.get("params") == pre.get("params"))
 
     print("\n%d passed, %d failed" % (_P, _F))

@@ -19,6 +19,7 @@ import time
 # macOS implementation
 # ---------------------------------------------------------------------------
 
+
 def _find_fl_macos() -> bool:
     """Check whether FL Studio is running (macOS)."""
     try:
@@ -47,6 +48,7 @@ def _force_focus_macos() -> bool:
 def _trigger_macos(settle: float = 0.35) -> dict:
     """Focus FL Studio and send Cmd+Opt+Y on macOS."""
     import pyautogui
+
     pyautogui.FAILSAFE = False
     found = _find_fl_macos()
     focused = _force_focus_macos() if found else False
@@ -58,6 +60,7 @@ def _trigger_macos(settle: float = 0.35) -> dict:
 # ---------------------------------------------------------------------------
 # Windows implementation (original logic, deferred import)
 # ---------------------------------------------------------------------------
+
 
 def _trigger_windows(settle: float = 0.35) -> dict:
     """Focus FL Studio via Win32 API and send Ctrl+Alt+Y."""
@@ -106,6 +109,7 @@ def _trigger_windows(settle: float = 0.35) -> dict:
         focused = _u.GetForegroundWindow() == hwnd
 
     import pyautogui
+
     pyautogui.FAILSAFE = False
     time.sleep(settle)
     pyautogui.hotkey("ctrl", "alt", "y")
@@ -115,6 +119,7 @@ def _trigger_windows(settle: float = 0.35) -> dict:
 # ---------------------------------------------------------------------------
 # Public API -- dispatch by platform
 # ---------------------------------------------------------------------------
+
 
 def trigger_run_last_script(settle: float = 0.35) -> dict:
     """Focus FL Studio and send the 'run last script' hotkey.

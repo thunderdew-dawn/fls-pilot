@@ -8,25 +8,48 @@ The .fst BASENAME is the plugin name FL uses. We only read the directory listing
 (names) -- never file contents. Read-only; pure filesystem. (FL still can't LOAD
 these via the API; this is for library-aware SUGGESTIONS.)
 """
+
 from __future__ import annotations
 
 import os
 from pathlib import Path
 
-_ENV = "FLSTUDIO_MCP_PLUGIN_DB"     # override: full path to the 'Installed' folder
+_ENV = "FLSTUDIO_MCP_PLUGIN_DB"  # override: full path to the 'Installed' folder
 
 # Rough keyword buckets for EFFECTS, a convenience for chain suggestions. Fuzzy
 # (a name can land in several roles); the full effects list stays authoritative.
 _ROLE_KW = {
     "eq": ("equaliz", " eq", "eq ", "pro-q", "proq"),
-    "compressor": ("compress", "pro-c", "proc", "vc 76", "vc76", "1176", "la-2a",
-                   "opto", "glue", "dynamics", "comp"),
-    "reverb": ("reverb", "reeverb", "verb", "rc 48", "rc48", "raum", " room",
-               "hall", "plate"),
+    "compressor": (
+        "compress",
+        "pro-c",
+        "proc",
+        "vc 76",
+        "vc76",
+        "1176",
+        "la-2a",
+        "opto",
+        "glue",
+        "dynamics",
+        "comp",
+    ),
+    "reverb": ("reverb", "reeverb", "verb", "rc 48", "rc48", "raum", " room", "hall", "plate"),
     "delay": ("delay", "echo", "replika"),
     "de-esser": ("de-ess", "deess", "de ess", "esser"),
-    "saturation": ("saturat", "tape", "overdrive", "distort", "drive", "dirt",
-                   "exciter", "decapitat", "clipper", "fresh air", "blood", "warmth"),
+    "saturation": (
+        "saturat",
+        "tape",
+        "overdrive",
+        "distort",
+        "drive",
+        "dirt",
+        "exciter",
+        "decapitat",
+        "clipper",
+        "fresh air",
+        "blood",
+        "warmth",
+    ),
     "limiter": ("limiter", "maxim", "unlimit"),
     "pitch": ("auto-tune", "autotune", "auto-key", "pitch", "tuner", "newtone"),
     "width": ("imager", "stereo", "width", "widen", "spread"),
@@ -66,12 +89,20 @@ def list_installed(base=None):
     {found, path, effects:[...], generators:[...], counts}. Read-only."""
     base = base or find_plugin_db()
     if not base or not os.path.isdir(base):
-        return {"found": False, "path": base,
-                "error": "FL plugin-db 'Installed' folder not found; set %s to its path." % _ENV}
+        return {
+            "found": False,
+            "path": base,
+            "error": f"FL plugin-db 'Installed' folder not found; set {_ENV} to its path.",
+        }
     eff = sorted(_names(os.path.join(base, "Effects")), key=str.lower)
     gen = sorted(_names(os.path.join(base, "Generators")), key=str.lower)
-    return {"found": True, "path": base, "effects": eff, "generators": gen,
-            "counts": {"effects": len(eff), "generators": len(gen)}}
+    return {
+        "found": True,
+        "path": base,
+        "effects": eff,
+        "generators": gen,
+        "counts": {"effects": len(eff), "generators": len(gen)},
+    }
 
 
 def effects_by_role(effect_names):

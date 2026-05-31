@@ -4,6 +4,7 @@ Peaks (mixer.getTrackPeaks) are only meaningful while audio is PLAYING.
 measure_track_level samples a short window and reports playing=False when
 nothing registers (the silence guard), so callers can fall back gracefully.
 """
+
 from __future__ import annotations
 
 import math
@@ -11,7 +12,7 @@ import time
 
 from .. import protocol
 
-SILENCE = 1e-4          # linear peak below this over the whole window == no signal
+SILENCE = 1e-4  # linear peak below this over the whole window == no signal
 
 
 def peak_to_db(peak):
@@ -36,14 +37,22 @@ def measure_track_level(bridge, track, samples=20, interval_ms=100):
 
     usable = [v for v in vals if v >= SILENCE]
     if not usable:
-        return {"track": track, "playing": False,
-                "avg_db": None, "peak_db": None, "n_reads": len(vals)}
+        return {
+            "track": track,
+            "playing": False,
+            "avg_db": None,
+            "peak_db": None,
+            "n_reads": len(vals),
+        }
 
     avg = sum(usable) / len(usable)
-    return {"track": track, "playing": True,
-            "avg_db": round(peak_to_db(avg), 2),
-            "peak_db": round(peak_to_db(max(usable)), 2),
-            "n_reads": len(vals)}
+    return {
+        "track": track,
+        "playing": True,
+        "avg_db": round(peak_to_db(avg), 2),
+        "peak_db": round(peak_to_db(max(usable)), 2),
+        "n_reads": len(vals),
+    }
 
 
 def measure_many(bridge, tracks, samples=15, interval_ms=100):
@@ -71,11 +80,21 @@ def measure_many(bridge, tracks, samples=15, interval_ms=100):
     for t, vals in acc.items():
         usable = [v for v in vals if v >= SILENCE]
         if usable:
-            out[t] = {"track": t, "playing": True,
-                      "avg_db": round(peak_to_db(sum(usable) / len(usable)), 2),
-                      "peak_db": round(peak_to_db(max(usable)), 2),
-                      "peak_lin": max(usable), "n_reads": len(vals)}
+            out[t] = {
+                "track": t,
+                "playing": True,
+                "avg_db": round(peak_to_db(sum(usable) / len(usable)), 2),
+                "peak_db": round(peak_to_db(max(usable)), 2),
+                "peak_lin": max(usable),
+                "n_reads": len(vals),
+            }
         else:
-            out[t] = {"track": t, "playing": False, "avg_db": None,
-                      "peak_db": None, "peak_lin": None, "n_reads": len(vals)}
+            out[t] = {
+                "track": t,
+                "playing": False,
+                "avg_db": None,
+                "peak_db": None,
+                "peak_lin": None,
+                "n_reads": len(vals),
+            }
     return out

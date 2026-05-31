@@ -8,6 +8,7 @@ then rolls back and confirms the project returns to its exact prior routing.
     set FLSTUDIO_MCP_TRANSPORT=tcp
     python scripts/test_route_write.py [src] [dst]
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -16,9 +17,9 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from fl_studio_mcp import protocol                       # noqa: E402
-from fl_studio_mcp.connection import get_bridge           # noqa: E402
-from fl_studio_mcp.server import build_server             # noqa: E402
+from fl_studio_mcp import protocol  # noqa: E402
+from fl_studio_mcp.connection import get_bridge  # noqa: E402
+from fl_studio_mcp.server import build_server  # noqa: E402
 
 SRC = int(sys.argv[1]) if len(sys.argv) > 1 else 9
 DST = int(sys.argv[2]) if len(sys.argv) > 2 else 1
@@ -31,7 +32,7 @@ def check(label, cond, detail=""):
         _P += 1
     else:
         _F += 1
-    print("  [%s] %s%s" % ("PASS" if cond else "FAIL", label, ("  -- " + detail) if detail else ""))
+    print(f"  [{'PASS' if cond else 'FAIL'}] {label}{'  -- ' + detail if detail else ''}")
 
 
 def unwrap(result):
@@ -66,16 +67,28 @@ def main() -> int:
 
     r = call("fl_set_route", {"src": SRC, "dst": DST, "enabled": True})
     print("set_route(%d->%d, on) -> after=%s" % (SRC, DST, r.get("after")))
-    check("set_route readback enabled=True", (r.get("after") or {}).get("enabled") is True, str(r.get("after")))
+    check(
+        "set_route readback enabled=True",
+        (r.get("after") or {}).get("enabled") is True,
+        str(r.get("after")),
+    )
     mid = routes_of(bridge, SRC)
-    check("%d -> %d now ON" % (SRC, DST), DST in mid, "routes=%s" % sorted(x for x in mid if x is not None))
+    check(
+        "%d -> %d now ON" % (SRC, DST),
+        DST in mid,
+        f"routes={sorted(x for x in mid if x is not None)}",
+    )
     check("default %d -> Master still present" % SRC, 0 in mid)
 
     rb = call("fl_rollback_last_change", {})
-    print("rollback -> %s  restored=%s" % (rb.get("rolled_back"), rb.get("restored")))
+    print(f"rollback -> {rb.get('rolled_back')}  restored={rb.get('restored')}")
     post = routes_of(bridge, SRC)
     print("post routes of track %d: %s" % (SRC, sorted(x for x in post if x is not None)))
-    check("rollback removed %d -> %d" % (SRC, DST), DST not in post, "routes=%s" % sorted(x for x in post if x is not None))
+    check(
+        "rollback removed %d -> %d" % (SRC, DST),
+        DST not in post,
+        f"routes={sorted(x for x in post if x is not None)}",
+    )
     check("post routing == pre routing", post == pre)
 
     print("\n%d passed, %d failed" % (_P, _F))

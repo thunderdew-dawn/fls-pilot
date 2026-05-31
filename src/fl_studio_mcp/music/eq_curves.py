@@ -11,14 +11,15 @@ These curves are SPECIFIC to Fruity Parametric EQ 2. Other plugins
 
 Pure functions only -- no bridge, no I/O -- so they're trivially unit-testable.
 """
+
 from __future__ import annotations
 
 import math
 
 # --- constants (from calibration) -------------------------------------------
-FREQ_MIN_HZ = 20.0          # norm 0.0
-FREQ_DECADES = 3.0          # 20 Hz * 10**3 = 20000 Hz at norm 1.0
-LEVEL_RANGE_DB = 18.0       # +/-18 dB full scale; 0 dB at norm 0.5
+FREQ_MIN_HZ = 20.0  # norm 0.0
+FREQ_DECADES = 3.0  # 20 Hz * 10**3 = 20000 Hz at norm 1.0
+LEVEL_RANGE_DB = 18.0  # +/-18 dB full scale; 0 dB at norm 0.5
 
 
 def _clamp01(n: float) -> float:
@@ -83,8 +84,7 @@ _BAND_OFFSET = {"level": -1, "freq": 6, "width": 13, "type": 20}
 def eq2_band_param_index(band: int, which: str) -> int:
     """Param index for (1-based) band N's ``which`` ('level'|'freq'|'width'|'type')."""
     if not 1 <= band <= 7:
-        raise ValueError("EQ2 band must be 1..7, got %r" % (band,))
+        raise ValueError(f"EQ2 band must be 1..7, got {band!r}")
     if which not in _BAND_OFFSET:
-        raise ValueError("which must be one of %s, got %r"
-                         % (sorted(_BAND_OFFSET), which))
+        raise ValueError(f"which must be one of {sorted(_BAND_OFFSET)}, got {which!r}")
     return _BAND_OFFSET[which] + band
