@@ -5,6 +5,62 @@
 > [`docs/CHANGELOG.md`](docs/CHANGELOG.md). The tool surface is unchanged;
 > phase work continues on top of the new transport.
 
+## Non-negotiable safety contract
+
+This project follows the contribution rule strictly: **no tool may modify FL
+Studio state unless the change is reversible through the MCP safety layer**.
+Read-only actions are the only exception.
+
+For every write-capable tool, the required shape is:
+
+1. Take a scoped snapshot before the write.
+2. Execute the smallest practical change.
+3. Read back the affected state.
+4. Persist a change-log entry with enough restore data to undo it.
+5. Return a human-readable before/after result.
+6. Support rollback through the MCP rollback path.
+
+This applies to mixer, channel, pattern, playlist, piano-roll, routing, plugin,
+effect-slot, project-tempo, time-signature, UI-assisted, and bulk operations.
+Multi-step tools must apply as one named rollback unit unless explicitly split
+into smaller user-approved changes.
+
+Tools that cannot provide rollback are limited to read-only diagnosis, dry-run
+planning, or clearly labelled manual instructions. They must not silently make
+irreversible changes in FL Studio.
+
+Transport-only runtime controls such as play, stop, and preview note triggering
+do not change the saved project structure, but any persisted project mutation
+such as tempo, pattern edits, channel routing, note writes, or mixer/plugin
+changes must follow this contract.
+
+## Phase A — Safety baseline before expansion
+
+Before adding the API-backed production suite:
+
+- [x] Add the PR-facing capability/safety audit document and static tool audit
+      script: [`docs/API_CAPABILITY_AUDIT.md`](docs/API_CAPABILITY_AUDIT.md)
+      and `scripts/audit_tool_safety.py`.
+- [x] Inventory every MCP tool and mark it as read-only, transient runtime
+      control, write with rollback, or write gap. Current baseline:
+      `scripts/audit_tool_safety.py --max-write-gaps 9`.
+- [ ] Move existing direct project writes behind `safety.safe_write` or
+      `safety.safe_write_group`. Initial gaps: tempo set, arrangement
+      pattern/marker writes, Piano Roll generated-script writes, and compose
+      tools that call the Piano Roll bridge.
+- [ ] Add snapshot scopes for new API-backed domains:
+      channel name, channel mixer target, step grid/step params, pattern
+      name/color/length/current selection, playlist track name/color/mute/solo,
+      effect slot mix/bypass, project time signature, and native mixer EQ.
+- [ ] Add grouped/named rollback units for project organizer, routing doctor,
+      step-pattern writes, and bulk operations.
+- [ ] Treat Piano Roll generated-script transforms as write tools: they need
+      a reversible representation or must stay dry-run/manual until rollback is
+      solved for that operation.
+- [ ] Document each tool's safety class in its docstring and MCP annotations.
+- [ ] Add tests for planned restore payloads where FL-live tests are not
+      practical.
+
 Tracking the full scope — eight phases shipping the MCP server, the scale/mode
 composition tools, the SKILL.md, evals, and the Claude Code plugin marketplace
 bundle.
