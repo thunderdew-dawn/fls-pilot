@@ -99,6 +99,9 @@ CMD_MIXER_SET_PAN = "mixer_set_pan"
 CMD_MIXER_SET_MUTE = "mixer_set_mute"
 CMD_MIXER_SET_SOLO = "mixer_set_solo"
 CMD_MIXER_SET_NAME = "mixer_set_name"
+CMD_MIXER_SELECTED = "mixer_selected"
+CMD_MIXER_SELECT_TRACK = "mixer_select_track"
+CMD_MIXER_SET_STEREO_SEP = "mixer_set_stereo_sep"
 
 # Channels (Phase 1)
 CMD_CHANNEL_LIST = "channel_list"
@@ -145,6 +148,7 @@ CMD_CHANNEL_GET_COLOR = "channel_get_color"
 
 # Plugin presets (navigate/read) -- op: info | next | prev
 CMD_PLUGIN_PRESET = "plugin_preset"  # getPresetCount/next/prev/getName
+CMD_PLUGIN_GET_PRESET_NAME = "plugin_get_preset_name"
 
 # API introspection / arrangement probe -- op: dir | ppq | marker_add | undo
 CMD_API_PROBE = "api_probe"
@@ -156,6 +160,26 @@ CMD_ARRANGE_ADD_MARKER = "arrange_add_marker"  # addAutoTimeMarker at a bar
 
 # Note-bridge hardening -- ensure the Piano roll is open before a note-write
 CMD_ENSURE_PIANO_ROLL = "ensure_piano_roll"  # ui.showWindow(widPianoRoll)
+
+# Phase A safety baseline expansion commands
+CMD_CHANNEL_GET_STEPS = "channel_get_steps"
+CMD_PATTERN_GET = "pattern_get"
+CMD_PATTERN_SELECTED = "pattern_selected"
+CMD_PLAYLIST_GET_TRACK = "playlist_get_track"
+CMD_PLAYLIST_LIST_TRACKS = "playlist_list_tracks"
+CMD_PLAYLIST_SET_MUTE = "playlist_set_mute"
+CMD_PLAYLIST_SET_SOLO = "playlist_set_solo"
+CMD_PLAYLIST_SET_NAME = "playlist_set_name"
+CMD_PLAYLIST_SET_COLOR = "playlist_set_color"
+CMD_PLAYLIST_SELECT_TRACK = "playlist_select_track"
+CMD_MIXER_GET_SLOT = "mixer_get_slot"
+CMD_MIXER_GET_EQ = "mixer_get_eq"
+CMD_MIXER_SET_EQ = "mixer_set_eq"
+CMD_GET_TIME_SIG = "get_time_sig"
+CMD_SET_TIME_SIG = "set_time_sig"
+
+# Phase 1 Step Sequencer commands
+CMD_CHANNEL_SET_STEPS = "channel_set_steps"
 
 
 # ---------------------------------------------------------------------------

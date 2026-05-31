@@ -26,6 +26,14 @@ from .protocol import (
     CMD_MIXER_LIST_TRACKS,
     CMD_PATTERN_LIST,
     CMD_PLUGIN_GET_PARAM,
+    CMD_CHANNEL_GET_STEPS,
+    CMD_PATTERN_GET,
+    CMD_PATTERN_SELECTED,
+    CMD_PLAYLIST_GET_TRACK,
+    CMD_MIXER_GET_SLOT,
+    CMD_MIXER_GET_EQ,
+    CMD_GET_TIME_SIG,
+    CMD_MIXER_SELECTED,
 )
 
 _DIR = Path.home() / ".flstudio-mcp"
@@ -174,12 +182,17 @@ def take_snapshot(bridge, scope):
     scope: "mixer_track:N" | "channel:N" | "mixer_all" | "channels_all"
            | "plugin_param:TRACK:SLOT:PARAM" | "tempo" | "selected_channel"
            | "patterns_all" | "project_state"
+           | "channel_steps:CHANNEL[:PATTERN]" | "pattern:INDEX" | "patterns_selected"
+           | "playlist_track:INDEX" | "mixer_eq:TRACK" | "effect_slot:TRACK:SLOT"
+           | "time_signature"
     """
     kind, _, arg = str(scope).partition(":")
     if kind == "tempo":
         return bridge.call(CMD_GET_TEMPO)
     if kind == "selected_channel":
         return bridge.call(CMD_CHANNEL_SELECTED)
+    if kind == "mixer_selection":
+        return bridge.call(CMD_MIXER_SELECTED)
     if kind == "project_state":
         return bridge.call(CMD_GET_PROJECT_STATE)
     if kind == "patterns_all":
@@ -208,6 +221,25 @@ def take_snapshot(bridge, scope):
         from .connection import fetch_all_pages
 
         return fetch_all_pages(bridge, CMD_CHANNEL_LIST, "channels")
+    if kind == "channel_steps":
+        parts = [int(x) for x in arg.split(":")]
+        params = {"channel": parts[0]}
+        if len(parts) > 1:
+            params["pattern"] = parts[1]
+        return bridge.call(CMD_CHANNEL_GET_STEPS, params)
+    if kind == "pattern":
+        return bridge.call(CMD_PATTERN_GET, {"index": int(arg)})
+    if kind == "patterns_selected":
+        return bridge.call(CMD_PATTERN_SELECTED)
+    if kind == "playlist_track":
+        return bridge.call(CMD_PLAYLIST_GET_TRACK, {"index": int(arg)})
+    if kind == "mixer_eq":
+        return bridge.call(CMD_MIXER_GET_EQ, {"track": int(arg)})
+    if kind == "effect_slot":
+        track, slot = (int(x) for x in arg.split(":"))
+        return bridge.call(CMD_MIXER_GET_SLOT, {"track": track, "slot": slot})
+    if kind == "time_signature":
+        return bridge.call(CMD_GET_TIME_SIG)
     raise ValueError(f"unknown snapshot scope: {scope!r}")
 
 

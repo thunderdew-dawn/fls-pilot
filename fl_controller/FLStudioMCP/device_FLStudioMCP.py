@@ -119,6 +119,11 @@ def OnInit():
             "[FLStudioMCP] WARNING: device.midiOutSysex not available -- "
             "responses cannot be sent back to the MCP server."
         )
+    # Enable track metering
+    try:
+        device.setHasMeters()
+    except Exception:
+        pass
     # Send a heartbeat immediately so the server doesn't have to wait.
     _emit_heartbeat()
     return
@@ -298,7 +303,7 @@ def _h_ping(params):
     return {
         "fl_version": _fl_version,
         "protocol_version": PROTOCOL_VERSION,
-        "build": "channels-v16",  # reload marker -- bump to verify reloads take
+        "build": "channels-v35",  # reload marker -- bump to verify reloads take
         "ts": time.time(),
     }
 
@@ -457,6 +462,18 @@ def _h_get_project_state(params):
 
 
 def _mixer_track_dict(i):
+    dock = -1
+    try:
+        if hasattr(mixer, "getTrackDockSide"):
+            dock = int(mixer.getTrackDockSide(i))
+    except Exception:
+        pass
+    sep = 0.0
+    try:
+        if hasattr(mixer, "getTrackStereoSep"):
+            sep = round(float(mixer.getTrackStereoSep(i)), 4)
+    except Exception:
+        pass
     return {
         "i": i,
         "name": mixer.getTrackName(i),
@@ -464,6 +481,8 @@ def _mixer_track_dict(i):
         "mute": bool(mixer.isTrackMuted(i)),
         "solo": bool(mixer.isTrackSolo(i)),
         "color": _color_out(_safe_track_color(i)),
+        "dock_side": dock,
+        "stereo_sep": sep,
         **_vol_out(mixer.getTrackVolume(i)),
     }
 
@@ -941,6 +960,23 @@ def _h_mixer_get_peaks(p):
     return out
 
 
+def _h_mixer_selected(params):
+    return {"track": mixer.trackNumber()}
+
+
+def _h_mixer_select_track(params):
+    track = int(params["track"])
+    mixer.setTrackNumber(track)
+    return {"track": track}
+
+
+def _h_mixer_set_stereo_sep(p):
+    track = int(p["track"])
+    val = float(p["value"])
+    mixer.setTrackStereoSep(track, val)
+    return {"track": track, "stereo_sep": round(mixer.getTrackStereoSep(track), 4)}
+
+
 # -- Plugin preset navigate/read (op: info | next | prev) --------------------
 
 
@@ -979,6 +1015,11 @@ def _h_plugin_preset(p):
         except Exception:
             out[key] = None
     return out
+
+
+def _h_plugin_get_preset_name(p):
+    p["op"] = "info"
+    return _h_plugin_preset(p)
 
 
 # -- API introspection / arrangement probe -----------------------------------
@@ -1060,12 +1101,22 @@ def _h_api_probe(p):
 
 
 def _h_pattern_list(p):
-    """Budget-paginated pattern list: {pattern (1-based), name}. Thin read."""
+    """Budget-paginated pattern list with name, color, and length."""
 
     def entry(i):
         pn = i + 1  # FL patterns are 1-based
         name, cut = _truncate_name(patterns.getPatternName(pn))
-        e = {"pattern": pn, "name": name}
+        try:
+            length = patterns.getPatternLength(pn)
+        except Exception:
+            length = 16
+        e = {
+            "pattern": pn,
+            "index": pn,
+            "name": name,
+            "color": _color_out(_safe_pattern_color(pn)),
+            "length": length or 16,
+        }
         if cut:
             e["trunc"] = True
         return e
@@ -1196,6 +1247,364 @@ def _h_arrange_add_marker(p):
         return {"ok": False, "error": f"addAutoTimeMarker: {e}"}
 
 
+def _safe_pattern_color(i):
+    try:
+        return int(patterns.getPatternColor(i)) & 0xFFFFFF
+    except Exception:
+        return 0
+
+
+def _safe_playlist_track_color(i):
+    try:
+        return int(playlist.getTrackColor(i)) & 0xFFFFFF
+    except Exception:
+        return 0
+
+
+def _h_channel_get_steps(p):
+    idx = int(p["channel"])
+    steps = int(p.get("steps", 64))
+    target_pattern = p.get("pattern")
+    previous_pattern = None
+    if target_pattern is not None:
+        target_pattern = int(target_pattern)
+        previous_pattern = patterns.patternNumber()
+        if target_pattern < 1 or target_pattern > patterns.patternCount():
+            raise _ClientError("pattern index out of range")
+        if previous_pattern != target_pattern:
+            patterns.jumpToPattern(target_pattern)
+    grid, vel, pan, shift, rep = [], [], [], [], []
+    try:
+        for s in range(steps):
+            try:
+                g = bool(channels.getGridBit(idx, s))
+            except Exception:
+                g = False
+            grid.append(g)
+
+            try:
+                raw_v = channels.getStepParam(idx, s, midi.pVelocity, 0, 0)
+                v = round(float(raw_v) / 127.0, 4)
+            except Exception:
+                v = 0.8
+            vel.append(v)
+
+            try:
+                raw_pan = channels.getStepParam(idx, s, midi.pPan, 0, 0)
+                pn = round(float(raw_pan) / 64.0 - 1.0, 4)
+            except Exception:
+                pn = 0.0
+            pan.append(pn)
+
+            try:
+                raw_shift = channels.getStepParam(idx, s, midi.pShift, 0, 0)
+                sh = round(float(raw_shift) / 240.0, 4)
+            except Exception:
+                sh = 0.0
+            shift.append(sh)
+
+            try:
+                rp = int(channels.getStepParam(idx, s, midi.pRepeat, 0, 0))
+            except Exception:
+                rp = 0
+            rep.append(rp)
+
+        return {
+            "channel": idx,
+            "pattern": patterns.patternNumber(),
+            "grid": grid,
+            "vel": vel,
+            "pan": pan,
+            "shift": shift,
+            "rep": rep,
+        }
+    finally:
+        if previous_pattern is not None and previous_pattern != patterns.patternNumber():
+            patterns.jumpToPattern(previous_pattern)
+
+
+def _h_pattern_get(p):
+    idx = int(p["index"])
+    if idx < 1 or idx > patterns.patternCount():
+        raise _ClientError("pattern index out of range")
+    try:
+        length = patterns.getPatternLength(idx)
+    except Exception:
+        length = 16
+    return {
+        "index": idx,
+        "name": patterns.getPatternName(idx),
+        "color": _color_out(_safe_pattern_color(idx)),
+        "length": length or 16,
+    }
+
+
+def _h_pattern_selected(p):
+    return {"selected": patterns.patternNumber()}
+
+
+def _h_playlist_get_track(p):
+    idx = int(p["index"])
+    if idx < 1 or idx > playlist.trackCount():
+        raise _ClientError("playlist track index out of range")
+    return {
+        "index": idx,
+        "name": playlist.getTrackName(idx) or "",
+        "color": _color_out(_safe_playlist_track_color(idx)),
+        "mute": bool(playlist.isTrackMuted(idx)),
+        "solo": bool(playlist.isTrackSolo(idx)),
+        "selected": bool(playlist.isTrackSelected(idx)),
+    }
+
+
+def _h_pattern_select(p):
+    idx = int(p["index"])
+    if idx < 1 or idx > patterns.patternCount():
+        raise _ClientError("pattern index out of range")
+    patterns.jumpToPattern(idx)
+    return {"selected": patterns.patternNumber()}
+
+
+def _h_pattern_rename(p):
+    idx = int(p["index"])
+    name = str(p["name"])
+    if idx < 1 or idx > patterns.patternCount():
+        raise _ClientError("pattern index out of range")
+    patterns.setPatternName(idx, name)
+    return {"index": idx, "name": patterns.getPatternName(idx)}
+
+
+def _h_pattern_get_length(p):
+    idx = int(p["index"])
+    if idx < 1 or idx > patterns.patternCount():
+        raise _ClientError("pattern index out of range")
+    beats = patterns.getPatternLength(idx)
+    return {"index": idx, "beats": beats, "steps": beats * 4}
+
+
+def _h_playlist_list_tracks(p):
+    def entry(i):
+        track_num = i + 1  # 1-based playlist tracks
+        return {
+            "index": track_num,
+            "name": playlist.getTrackName(track_num) or "",
+            "color": _color_out(_safe_playlist_track_color(track_num)),
+            "mute": bool(playlist.isTrackMuted(track_num)),
+            "solo": bool(playlist.isTrackSolo(track_num)),
+            "selected": bool(playlist.isTrackSelected(track_num)),
+        }
+    return _paginate(playlist.trackCount(), p.get("start", 0), entry, "tracks")
+
+
+def _h_playlist_set_mute(p):
+    idx = int(p["index"])
+    state = bool(p["state"])
+    if idx < 1 or idx > playlist.trackCount():
+        raise _ClientError("playlist track index out of range")
+    playlist.muteTrack(idx, 1 if state else 0)
+    return {"index": idx, "mute": bool(playlist.isTrackMuted(idx))}
+
+
+def _h_playlist_set_solo(p):
+    idx = int(p["index"])
+    state = bool(p["state"])
+    if idx < 1 or idx > playlist.trackCount():
+        raise _ClientError("playlist track index out of range")
+    playlist.soloTrack(idx, 1 if state else 0)
+    return {"index": idx, "solo": bool(playlist.isTrackSolo(idx))}
+
+
+def _h_playlist_set_name(p):
+    idx = int(p["index"])
+    name = str(p["name"])
+    if idx < 1 or idx > playlist.trackCount():
+        raise _ClientError("playlist track index out of range")
+    playlist.setTrackName(idx, name)
+    return {"index": idx, "name": playlist.getTrackName(idx)}
+
+
+def _h_playlist_set_color(p):
+    idx = int(p["index"])
+    if idx < 1 or idx > playlist.trackCount():
+        raise _ClientError("playlist track index out of range")
+    color_val = _resolve_color(p)
+    playlist.setTrackColor(idx, color_val)
+    return {"index": idx, "color": _color_out(_safe_playlist_track_color(idx))}
+
+
+def _h_playlist_select_track(p):
+    idx = int(p["index"])
+    state = bool(p.get("state", True))
+    if idx < 1 or idx > playlist.trackCount():
+        raise _ClientError("playlist track index out of range")
+    playlist.selectTrack(idx, 1 if state else 0)
+    return {"index": idx, "selected": bool(playlist.isTrackSelected(idx))}
+
+
+def _h_mixer_get_slot(p):
+    track = int(p["track"])
+    slot = int(p["slot"])
+    valid = bool(plugins.isValid(track, slot))
+    name = plugins.getPluginName(track, slot) if valid else ""
+    mix = round(mixer.getPluginMixLevel(track, slot), 4)
+    mute_fn = getattr(plugins, "getPluginMuteState", None)
+    enabled = True
+    if mute_fn is not None:
+        try:
+            enabled = not bool(mute_fn(track, slot))
+        except Exception:
+            pass
+    return {
+        "track": track,
+        "slot": slot,
+        "valid": valid,
+        "name": name,
+        "mix": mix,
+        "enabled": enabled,
+    }
+
+
+def _h_mixer_get_eq(p):
+    track = int(p["track"])
+    bands = []
+    for b in range(3):
+        bands.append({
+            "band": b,
+            "gain": round(mixer.getEqGain(track, b), 4),
+            "frequency": round(mixer.getEqFrequency(track, b), 4),
+            "bandwidth": round(mixer.getEqBandwidth(track, b), 4) if hasattr(mixer, "getEqBandwidth") else 1.0,
+            "type": _get_eq_type(track, b),
+        })
+    return {"track": track, "bands": bands}
+
+
+def _get_eq_type(track, band):
+    eq_type_base = getattr(midi, "REC_Mixer_EQ_Type", None)
+    if eq_type_base is None:
+        return 0
+    try:
+        plugin_id = mixer.getTrackPluginId(track, 0)
+        val = mixer.getEventValue(eq_type_base + band + plugin_id)
+        return int(val)
+    except Exception:
+        return 0
+
+
+def _h_mixer_set_eq(p):
+    track = int(p["track"])
+    band = int(p["band"])
+    if band < 0 or band > 2:
+        raise _ClientError("band out of range (0-2)")
+    plugin_id = mixer.getTrackPluginId(track, 0)
+    flags = midi.REC_Control | midi.REC_UpdateControl | midi.REC_UpdateValue
+    if "gain" in p:
+        mixer.setEqGain(track, band, float(p["gain"]))
+    if "frequency" in p:
+        mixer.setEqFrequency(track, band, float(p["frequency"]))
+    if "bandwidth" in p and hasattr(mixer, "setEqBandwidth"):
+        mixer.setEqBandwidth(track, band, float(p["bandwidth"]))
+    if "type" in p:
+        type_val = int(p["type"])
+        eq_type_base = getattr(midi, "REC_Mixer_EQ_Type", None)
+        if eq_type_base is not None:
+            general.processRECEvent(eq_type_base + band + plugin_id, type_val, flags)
+    return _h_mixer_get_eq({"track": track})
+
+
+def _h_get_time_sig(p):
+    try:
+        ppb = general.getRecPPB()
+        ppq = general.getRecPPQ()
+        if ppq > 0:
+            num = ppb // ppq
+            if num * ppq == ppb:
+                return {"numerator": num, "denominator": 4}
+            num8 = ppb // (ppq // 2)
+            if num8 * (ppq // 2) == ppb:
+                return {"numerator": num8, "denominator": 8}
+        return {"numerator": 4, "denominator": 4}
+    except Exception:
+        return {"numerator": 4, "denominator": 4}
+
+
+def _h_set_time_sig(p):
+    num = int(p["numerator"])
+    den = int(p["denominator"])
+    if den not in (4, 8):
+        raise _ClientError("time signature denominator must be 4 or 8 for safe readback")
+    try:
+        general.setNumerator(num)
+        general.setDenominator(den)
+    except Exception as e:
+        raise _ClientError(f"failed to set time signature: {e}")
+    return _h_get_time_sig({})
+
+
+def _h_channel_set_steps(p):
+    idx = int(p["channel"])
+    steps_list = p.get("steps", [])
+    target_pattern = int(p.get("pattern") or patterns.patternNumber())
+    if target_pattern < 1 or target_pattern > patterns.patternCount():
+        raise _ClientError("pattern index out of range")
+    previous_pattern = patterns.patternNumber()
+    if previous_pattern != target_pattern:
+        patterns.jumpToPattern(target_pattern)
+    pat_idx = max(0, target_pattern - 1)
+    failures = []
+    try:
+        for s_info in steps_list:
+            step_idx = int(s_info["step"])
+            if "value" in s_info:
+                v = bool(s_info["value"])
+                channels.setGridBit(idx, step_idx, 1 if v else 0)
+
+            if "velocity" in s_info and s_info["velocity"] is not None:
+                vel = max(0, min(127, int(float(s_info["velocity"]) * 127.0)))
+                try:
+                    channels.setStepParameterByIndex(
+                        idx, pat_idx, step_idx, midi.pVelocity, vel, True
+                    )
+                except Exception as e:
+                    failures.append({"step": step_idx, "param": "velocity", "error": str(e)})
+
+            if "pan" in s_info and s_info["pan"] is not None:
+                pan = max(0, min(128, int((float(s_info["pan"]) + 1.0) * 64.0)))
+                try:
+                    channels.setStepParameterByIndex(idx, pat_idx, step_idx, midi.pPan, pan, True)
+                except Exception as e:
+                    failures.append({"step": step_idx, "param": "pan", "error": str(e)})
+
+            if "shift" in s_info and s_info["shift"] is not None:
+                shift = max(0, min(240, int(float(s_info["shift"]) * 240.0)))
+                try:
+                    channels.setStepParameterByIndex(
+                        idx, pat_idx, step_idx, midi.pShift, shift, True
+                    )
+                except Exception as e:
+                    failures.append({"step": step_idx, "param": "shift", "error": str(e)})
+
+            if "repeat" in s_info and s_info["repeat"] is not None:
+                rep = max(0, min(15, int(s_info["repeat"])))
+                try:
+                    channels.setStepParameterByIndex(
+                        idx, pat_idx, step_idx, midi.pRepeat, rep, True
+                    )
+                except Exception as e:
+                    failures.append({"step": step_idx, "param": "repeat", "error": str(e)})
+
+        try:
+            channels.updateGraphEditor()
+        except Exception:
+            pass
+        out = _h_channel_get_steps({"channel": idx, "pattern": target_pattern})
+        if failures:
+            out["step_param_failures"] = failures
+        return out
+    finally:
+        if previous_pattern != patterns.patternNumber():
+            patterns.jumpToPattern(previous_pattern)
+
+
 _HANDLERS = {
     "ping": _h_ping,
     "get_tempo": _h_get_tempo,
@@ -1211,6 +1620,8 @@ _HANDLERS = {
     "get_project_state": _h_get_project_state,
     "mixer_list_tracks": _h_mixer_list_tracks,
     "mixer_get_track": _h_mixer_get_track,
+    "mixer_selected": _h_mixer_selected,
+    "mixer_select_track": _h_mixer_select_track,
     "channel_list": _h_channel_list,
     "channel_get": _h_channel_get,
     "mixer_set_volume": _h_mixer_set_volume,
@@ -1218,6 +1629,7 @@ _HANDLERS = {
     "mixer_set_mute": _h_mixer_set_mute,
     "mixer_set_solo": _h_mixer_set_solo,
     "mixer_set_name": _h_mixer_set_name,
+    "mixer_set_stereo_sep": _h_mixer_set_stereo_sep,
     "channel_set_volume": _h_channel_set_volume,
     "channel_set_pan": _h_channel_set_pan,
     "channel_set_mute": _h_channel_set_mute,
@@ -1238,6 +1650,7 @@ _HANDLERS = {
     "channel_set_color": _h_channel_set_color,
     "channel_get_color": _h_channel_get_color,
     "plugin_preset": _h_plugin_preset,
+    "plugin_get_preset_name": _h_plugin_get_preset_name,
     "api_probe": _h_api_probe,
     "arrange_new_pattern": _h_arrange_new_pattern,
     "arrange_clone_pattern": _h_arrange_clone_pattern,
@@ -1246,4 +1659,23 @@ _HANDLERS = {
     "channel_selected": _h_channel_selected,
     "ensure_piano_roll": _h_ensure_piano_roll,
     "pattern_list": _h_pattern_list,
+    "pattern_select": _h_pattern_select,
+    "pattern_rename": _h_pattern_rename,
+    "pattern_get_length": _h_pattern_get_length,
+    "channel_get_steps": _h_channel_get_steps,
+    "pattern_get": _h_pattern_get,
+    "pattern_selected": _h_pattern_selected,
+    "playlist_get_track": _h_playlist_get_track,
+    "playlist_list_tracks": _h_playlist_list_tracks,
+    "playlist_set_mute": _h_playlist_set_mute,
+    "playlist_set_solo": _h_playlist_set_solo,
+    "playlist_set_name": _h_playlist_set_name,
+    "playlist_set_color": _h_playlist_set_color,
+    "playlist_select_track": _h_playlist_select_track,
+    "mixer_get_slot": _h_mixer_get_slot,
+    "mixer_get_eq": _h_mixer_get_eq,
+    "mixer_set_eq": _h_mixer_set_eq,
+    "get_time_sig": _h_get_time_sig,
+    "set_time_sig": _h_set_time_sig,
+    "channel_set_steps": _h_channel_set_steps,
 }

@@ -17,6 +17,7 @@ from pydantic import Field
 
 from .. import protocol, safety
 from ..connection import fetch_all_pages, get_bridge
+from ..music import levels
 
 
 def register(mcp: FastMCP) -> None:
@@ -197,6 +198,127 @@ def register(mcp: FastMCP) -> None:
             build_restore=lambda b: {
                 "command": protocol.CMD_CHANNEL_SET_SOLO,
                 "params": {"channel": channel, "state": b["solo"]},
+            },
+        )
+
+    # ---- mixer pack v2 (phase 2) ----------------------------------------
+    @mcp.tool(annotations={"title": "List mixer tracks", **_RO})
+    def fl_mixer_list_tracks() -> dict:
+        """List all mixer tracks (index, name, volume, pan, mute, solo)."""
+        return fetch_all_pages(get_bridge(), protocol.CMD_MIXER_LIST_TRACKS, "tracks")
+
+    @mcp.tool(annotations={"title": "Get mixer track details", **_RO})
+    def fl_mixer_get_track(
+        track: Annotated[int, Field(ge=0, description="Mixer track index (0 = Master).")],
+    ) -> dict:
+        """Get details for a single mixer track."""
+        return get_bridge().call(protocol.CMD_MIXER_GET_TRACK, {"index": track})
+
+    @mcp.tool(annotations={"title": "Set mixer track volume", **_WR})
+    def fl_mixer_set_volume(
+        track: Annotated[int, Field(ge=0, description="Mixer track index (0 = Master).")],
+        value: Annotated[float, Field(description="Volume; normalized 0..1 (0.8=unity) or dB.")],
+        unit: Annotated[str, Field(description="'normalized' or 'db'.")] = "normalized",
+    ) -> dict:
+        """Set a mixer track volume. unit='db' uses 0.8=unity (0 dB)."""
+        return fl_set_mixer_volume(track=track, value=value, unit=unit)
+
+    @mcp.tool(annotations={"title": "Set mixer track pan", **_WR})
+    def fl_mixer_set_pan(
+        track: Annotated[int, Field(ge=0)],
+        value: Annotated[float, Field(ge=-1.0, le=1.0, description="-1 left .. +1 right.")],
+    ) -> dict:
+        """Set a mixer track's pan position (-1 left .. +1 right)."""
+        return fl_set_mixer_pan(track=track, value=value)
+
+    @mcp.tool(annotations={"title": "Set mixer track mute", **_WR})
+    def fl_mixer_set_mute(track: Annotated[int, Field(ge=0)], state: bool) -> dict:
+        """Mute or unmute a mixer track (state=True mutes)."""
+        return fl_set_mixer_mute(track=track, state=state)
+
+    @mcp.tool(annotations={"title": "Set mixer track solo", **_WR})
+    def fl_mixer_set_solo(track: Annotated[int, Field(ge=0)], state: bool) -> dict:
+        """Solo or unsolo a mixer track (state=True solos)."""
+        return fl_set_mixer_solo(track=track, state=state)
+
+    @mcp.tool(annotations={"title": "Select mixer track", **_WR})
+    def fl_mixer_select_track(
+        track: Annotated[int, Field(ge=0, description="Mixer track index (0 = Master).")],
+    ) -> dict:
+        """Select a mixer track to drive UI focus; rollback restores the previous selection."""
+        return safety.safe_write(
+            get_bridge(),
+            tool="mixer_select_track",
+            scope="mixer_selection",
+            command=protocol.CMD_MIXER_SELECT_TRACK,
+            params={"track": track},
+            verify=("track", track),
+            build_restore=lambda b: {
+                "command": protocol.CMD_MIXER_SELECT_TRACK,
+                "params": {"track": b["track"]},
+            },
+        )
+
+    @mcp.tool(annotations={"title": "Get mixer track routing", **_RO})
+    def fl_mixer_get_route(
+        track: Annotated[int, Field(ge=0, description="Mixer track index (0 = Master).")],
+    ) -> dict:
+        """Which destination tracks this mixer track sends to:
+        {track, name, routes_to:[{dst, dst_name, level?}]}."""
+        return get_bridge().call(protocol.CMD_MIXER_GET_ROUTING, {"track": track})
+
+    @mcp.tool(annotations={"title": "Set mixer routing (src -> dst)", **_WR})
+    def fl_mixer_set_route(
+        src: Annotated[int, Field(ge=0, description="Source mixer track.")],
+        dst: Annotated[int, Field(ge=0, description="Destination mixer track (0 = Master).")],
+        enabled: Annotated[bool, Field(description="True = route on, False = off.")] = True,
+    ) -> dict:
+        """Enable/disable a send from src to dst; rollback restores the prior route state."""
+        return safety.safe_write(
+            get_bridge(),
+            tool="mixer_set_route",
+            scope=f"route:{src}:{dst}",
+            command=protocol.CMD_MIXER_SET_ROUTE,
+            params={"src": src, "dst": dst, "enabled": enabled},
+            verify=("enabled", enabled),
+            build_restore=lambda b: {
+                "command": protocol.CMD_MIXER_SET_ROUTE,
+                "params": {"src": src, "dst": dst, "enabled": b["enabled"]},
+            },
+        )
+
+    @mcp.tool(annotations={"title": "Get mixer track levels", **_RO})
+    def fl_mixer_get_levels(
+        track: Annotated[int, Field(ge=0, description="Mixer track index (0 = Master).")],
+        samples: Annotated[int, Field(ge=1, le=100, description="Reads over ~samples*100ms.")] = 20,
+    ) -> dict:
+        """Measure a mixer track's level by sampling meter peaks over a short window.
+        {track, playing, avg_db, peak_db, n_reads}
+        """
+        return levels.measure_track_level(get_bridge(), track, samples=samples)
+
+    @mcp.tool(annotations={"title": "Set mixer track stereo separation", **_WR})
+    def fl_mixer_set_stereo_separation(
+        track: Annotated[int, Field(ge=0, description="Mixer track index (0 = Master).")],
+        value: Annotated[
+            float,
+            Field(
+                ge=-1.0,
+                le=1.0,
+                description="Stereo separation: -1.0 mono to 1.0 separated.",
+            ),
+        ],
+    ) -> dict:
+        """Set a mixer track's stereo separation (-1.0 mono .. 1.0 fully separated)."""
+        return safety.safe_write(
+            get_bridge(),
+            tool="mixer_set_stereo_separation",
+            scope=f"mixer_track:{track}",
+            command=protocol.CMD_MIXER_SET_STEREO_SEP,
+            params={"track": track, "value": value},
+            build_restore=lambda b: {
+                "command": protocol.CMD_MIXER_SET_STEREO_SEP,
+                "params": {"track": track, "value": b["stereo_sep"]},
             },
         )
 

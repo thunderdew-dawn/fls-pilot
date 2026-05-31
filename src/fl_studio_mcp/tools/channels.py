@@ -26,6 +26,26 @@ def _target_restore(channel: int, before: dict) -> dict:
     }
 
 
+def _steps_restore(channel: int, before: dict) -> dict:
+    steps_list = []
+    for s in range(len(before.get("grid", []))):
+        steps_list.append(
+            {
+                "step": s,
+                "value": before["grid"][s],
+                "velocity": before["vel"][s],
+                "pan": before["pan"][s],
+                "shift": before["shift"][s],
+                "repeat": before["rep"][s],
+            }
+        )
+    pattern = before.get("pattern")
+    return {
+        "command": protocol.CMD_CHANNEL_SET_STEPS,
+        "params": {"channel": channel, "pattern": pattern, "steps": steps_list},
+    }
+
+
 def _needs_assignment(channel: dict, *, include_master: bool = True) -> bool:
     target = channel.get("target_fx_track")
     if not isinstance(target, int):
@@ -110,7 +130,10 @@ def register(mcp: FastMCP) -> None:
         channel: Annotated[int, Field(ge=0, description="Channel-rack channel index.")],
         name: Annotated[str, Field(min_length=1, description="New channel name.")],
     ) -> dict:
-        """Rename a channel. Snapshot + readback; rollback restores the prior name."""
+        """Rename a channel. Snapshot + readback; rollback restores the prior name.
+
+        Safety: Write-Safe with Rollback.
+        """
         return safety.safe_write(
             get_bridge(),
             tool="channel_set_name",
@@ -128,7 +151,10 @@ def register(mcp: FastMCP) -> None:
         channel: Annotated[int, Field(ge=0, description="Channel-rack channel index.")],
         mixer_track: Annotated[int, Field(ge=0, description="Target mixer track index.")],
     ) -> dict:
-        """Route a channel to a mixer track. Rollback restores the previous target."""
+        """Route a channel to a mixer track. Rollback restores the previous target.
+
+        Safety: Write-Safe with Rollback.
+        """
         return safety.safe_write(
             get_bridge(),
             tool="channel_set_target",
@@ -148,6 +174,8 @@ def register(mcp: FastMCP) -> None:
 
         This does not rename or color the mixer track; it only changes the
         channel's mixer target so rollback remains one small restore.
+
+        Safety: Write-Safe with Rollback.
         """
         bridge = get_bridge()
         track = _find_free_mixer_track(bridge, start_track=start_track)
@@ -163,3 +191,156 @@ def register(mcp: FastMCP) -> None:
             build_restore=lambda b: _target_restore(channel, b),
         )
         return {"ok": True, "assigned_track": track, "result": result}
+
+    @mcp.tool(annotations={"title": "Get channel step sequencer grid", **_RO})
+    def fl_channel_get_grid(
+        channel: Annotated[int, Field(ge=0, description="Channel-rack channel index.")],
+        steps: Annotated[
+            int,
+            Field(ge=1, le=64, description="Number of steps to read."),
+        ] = 64,
+        pattern: Annotated[
+            int | None,
+            Field(ge=1, description="Optional pattern index. Defaults to current pattern."),
+        ] = None,
+    ) -> dict:
+        """Read the step sequencer grid and parameters (velocity, pan, shift, repeat) for a channel.
+
+        Safety: Read-Only.
+        """
+        params = {"channel": channel, "steps": steps}
+        if pattern is not None:
+            params["pattern"] = pattern
+        return get_bridge().call(protocol.CMD_CHANNEL_GET_STEPS, params)
+
+    @mcp.tool(annotations={"title": "Set step sequencer grid bit", **_WR})
+    def fl_channel_set_grid_bit(
+        channel: Annotated[int, Field(ge=0, description="Channel-rack channel index.")],
+        step: Annotated[int, Field(ge=0, le=63, description="Zero-based step index.")],
+        value: Annotated[bool, Field(description="Turn step on (True) or off (False).")],
+        velocity: Annotated[
+            float | None,
+            Field(ge=0.0, le=1.0, description="Optional step velocity."),
+        ] = None,
+        pan: Annotated[
+            float | None,
+            Field(ge=-1.0, le=1.0, description="Optional step pan."),
+        ] = None,
+        shift: Annotated[
+            float | None,
+            Field(ge=0.0, le=1.0, description="Optional step shift/delay."),
+        ] = None,
+        repeat: Annotated[
+            int | None,
+            Field(ge=0, le=15, description="Optional step repeat count."),
+        ] = None,
+        pattern: Annotated[
+            int | None,
+            Field(ge=1, description="Optional pattern index. Defaults to current pattern."),
+        ] = None,
+    ) -> dict:
+        """Set or clear a single step sequencer step and its parameters.
+
+        Safety: Write-Safe with Rollback.
+        """
+        params = {"step": step, "value": value}
+        if velocity is not None:
+            params["velocity"] = velocity
+        if pan is not None:
+            params["pan"] = pan
+        if shift is not None:
+            params["shift"] = shift
+        if repeat is not None:
+            params["repeat"] = repeat
+
+        bridge = get_bridge()
+        selected = bridge.call(protocol.CMD_PATTERN_SELECTED)
+        pattern_index = int(pattern or selected["selected"])
+        return safety.safe_write(
+            bridge,
+            tool="channel_set_grid_bit",
+            scope=f"channel_steps:{channel}:{pattern_index}",
+            command=protocol.CMD_CHANNEL_SET_STEPS,
+            params={"channel": channel, "pattern": pattern_index, "steps": [params]},
+            build_restore=lambda b: _steps_restore(channel, b),
+        )
+
+    @mcp.tool(annotations={"title": "Set step sequencer steps in batch", **_WR})
+    def fl_channel_set_steps(
+        channel: Annotated[int, Field(ge=0, description="Channel-rack channel index.")],
+        steps: Annotated[
+            list[dict],
+            Field(
+                description="Step dicts with step, value, velocity, pan, shift, repeat."
+            ),
+        ],
+        pattern: Annotated[
+            int | None,
+            Field(ge=1, description="Optional pattern index. Defaults to current pattern."),
+        ] = None,
+    ) -> dict:
+        """Set or clear multiple steps and parameters in a single batch.
+
+        Safety: Write-Safe with Rollback.
+        """
+        validated_steps = []
+        for s in steps:
+            step_idx = s.get("step")
+            if not isinstance(step_idx, int) or step_idx < 0 or step_idx > 63:
+                raise ValueError("Each step dict must contain a valid 'step' index (0-63)")
+            s_dict = {"step": step_idx}
+            if "value" in s:
+                s_dict["value"] = bool(s["value"])
+            if "velocity" in s and s["velocity"] is not None:
+                s_dict["velocity"] = max(0.0, min(1.0, float(s["velocity"])))
+            if "pan" in s and s["pan"] is not None:
+                s_dict["pan"] = max(-1.0, min(1.0, float(s["pan"])))
+            if "shift" in s and s["shift"] is not None:
+                s_dict["shift"] = max(0.0, min(1.0, float(s["shift"])))
+            if "repeat" in s and s["repeat"] is not None:
+                s_dict["repeat"] = max(0, min(15, int(s["repeat"])))
+            validated_steps.append(s_dict)
+
+        bridge = get_bridge()
+        selected = bridge.call(protocol.CMD_PATTERN_SELECTED)
+        pattern_index = int(pattern or selected["selected"])
+
+        return safety.safe_write(
+            bridge,
+            tool="channel_set_steps",
+            scope=f"channel_steps:{channel}:{pattern_index}",
+            command=protocol.CMD_CHANNEL_SET_STEPS,
+            params={"channel": channel, "pattern": pattern_index, "steps": validated_steps},
+            build_restore=lambda b: _steps_restore(channel, b),
+        )
+
+    @mcp.tool(annotations={"title": "Clear step sequencer grid", **_WR})
+    def fl_channel_clear_grid(
+        channel: Annotated[int, Field(ge=0, description="Channel-rack channel index.")],
+        pattern: Annotated[
+            int | None,
+            Field(ge=1, description="Optional pattern index. Defaults to current pattern."),
+        ] = None,
+    ) -> dict:
+        """Wipe all step sequencer steps for a channel in the current pattern.
+
+        Safety: Write-Safe with Rollback.
+        """
+        bridge = get_bridge()
+        selected = bridge.call(protocol.CMD_PATTERN_SELECTED)
+        pattern_index = int(pattern or selected["selected"])
+        current = bridge.call(
+            protocol.CMD_CHANNEL_GET_STEPS,
+            {"channel": channel, "pattern": pattern_index},
+        )
+        grid_len = len(current.get("grid", [])) or 64
+        cleared_steps = [{"step": s, "value": False} for s in range(grid_len)]
+
+        return safety.safe_write(
+            bridge,
+            tool="channel_clear_grid",
+            scope=f"channel_steps:{channel}:{pattern_index}",
+            command=protocol.CMD_CHANNEL_SET_STEPS,
+            params={"channel": channel, "pattern": pattern_index, "steps": cleared_steps},
+            build_restore=lambda b: _steps_restore(channel, b),
+        )

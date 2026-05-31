@@ -94,7 +94,10 @@ def register(mcp: FastMCP) -> None:
             float, Field(ge=10.0, le=999.0, description="Target tempo in BPM, FL accepts 10-999.")
         ],
     ) -> dict:
-        """Set the FL Studio project tempo. Snapshot + readback; rollback restores BPM."""
+        """Set the FL Studio project tempo. Snapshot + readback; rollback restores BPM.
+
+        Safety: Write-Safe with Rollback.
+        """
         return safety.safe_write(
             get_bridge(),
             tool="set_tempo",
@@ -197,6 +200,57 @@ def register(mcp: FastMCP) -> None:
     ) -> dict:
         """Move the playhead to the given beat position."""
         return _safe_call(protocol.CMD_SET_SONG_POS, {"beats": float(beats)})
+
+    @mcp.tool(
+        annotations={
+            "title": "Get time signature",
+            "readOnlyHint": True,
+            "idempotentHint": True,
+            "openWorldHint": True,
+        },
+    )
+    def fl_get_time_signature() -> dict:
+        """Return the current project time signature numerator and denominator."""
+        return _safe_call(protocol.CMD_GET_TIME_SIG)
+
+    @mcp.tool(
+        annotations={
+            "title": "Set time signature",
+            "readOnlyHint": False,
+            "destructiveHint": False,
+            "idempotentHint": True,
+            "openWorldHint": True,
+        },
+    )
+    def fl_set_time_signature(
+        numerator: Annotated[int, Field(ge=1, le=64, description="Time signature numerator (beats per bar).")],
+        denominator: Annotated[
+            int,
+            Field(description="Time signature denominator. Only 4 and 8 have safe readback."),
+        ],
+    ) -> dict:
+        """Set the project time signature. Snapshot + readback; rollback restores it.
+
+        Safety: Write-Safe with Rollback.
+        """
+        if denominator not in (4, 8):
+            return {
+                "ok": False,
+                "api_limited": True,
+                "error": "Only denominators 4 and 8 are enabled because FL readback is reliable there.",
+            }
+        return safety.safe_write(
+            get_bridge(),
+            tool="set_time_signature",
+            scope="time_signature",
+            command=protocol.CMD_SET_TIME_SIG,
+            params={"numerator": int(numerator), "denominator": int(denominator)},
+            build_restore=lambda b: {
+                "command": protocol.CMD_SET_TIME_SIG,
+                "params": {"numerator": b["numerator"], "denominator": b["denominator"]},
+            },
+        )
+
 
 
 def _safe_call(command: str, params: dict | None = None):
