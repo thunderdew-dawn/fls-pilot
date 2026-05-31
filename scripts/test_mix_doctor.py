@@ -112,6 +112,14 @@ def main() -> int:
     ]}
     check("ungrouped NOT flagged when drums share a bus",
           "ungrouped" not in rules_hit(md.diagnose(snap2)))
+    # ...and not when one of the matching drum-family names is already a bus.
+    snap3 = {"playing": False, "tracks": [
+        trk(0, "Master"),
+        trk(1, "Kick", routes_to=[]),
+        trk(27, "BUS_DRUMS", routes_to=[]),
+    ]}
+    check("ungrouped SKIPS already-named bus tracks",
+          "ungrouped" not in rules_hit(md.diagnose(snap3)))
 
     # 5) EQ clash: two tracks boosting ~240 Hz.
     eq = lambda: {"slot": 0, "name": "Fruity parametric EQ 2", "params": [

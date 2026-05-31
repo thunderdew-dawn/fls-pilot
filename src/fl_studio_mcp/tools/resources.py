@@ -12,7 +12,11 @@ from fastmcp import FastMCP
 from .. import protocol
 from ..connection import fetch_all_pages, get_bridge
 
-_CAP = 80                       # max list entries in a resource payload
+_CAPS = {
+    "channels": 24,
+    "tracks": 28,
+    "patterns": 80,
+}
 
 
 def _safe(fn):
@@ -25,10 +29,11 @@ def _safe(fn):
 def _summary(full, key, detail_tool):
     items = full.get(key) or []
     total = full.get("total", len(items))
-    out = {"total": total, key: items[:_CAP]}
-    if len(items) > _CAP:
+    cap = _CAPS.get(key, 24)
+    out = {"total": total, "shown": min(len(items), cap), key: items[:cap]}
+    if len(items) > cap:
         out["truncated"] = True
-        out["note"] = "showing first %d of %d -- call %s for the rest" % (_CAP, total, detail_tool)
+        out["note"] = "showing first %d of %d -- call %s for the rest" % (cap, total, detail_tool)
     return out
 
 
@@ -39,6 +44,9 @@ def register(mcp: FastMCP) -> None:
         """Bridge alive + a cheap transport/tempo snapshot."""
         def _do():
             b = get_bridge()
+            wait = getattr(b, "wait_for_heartbeat", None)
+            if callable(wait):
+                wait(timeout=1.0)
             alive = b.is_alive()
             out = {"alive": alive, "heartbeat_age_seconds": b.heartbeat_age() if alive else None}
             if alive:

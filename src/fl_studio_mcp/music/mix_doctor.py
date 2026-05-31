@@ -306,6 +306,8 @@ def rule_ungrouped(tracks):
     fams = {}
     for t in _audible(tracks):
         nm = (t.get("name") or "").lower()
+        if "bus" in nm:
+            continue
         for fam, kws in FAMILIES.items():
             if any(k in nm for k in kws):
                 fams.setdefault(fam, []).append(t)
