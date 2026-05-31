@@ -26,6 +26,13 @@ task.
 
 ## Current verification checkpoints
 
+- 2026-06-01: Priority 1/2 live smoke suite attempted, blocked by stale FL controller build.
+  - Verified path: daemon up, bridge ping ok (`build=channels-v35`), then
+    `scripts/test_priority12_live.py`.
+  - Result: blocked at command preflight (`Unknown command: pattern_find_empty`)
+    because FL still runs an older script build that does not include the new
+    controller handlers. Required next step: reload FL MIDI scripts and rerun
+    the live smoke suite.
 - 2026-06-01: Priority 1 + Priority 2 implementation slice (offline) passed.
   - Verified path: `compileall` for `src/` + controller script, safety audit
     gate (`scripts/audit_tool_safety.py --fail-on-gaps`), focused offline tests:

@@ -303,7 +303,8 @@ MVP:
 
 - Project health report with read-only findings. ✅ shipped
 - Export readiness report with blocker/advisory split. ✅ shipped
-- Fix plan with one approved fix at a time.
+- Dry-run fix plan that references existing rollback-safe tools. ✅ shipped
+- Fix execution remains one approved write at a time.
 - Grouped rollback for organizer actions.
 
 Safety requirement:
@@ -330,6 +331,13 @@ Allowed next steps:
   legato, overlap trim, strum, arpeggiate, mute/unmute, note color, slide,
   porta, and snap-to-scale.
 - Add marker helpers only as generated, reviewable script payloads.
+
+Current shipped slice:
+
+- `duplicate` and `velocity_ramp` transforms are shipped as undo-backed writes.
+- Initial marker helpers are shipped as generated-script writes:
+  add marker, add time-signature marker, clear markers.
+- Marker and note readback remain API-limited; rollback uses FL undo.
 
 Safety requirement:
 
