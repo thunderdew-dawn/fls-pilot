@@ -746,7 +746,7 @@ def _h_plugin_set_param(p):
 # -- Routing / grouping / cleanup READ surface (Slice 1, read-only) ----------
 
 def _route_level(src, dst):
-    fn = getattr(mixer, "getRouteSendLevel", None)
+    fn = getattr(mixer, "getRouteToLevel", None) or getattr(mixer, "getRouteSendLevel", None)
     if fn is None:
         return None
     try:
