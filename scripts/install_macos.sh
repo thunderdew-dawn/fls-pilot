@@ -79,11 +79,16 @@ Next steps:
   5. Run: python3 scripts/test_bridge.py
 
 To use with Claude Desktop (stdio):
-  Add this to your Claude Desktop config (~/Library/Application Support/Claude/claude_desktop_config.json):
+  1. Start the daemon (holds the MIDI ports):
+     $REPO_ROOT/.venv/bin/fl-studio-mcp-daemon
+  2. Add this to your Claude Desktop config (~/Library/Application Support/Claude/claude_desktop_config.json):
   {
     "mcpServers": {
       "fl-studio": {
-        "command": "$REPO_ROOT/.venv/bin/fl-studio-mcp"
+        "command": "$REPO_ROOT/.venv/bin/fl-studio-mcp",
+        "env": {
+          "FLSTUDIO_MCP_TRANSPORT": "tcp"
+        }
       }
     }
   }

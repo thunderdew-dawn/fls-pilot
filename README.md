@@ -6,7 +6,7 @@
 ![status](https://img.shields.io/badge/status-beta-yellow)
 ![license](https://img.shields.io/badge/license-MIT-green)
 ![python](https://img.shields.io/badge/python-3.10+-blue)
-![platform](https://img.shields.io/badge/platform-Windows-blue)
+![platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS-blue)
 ![FL Studio](https://img.shields.io/badge/FL%20Studio-2025%2B-orange)
 
 ![Claude diagnosing and fixing a mix in FL Studio](docs/demo.gif)
@@ -22,8 +22,13 @@ It is genre- and producer-agnostic: nothing about it assumes a particular style 
 ## Quickstart
 
 ```bat
-scripts\install_windows.bat        :: controller + server + note bridge
+scripts\install_windows.bat        :: Windows: controller + server + note bridge
 fl-studio-mcp-daemon               :: start the bridge, keep it running
+```
+
+```bash
+./scripts/install_macos.sh         # macOS: controller + server + note bridge
+.venv/bin/fl-studio-mcp-daemon     # start the bridge, keep it running
 ```
 
 Wire the two loopMIDI ports in FL (Options > MIDI Settings), arm `MCP_Apply` once in the piano roll, then ask Claude in plain language:
