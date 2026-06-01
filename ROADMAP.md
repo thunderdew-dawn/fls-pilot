@@ -26,6 +26,15 @@ task.
 
 ## Current verification checkpoints
 
+- 2026-06-02: FL Studio production skill orchestration layer updated.
+  - Verified path: `wc -l` confirms `skills/flstudio-production/SKILL.md` is
+    under 500 lines; frontmatter/reference existence check passed; all `fl_*`
+    tools named in `references/tool-map.md` resolve to registered tool
+    functions.
+  - Result: the skill now points to real one-level references for limits, tool
+    selection, workflows, and troubleshooting; stale non-existent preset/kuthu
+    tool names were removed; the skill documents rollback-first behavior and
+    documented-API false-positive probe discipline.
 - 2026-06-02: Compose and MIDI Export tools now have safety-class docstrings
   and MCP annotations; the strict safety-doc audit passes for the full tool
   surface.
@@ -768,7 +777,7 @@ so it ships inside the wheel.
 
 ## Phase 7 — Polish & ship
 
-- [ ] `skills/flstudio-production/SKILL.md` orchestration layer with deep
+- [x] `skills/flstudio-production/SKILL.md` orchestration layer with deep
       content in `references/`. Under 500 lines.
 - [ ] `evals/evals.json` — 10 questions exercising the full tool surface.
 - [ ] `.claude-plugin/marketplace.json` so this can live in
