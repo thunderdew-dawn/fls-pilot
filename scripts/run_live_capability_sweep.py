@@ -43,6 +43,10 @@ def main() -> int:
         [py, "scripts/probe_documented_api_live.py"],
     )
     rc |= _run(
+        "Native EQ type mapping probe",
+        [py, "scripts/probe_native_eq_type_live.py"],
+    )
+    rc |= _run(
         "Targeted effect plugin probes (track 49/50)",
         [py, "scripts/test_effect_targets_live.py"],
     )

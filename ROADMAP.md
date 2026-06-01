@@ -26,6 +26,22 @@ task.
 
 ## Current verification checkpoints
 
+- 2026-06-01: Native EQ type mapping probe infrastructure added offline.
+  - Verified path: `compileall` for `src/fl_studio_mcp/protocol.py`,
+    `fl_controller/FLStudioMCP/device_FLStudioMCP.py`,
+    `scripts/probe_native_eq_type_live.py`, and
+    `scripts/run_live_capability_sweep.py`;
+    `scripts/test_effects_pattern_extensions.py`;
+    `scripts/audit_tool_safety.py --fail-on-gaps`.
+  - Result: controller build marker bumped to `channels-v38`; added the
+    constrained internal `mixer_probe_eq_type` command and
+    `scripts/probe_native_eq_type_live.py` to test Native EQ type REC event
+    value/flag variants with immediate rollback. This is probe-only and does
+    not expose a user-facing raw API surface.
+  - Next action: reload FL MIDI scripts, confirm `fl_ping` reports
+    `channels-v38`, then run `scripts/probe_native_eq_type_live.py`.
+  - Live preflight: attempted immediately after implementation; blocked as
+    expected because FL still reported controller build `channels-v37`.
 - 2026-06-01: Targeted Native EQ high-pass write on mixer track 8 `Drums`
   did not pass; visual check confirmed no visible mixer EQ change, and rollback
   restored the original EQ state.

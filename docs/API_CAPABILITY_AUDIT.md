@@ -312,6 +312,11 @@ Live evidence and false-positive probes:
   EQ change on track 8. Rollback by change ID restored the original band state.
   Native EQ type writes need a dedicated REC event/value mapping probe before
   user-facing high-pass configuration can be promised.
+- 2026-06-01, offline: added constrained Native EQ type mapping probe support
+  (`mixer_probe_eq_type`, controller build marker `channels-v38`, and
+  `scripts/probe_native_eq_type_live.py`). The probe tries documented
+  REC_Mixer_EQ_Type value/flag variants with immediate rollback and is not
+  exposed as a user-facing MCP tool.
 - 2026-06-01, controller `channels-v37`: generic plugin parameter writes did
   not stick for any of Fruity Limiter's 18 exposed parameters on track 49 slot
   0; keep Limiter sidechain configuration manual until a stable parameter path

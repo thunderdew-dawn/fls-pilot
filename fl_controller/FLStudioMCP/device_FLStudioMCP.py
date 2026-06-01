@@ -304,7 +304,7 @@ def _h_ping(params):
     return {
         "fl_version": _fl_version,
         "protocol_version": PROTOCOL_VERSION,
-        "build": "channels-v37",  # reload marker -- bump to verify reloads take
+        "build": "channels-v38",  # reload marker -- bump to verify reloads take
         "ts": time.time(),
     }
 
@@ -1664,6 +1664,47 @@ def _h_mixer_set_eq(p):
     return _h_mixer_get_eq({"track": track})
 
 
+def _eq_probe_flags(mode):
+    base = {
+        "control": midi.REC_Control | midi.REC_UpdateControl | midi.REC_UpdateValue,
+        "update": midi.REC_UpdateControl | midi.REC_UpdateValue,
+        "midi": midi.REC_UpdateControl | midi.REC_UpdateValue,
+    }.get(str(mode), midi.REC_Control | midi.REC_UpdateControl | midi.REC_UpdateValue)
+    if str(mode) == "midi":
+        from_midi = getattr(midi, "REC_FromMIDI", None)
+        if from_midi is not None:
+            base |= from_midi
+    for name in ("REC_SetChanged", "REC_SetTouched"):
+        val = getattr(midi, name, None)
+        if val is not None:
+            base |= val
+    return base
+
+
+def _h_mixer_probe_eq_type(p):
+    """Constrained internal probe for native mixer EQ type REC event writes."""
+    track = int(p["track"])
+    band = int(p["band"])
+    if band < 0 or band > 2:
+        raise _ClientError("band out of range (0-2)")
+    eq_type_base = getattr(midi, "REC_Mixer_EQ_Type", None)
+    if eq_type_base is None:
+        raise _ClientError("native EQ type REC event unavailable")
+    plugin_id = mixer.getTrackPluginId(track, 0)
+    event_id = eq_type_base + band + plugin_id
+    value = p.get("value", 0)
+    flags = _eq_probe_flags(p.get("flags", "control"))
+    general.processRECEvent(event_id, value, flags)
+    out = _h_mixer_get_eq({"track": track})
+    out["probe"] = {
+        "event_id": event_id,
+        "value": value,
+        "flags": flags,
+        "flags_mode": p.get("flags", "control"),
+    }
+    return out
+
+
 def _h_get_time_sig(p):
     try:
         ppb = general.getRecPPB()
@@ -1872,6 +1913,7 @@ _HANDLERS = {
     "mixer_set_slot_enabled": _h_mixer_set_slot_enabled,
     "mixer_get_eq": _h_mixer_get_eq,
     "mixer_set_eq": _h_mixer_set_eq,
+    "mixer_probe_eq_type": _h_mixer_probe_eq_type,
     "get_time_sig": _h_get_time_sig,
     "set_time_sig": _h_set_time_sig,
     "channel_set_steps": _h_channel_set_steps,

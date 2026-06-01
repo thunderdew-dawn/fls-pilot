@@ -182,6 +182,7 @@ CMD_MIXER_SET_TRACK_SLOTS = "mixer_set_track_slots"
 CMD_MIXER_SET_SLOT_ENABLED = "mixer_set_slot_enabled"
 CMD_MIXER_GET_EQ = "mixer_get_eq"
 CMD_MIXER_SET_EQ = "mixer_set_eq"
+CMD_MIXER_PROBE_EQ_TYPE = "mixer_probe_eq_type"
 CMD_GET_TIME_SIG = "get_time_sig"
 CMD_SET_TIME_SIG = "set_time_sig"
 
