@@ -229,8 +229,10 @@ Not currently supported:
 
 ### Effect Slot Control and Native Mixer EQ
 
-Status: `documented`, `live-probed` for mix and track slot enable; per-slot
-mute needs a live behavior test before user-facing exposure.
+Status: `documented`, partially `live-probed`. Track-slot enable has passed
+live smoke. Slot mix and per-slot mute are build/state dependent on FL Studio
+Producer Edition v25.2.5 build 5055 and must be treated as live-limited until
+readback sticks on the intended target.
 
 Useful API:
 
@@ -267,6 +269,20 @@ Current next slice:
 - Add static audit coverage for slot and EQ restore payloads.
 - Live-smoke slot mix, track-slot enable, EQ gain/frequency/bandwidth, and
   rollback before promoting per-slot bypass or EQ type changes.
+
+Live limits:
+
+- 2026-06-01, controller `channels-v37`: `mixer.setPluginMixLevel` did not
+  stick on track 49 slot 0 (`Fruity Limiter`) or track 50 slot 0 (`Fruity
+  parametric EQ 2`), although rollback restore remained safe.
+- 2026-06-01, controller `channels-v37`: per-slot mute/enable returned API
+  unavailable on the same targets.
+- 2026-06-01, controller `channels-v37`: generic plugin parameter writes did
+  not stick for any of Fruity Limiter's 18 exposed parameters on track 49 slot
+  0; keep Limiter sidechain configuration manual until a stable parameter path
+  is proven.
+- 2026-06-01, controller `channels-v37`: Fruity Parametric EQ 2 plugin
+  parameter write/readback/rollback passed on track 50 slot 0, Band 4 level.
 
 ### Step Parameter Pack
 

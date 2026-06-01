@@ -34,6 +34,10 @@ task.
   - Verified path: `scripts/run_live_capability_sweep.py` over TCP after FL MIDI script reload and ping confirmation.
   - Result: patterns/playlist, mixer, step sequencer, Piano Roll duplicate, and Piano Roll velocity ramp paths passed with rollback checks; `pattern_set_length` skipped because this FL build does not expose a working length write API; plugin-parameter probe skipped because no plugin was loaded on the probe tracks.
   - Live API limits observed: effect slot mix and native EQ band writes did not stick on the auto-selected mixer target (track 1, slot 0), so readback verification failed while rollback/restore checks remained safe. Treat these as build/state-dependent live limits until a narrower target-selection probe proves otherwise.
+- 2026-06-01: Targeted effect-plugin live probe against track 49/50 did not fully pass.
+  - Verified path: `scripts/test_effect_targets_live.py` over TCP against track 49 slot 0 `Fruity Limiter` with route 1->49 active, and track 50 slot 0 `Fruity parametric EQ 2`.
+  - Result: Fruity Parametric EQ 2 plugin parameter write/readback/rollback passed on Band 4 level; Fruity Limiter generic plugin parameters did not stick across all 18 exposed parameters; per-slot mix did not stick for either plugin; per-slot enabled write is unavailable on this FL build. All attempted writes used immediate rollback/restore checks.
+  - Next action: treat effect slot mix and Fruity Limiter parameter writes as live API-limited for this build/state; prefer plugin-specific EQ2 parameter writes where readback is proven, and keep Limiter sidechain configuration manual until a stable parameter path is proven.
 - 2026-06-01: Priority 1/2 live smoke suite attempted, blocked by stale FL controller build.
   - Verified path: daemon up, bridge ping ok (`build=channels-v35`), then
     `scripts/test_priority12_live.py`.
