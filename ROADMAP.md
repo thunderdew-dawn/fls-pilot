@@ -26,6 +26,19 @@ task.
 
 ## Current verification checkpoints
 
+- 2026-06-02: Compose and MIDI Export tools now have safety-class docstrings
+  and MCP annotations; the strict safety-doc audit passes for the full tool
+  surface.
+  - Verified path: `compileall` for `src/fl_studio_mcp/tools/compose.py` and
+    `src/fl_studio_mcp/tools/export.py`; targeted `audit_file` check for
+    Compose and MIDI Export tools' `safetyClass` and `Safety:` docstrings;
+    `scripts/test_compose.py`; `scripts/test_midi_export.py`;
+    `scripts/audit_tool_safety.py --fail-on-gaps`;
+    `scripts/audit_tool_safety.py --fail-on-missing-safety-docs --format json`.
+  - Result: undo-backed raga/scale Piano Roll writes, scale catalogue reads,
+    and the external MIDI-file export now report explicit safety classes.
+    Safety-class docstrings and MCP annotations are complete across the
+    audited tool surface.
 - 2026-06-02: Bulk mute/solo and Color tools now have safety-class docstrings
   and MCP annotations.
   - Verified path: `compileall` for `src/fl_studio_mcp/tools/bulk.py` and
@@ -410,14 +423,14 @@ Before adding the API-backed production suite:
 - [x] Treat Piano Roll generated-script transforms as write tools: all exposed
       transforms route through `safety.safe_piano_roll_write` and FL undo
       rollback. Readback remains explicitly API-limited.
-- [ ] Document each tool's safety class in its docstring and MCP annotations.
+- [x] Document each tool's safety class in its docstring and MCP annotations.
       Audit support and the Effect Slot/Native EQ, Transport,
       Pattern/Playlist, Plugin Parameter, Routing, Phase 1, Piano Roll, and
       Channel/Step Sequencer, Mix Doctor, Mixing Intent, and Arrangement
       modules are complete. Read-only Audio Analysis, Chain Planning, Preset
       Suggestion, Project Doctor, Bulk, and Color modules are also complete;
-      the strict doc gate is available but intentionally not part of the
-      standard gate until the remaining modules are migrated.
+      Compose and MIDI Export are complete. The strict doc gate now passes:
+      `scripts/audit_tool_safety.py --fail-on-missing-safety-docs --format json`.
 - [x] Add tests for planned restore payloads where FL-live tests are not
       practical.
 

@@ -42,6 +42,7 @@ def register(mcp: FastMCP) -> None:
             "destructiveHint": False,
             "idempotentHint": False,
             "openWorldHint": True,
+            "safetyClass": "external-write",
         }
     )
     def fl_export_midi(
@@ -61,7 +62,10 @@ def register(mcp: FastMCP) -> None:
 
         Does NOT touch FL: IMPORT the file yourself (FL: File > Import > MIDI file,
         or drag it into the playlist). FL won't auto-load instruments -- assign a
-        channel to each imported track. Returns the saved file path."""
+        channel to each imported track. Returns the saved file path.
+
+        Safety: External Write.
+        """
         if not tracks:
             return {"ok": False, "error": "no tracks given"}
         path = output_path or os.path.join(_EXPORT_DIR, f"arrangement_{int(time.time())}.mid")

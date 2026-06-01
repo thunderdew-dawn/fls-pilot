@@ -65,6 +65,7 @@ def register(mcp: FastMCP) -> None:
         "destructiveHint": True,
         "idempotentHint": False,
         "openWorldHint": True,
+        "safetyClass": "write-safe",
     }
 
     @mcp.tool(annotations={"title": "Write a raga/scale MELODY", **_WR})
@@ -89,7 +90,10 @@ def register(mcp: FastMCP) -> None:
         raga/root -> MIDI notes (use the proper aarohana/avarohana; respect the
         raga's allowed swaras); this tool only selects the channel + writes. SHOW
         the user the notes/swaras BEFORE calling. Needs the Piano roll open +
-        MCP_Apply armed once this session (see the note-bridge setup)."""
+        MCP_Apply armed once this session (see the note-bridge setup).
+
+        Safety: Write-Safe with Rollback.
+        """
         return {
             "ok": True,
             "wrote": len(notes),
@@ -115,7 +119,10 @@ def register(mcp: FastMCP) -> None:
         """Write CHORDS / a progression (stacked notes sharing start times) into
         the selected channel via the bridge. YOU stack chord tones drawn from the
         raga/scale (give simultaneous notes the SAME time_bars). Tool selects the
-        channel + writes. SHOW the user the chords BEFORE calling."""
+        channel + writes. SHOW the user the chords BEFORE calling.
+
+        Safety: Write-Safe with Rollback.
+        """
         return {
             "ok": True,
             "wrote": len(notes),
@@ -125,12 +132,20 @@ def register(mcp: FastMCP) -> None:
             "bridge": _write(notes, channel, mode),
         }
 
-    _RO = {"readOnlyHint": True, "idempotentHint": True, "openWorldHint": True}
+    _RO = {
+        "readOnlyHint": True,
+        "idempotentHint": True,
+        "openWorldHint": True,
+        "safetyClass": "read-only",
+    }
 
     @mcp.tool(annotations={"title": "List all scales and ragas", **_RO})
     def fl_scale_list() -> dict:
         """Get a categorized list of all available scales and ragas,
-        including their families and moods."""
+        including their families and moods.
+
+        Safety: Read-Only.
+        """
         from ..music.scales import SCALES_CATALOGUE
         families = {}
         for k, v in SCALES_CATALOGUE.items():
@@ -159,7 +174,10 @@ def register(mcp: FastMCP) -> None:
             Field(ge=1, le=4, description="Generate pitches over this many octaves."),
         ] = 1,
     ) -> dict:
-        """Get the notes, MIDI numbers, and mood of a scale/raga relative to a root note."""
+        """Get the notes, MIDI numbers, and mood of a scale/raga relative to a root note.
+
+        Safety: Read-Only.
+        """
         from ..music import scales
         try:
             res = scales.get_scale_notes(scale_name, root_note, octave_range)
