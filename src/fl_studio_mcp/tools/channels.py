@@ -101,19 +101,28 @@ def _find_free_mixer_track(bridge, *, start_track: int = 1) -> int | None:
 
 
 def register(mcp: FastMCP) -> None:
-    _RO = {"readOnlyHint": True, "idempotentHint": True, "openWorldHint": True}
+    _RO = {
+        "readOnlyHint": True,
+        "idempotentHint": True,
+        "openWorldHint": True,
+        "safetyClass": "read-only",
+    }
     _WR = {
         "readOnlyHint": False,
         "destructiveHint": False,
         "idempotentHint": True,
         "openWorldHint": True,
+        "safetyClass": "write-safe",
     }
 
     @mcp.tool(annotations={"title": "Get channel details", **_RO})
     def fl_get_channel_details(
         channel: Annotated[int, Field(ge=0, description="Channel-rack channel index.")],
     ) -> dict:
-        """Read full details for one channel, including type, color, and mixer target."""
+        """Read full details for one channel, including type, color, and mixer target.
+
+        Safety: Read-Only.
+        """
         return get_bridge().call(protocol.CMD_CHANNEL_GET, {"index": channel})
 
     @mcp.tool(annotations={"title": "Detect channels needing mixer assignment", **_RO})
@@ -123,7 +132,10 @@ def register(mcp: FastMCP) -> None:
             Field(description="Treat channels routed only to Master as assignment candidates."),
         ] = True,
     ) -> dict:
-        """Find channels with no mixer target, or optionally channels still routed to Master."""
+        """Find channels with no mixer target, or optionally channels still routed to Master.
+
+        Safety: Read-Only.
+        """
         bridge = get_bridge()
         listed = fetch_all_pages(bridge, protocol.CMD_CHANNEL_LIST, "channels")
         candidates = []
@@ -288,7 +300,10 @@ def register(mcp: FastMCP) -> None:
             Field(ge=1, description="Optional pattern index. Defaults to current pattern."),
         ] = None,
     ) -> dict:
-        """Set one step parameter with rollback-safe snapshot/readback."""
+        """Set one step parameter with rollback-safe snapshot/readback.
+
+        Safety: Write-Safe with Rollback.
+        """
         key = parameter.strip().lower()
         payload: dict[str, object] = {"step": step}
         if key in ("velocity", "vel"):

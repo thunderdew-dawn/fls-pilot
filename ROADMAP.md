@@ -26,6 +26,16 @@ task.
 
 ## Current verification checkpoints
 
+- 2026-06-02: Channel Organizer and Step Sequencer tools now have
+  safety-class docstrings and MCP annotations.
+  - Verified path: `compileall` for `src/fl_studio_mcp/tools/channels.py`;
+    targeted `audit_file` check for every channel tool's `safetyClass` and
+    `Safety:` docstring; `scripts/test_channel_organizer.py`;
+    `scripts/test_step_sequencer.py`;
+    `scripts/audit_tool_safety.py --fail-on-gaps`.
+  - Result: channel detail/assignment reads and rollback-backed channel
+    naming, mixer-target, and step-sequencer writes now report explicit safety
+    classes.
 - 2026-06-02: Piano Roll tools now have safety-class docstrings and MCP
   annotations.
   - Verified path: `compileall` for `src/fl_studio_mcp/tools/pianoroll.py`;
@@ -350,9 +360,10 @@ Before adding the API-backed production suite:
       rollback. Readback remains explicitly API-limited.
 - [ ] Document each tool's safety class in its docstring and MCP annotations.
       Audit support and the Effect Slot/Native EQ, Transport,
-      Pattern/Playlist, Plugin Parameter, Routing, Phase 1, and Piano Roll
-      modules are complete; the strict doc gate is available but intentionally
-      not part of the standard gate until the remaining modules are migrated.
+      Pattern/Playlist, Plugin Parameter, Routing, Phase 1, Piano Roll, and
+      Channel/Step Sequencer modules are complete; the strict doc gate is
+      available but intentionally not part of the standard gate until the
+      remaining modules are migrated.
 - [x] Add tests for planned restore payloads where FL-live tests are not
       practical.
 
