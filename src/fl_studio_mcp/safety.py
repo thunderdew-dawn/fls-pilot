@@ -150,6 +150,7 @@ def _entry_summary(entry: dict) -> dict:
         "change_id": entry.get("change_id"),
         "ts": entry.get("ts"),
         "tool": entry.get("tool"),
+        "rollback_unit": entry.get("rollback_unit") or entry.get("tool"),
         "scope": entry.get("scope"),
         "group": bool(entry.get("group")),
         "command": entry.get("command"),
@@ -272,7 +273,17 @@ def _verify_retry(bridge, command, params, result, verify, attempts=4, delay=0.0
     return result
 
 
-def safe_write(bridge, *, tool, scope, command, params, build_restore, verify=None):
+def safe_write(
+    bridge,
+    *,
+    tool,
+    scope,
+    command,
+    params,
+    build_restore,
+    verify=None,
+    rollback_unit=None,
+):
     """Snapshot -> log -> execute -> (verify+retry) -> read back. Honors dry-run.
 
     ``build_restore(before)`` returns ``{"command", "params"}`` that undoes
@@ -296,6 +307,7 @@ def safe_write(bridge, *, tool, scope, command, params, build_restore, verify=No
     entry = _log.append(
         {
             "tool": tool,
+            "rollback_unit": rollback_unit or tool,
             "scope": scope,
             "command": command,
             "params": params,
@@ -346,7 +358,7 @@ def safe_piano_roll_write(bridge, *, tool, params, apply):
     }
 
 
-def safe_write_group(bridge, *, tool, scope, writes):
+def safe_write_group(bridge, *, tool, scope, writes, rollback_unit=None):
     """Apply several param writes as ONE rollback unit.
 
     ``writes`` is a list of dicts, each:
@@ -365,6 +377,7 @@ def safe_write_group(bridge, *, tool, scope, writes):
             "dry_run": True,
             "planned": {
                 "tool": tool,
+                "rollback_unit": rollback_unit or tool,
                 "scope": scope,
                 "writes": [{"command": w["command"], "params": w["params"]} for w in writes],
             },
@@ -378,6 +391,7 @@ def safe_write_group(bridge, *, tool, scope, writes):
     entry = _log.append(
         {
             "tool": tool,
+            "rollback_unit": rollback_unit or tool,
             "scope": scope,
             "group": True,
             "befores": befores,

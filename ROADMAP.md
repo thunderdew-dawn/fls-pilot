@@ -41,6 +41,17 @@ task.
     user-facing tool on this build. Keep Native EQ type writes
     `documented-unconfirmed`/manual until a different FL build or API path
     proves a visible, rollback-safe type mutation.
+- 2026-06-01: Named rollback-unit metadata added offline for write history.
+  - Verified path: `scripts/test_change_history.py`;
+    `scripts/test_step_sequencer.py`; `scripts/test_bulk.py`;
+    `scripts/audit_tool_safety.py --fail-on-gaps`.
+  - Result: `safe_write` and `safe_write_group` now persist a
+    `rollback_unit` name in changelog entries and recent summaries. Bulk
+    mute/solo/reset, routing group, and step sequencer batch writes now pass
+    explicit rollback-unit names so grouped/batch operations are easier to
+    audit before rollback.
+  - Note: `scripts/test_group_tracks.py` is live-only and was not counted in
+    the offline verification set.
 - 2026-06-01: Native EQ type mapping probe infrastructure added offline.
   - Verified path: `compileall` for `src/fl_studio_mcp/protocol.py`,
     `fl_controller/FLStudioMCP/device_FLStudioMCP.py`,
@@ -266,7 +277,7 @@ Before adding the API-backed production suite:
       channel name, channel mixer target, step grid/step params, pattern
       name/color/length/current selection, playlist track name/color/mute/solo,
       effect slot mix/bypass, project time signature, and native mixer EQ.
-- [ ] Add grouped/named rollback units for project organizer, routing doctor,
+- [x] Add grouped/named rollback units for project organizer, routing doctor,
       step-pattern writes, and bulk operations.
 - [x] Treat Piano Roll generated-script transforms as write tools: all exposed
       transforms route through `safety.safe_piano_roll_write` and FL undo

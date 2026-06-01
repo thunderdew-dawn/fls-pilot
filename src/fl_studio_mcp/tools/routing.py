@@ -215,7 +215,11 @@ def register(mcp: FastMCP) -> None:
         if not srcs:
             return {"ok": False, "error": "no valid source tracks (excluding bus and Master)"}
         res = safety.safe_write_group(
-            bridge, tool="group_tracks", scope=f"group:bus{bus}", writes=writes
+            bridge,
+            tool="group_tracks",
+            scope=f"group:bus{bus}",
+            writes=writes,
+            rollback_unit=f"group_tracks_bus_{bus}",
         )
         if res.get("dry_run"):
             res.update({"sources": srcs, "bus": bus, "name": name})

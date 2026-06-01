@@ -72,6 +72,10 @@ def main() -> int:
                 "recent summaries omit restore payload",
                 "restore" not in summaries[0] and summaries[0]["tool"] == "first_write",
             )
+            check(
+                "recent summaries expose rollback unit",
+                summaries[0]["rollback_unit"] == "first_write",
+            )
             payload = log.recent(1, include_payload=True)
             check(
                 "payload view includes restore",
@@ -113,6 +117,7 @@ def main() -> int:
             group = log.append(
                 {
                     "tool": "group_write",
+                    "rollback_unit": "named_group",
                     "scope": "mixer:bulk",
                     "group": True,
                     "restores": [
@@ -120,6 +125,11 @@ def main() -> int:
                         {"command": "restore_second_in_group", "params": {"order": 2}},
                     ],
                 }
+            )
+            group_summary = log.recent(1)[0]
+            check(
+                "group summary exposes explicit rollback unit",
+                group_summary["rollback_unit"] == "named_group",
             )
             group_result = safety.rollback_change(bridge, group["change_id"])
             check("group rollback succeeds", group_result["ok"] is True)

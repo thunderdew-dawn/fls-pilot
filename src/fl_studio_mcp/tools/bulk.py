@@ -125,7 +125,11 @@ def register(mcp: FastMCP) -> None:
             }
         try:
             safety.safe_write_group(
-                b, tool="bulk_solo", scope="mixer:bulk", writes=_mute_writes(to_mute, True)
+                b,
+                tool="bulk_solo",
+                scope="mixer:bulk",
+                writes=_mute_writes(to_mute, True),
+                rollback_unit="bulk_solo_tracks",
             )
         except Exception as e:
             return {"ok": False, "error": f"{type(e).__name__}: {e}"}
@@ -163,7 +167,11 @@ def register(mcp: FastMCP) -> None:
             }
         try:
             safety.safe_write_group(
-                b, tool="bulk_mute", scope="mixer:bulk", writes=_mute_writes(to_mute, True)
+                b,
+                tool="bulk_mute",
+                scope="mixer:bulk",
+                writes=_mute_writes(to_mute, True),
+                rollback_unit="bulk_mute_tracks",
             )
         except Exception as e:
             return {"ok": False, "error": f"{type(e).__name__}: {e}"}
@@ -209,7 +217,13 @@ def register(mcp: FastMCP) -> None:
         if not writes:
             return {"ok": True, "cleared": 0, "note": "no mutes or solos were set"}
         try:
-            safety.safe_write_group(b, tool="clear_mute_solo", scope="mixer:bulk", writes=writes)
+            safety.safe_write_group(
+                b,
+                tool="clear_mute_solo",
+                scope="mixer:bulk",
+                writes=writes,
+                rollback_unit="clear_mute_solo",
+            )
         except Exception as e:
             return {"ok": False, "error": f"{type(e).__name__}: {e}"}
         return {"ok": True, "cleared": len(writes)}

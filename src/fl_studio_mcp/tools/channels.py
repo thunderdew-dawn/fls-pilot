@@ -271,6 +271,7 @@ def register(mcp: FastMCP) -> None:
             command=protocol.CMD_CHANNEL_SET_STEPS,
             params={"channel": channel, "pattern": pattern_index, "steps": [params]},
             build_restore=lambda b: _steps_restore(channel, b),
+            rollback_unit=f"step_grid_bit_ch{channel}_pat{pattern_index}",
         )
 
     @mcp.tool(annotations={"title": "Set one step sequencer parameter", **_WR})
@@ -317,6 +318,7 @@ def register(mcp: FastMCP) -> None:
             command=protocol.CMD_CHANNEL_SET_STEPS,
             params={"channel": channel, "pattern": pattern_index, "steps": [payload]},
             build_restore=lambda b: _steps_restore(channel, b),
+            rollback_unit=f"step_param_ch{channel}_pat{pattern_index}",
         )
 
     @mcp.tool(annotations={"title": "Set step sequencer steps in batch", **_WR})
@@ -372,6 +374,7 @@ def register(mcp: FastMCP) -> None:
             command=protocol.CMD_CHANNEL_SET_STEPS,
             params={"channel": channel, "pattern": pattern_index, "steps": validated_steps},
             build_restore=lambda b: _steps_restore(channel, b),
+            rollback_unit=f"step_batch_ch{channel}_pat{pattern_index}",
         )
 
     @mcp.tool(annotations={"title": "Clear step sequencer grid", **_WR})
@@ -403,4 +406,5 @@ def register(mcp: FastMCP) -> None:
             command=protocol.CMD_CHANNEL_SET_STEPS,
             params={"channel": channel, "pattern": pattern_index, "steps": cleared_steps},
             build_restore=lambda b: _steps_restore(channel, b),
+            rollback_unit=f"step_clear_ch{channel}_pat{pattern_index}",
         )
