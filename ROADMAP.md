@@ -42,6 +42,13 @@ task.
     `channels-v38`, then run `scripts/probe_native_eq_type_live.py`.
   - Live preflight: attempted immediately after implementation; blocked as
     expected because FL still reported controller build `channels-v37`.
+- 2026-06-01: Phase A API-backed snapshot scopes marked complete offline.
+  - Verified path: `scripts/test_safety_scopes.py`;
+    `scripts/audit_tool_safety.py --fail-on-gaps`.
+  - Result: snapshot coverage now includes channel state, channel steps,
+    pattern state/current selection, playlist tracks, effect slots, track slot
+    bypass state, project time signature, and native mixer EQ. Added focused
+    test assertions for the previously implicit channel and track-slot scopes.
 - 2026-06-01: Targeted Native EQ high-pass write on mixer track 8 `Drums`
   did not pass; visual check confirmed no visible mixer EQ change, and rollback
   restored the original EQ state.
@@ -240,7 +247,7 @@ Before adding the API-backed production suite:
       `flp.score.undoSection()` when available.
 - [x] Expose the MCP changelog safely: recent history, JSON export, stable
       change IDs, and LIFO-only rollback by change ID.
-- [ ] Add snapshot scopes for new API-backed domains:
+- [x] Add snapshot scopes for new API-backed domains:
       channel name, channel mixer target, step grid/step params, pattern
       name/color/length/current selection, playlist track name/color/mute/solo,
       effect slot mix/bypass, project time signature, and native mixer EQ.
