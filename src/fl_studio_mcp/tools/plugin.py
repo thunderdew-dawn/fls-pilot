@@ -86,12 +86,18 @@ def resolve_param_index(bridge, track: int, slot: int, param):
 
 
 def register(mcp: FastMCP) -> None:
-    _RO = {"readOnlyHint": True, "idempotentHint": True, "openWorldHint": True}
+    _RO = {
+        "readOnlyHint": True,
+        "idempotentHint": True,
+        "openWorldHint": True,
+        "safetyClass": "read-only",
+    }
     _WR = {
         "readOnlyHint": False,
         "destructiveHint": False,
         "idempotentHint": True,
         "openWorldHint": True,
+        "safetyClass": "write-safe",
     }
 
     @mcp.tool(annotations={"title": "List plugins on a mixer track", **_RO})
@@ -101,7 +107,10 @@ def register(mcp: FastMCP) -> None:
         """List the filled effect slots (0-9) on a mixer track, with plugin names.
 
         We cannot load NEW plugins (FL API limit) -- this only reports plugins
-        already present in the project."""
+        already present in the project.
+
+        Safety: Read-Only.
+        """
         return get_bridge().call(protocol.CMD_PLUGIN_LIST, {"track": track})
 
     @mcp.tool(annotations={"title": "Get plugin parameters", **_RO})
@@ -111,7 +120,10 @@ def register(mcp: FastMCP) -> None:
     ) -> dict:
         """Every named parameter of the plugin in this slot: index, name,
         normalised value (0..1) and FL's display string (e.g. '3.6dB',
-        '500Hz'). Returns {"total", "params":[{"i","name","v","s"}, ...]}."""
+        '500Hz'). Returns {"total", "params":[{"i","name","v","s"}, ...]}.
+
+        Safety: Read-Only.
+        """
         return fetch_all_pages(
             get_bridge(), protocol.CMD_PLUGIN_GET_PARAMS, "params", {"track": track, "slot": slot}
         )
@@ -128,7 +140,11 @@ def register(mcp: FastMCP) -> None:
         """Set one plugin parameter (normalised 0..1). ``param`` may be an
         index or a name; names are resolved from the live param list. The
         change is logged and undo-able via fl_rollback_last_change. Returns
-        before/after plus the resolved {index, name}."""
+        before/after plus the resolved {index, name}.
+
+        Safety: Write-Safe with Rollback. This only configures already-loaded
+        plugins; plugin loading remains manual.
+        """
         bridge = get_bridge()
         idx, name = resolve_param_index(bridge, track, slot, param)
         scope = f"plugin_param:{track}:{slot}:{idx}"
@@ -152,7 +168,10 @@ def register(mcp: FastMCP) -> None:
         track: Annotated[int, Field(ge=0, description="Mixer track index (0 = Master).")],
         slot: Annotated[int, Field(ge=0, le=9, description="Effect slot index 0-9.")],
     ) -> dict:
-        """List all parameters of a plugin. Alias for fl_plugin_get_params."""
+        """List all parameters of a plugin. Alias for fl_plugin_get_params.
+
+        Safety: Read-Only.
+        """
         return fl_plugin_get_params(track, slot)
 
     @mcp.tool(annotations={"title": "Get plugin parameter value", **_RO})
@@ -161,13 +180,16 @@ def register(mcp: FastMCP) -> None:
         slot: Annotated[int, Field(ge=0, le=9)],
         param: Annotated[int | str, Field(description="Param index (int) or name (str).")],
     ) -> dict:
-        """Get the current value and display string of a single plugin parameter."""
+        """Get the current value and display string of a single plugin parameter.
+
+        Safety: Read-Only.
+        """
         bridge = get_bridge()
         try:
             idx, name = resolve_param_index(bridge, track, slot, param)
         except ParamNotFound as e:
             return {"ok": False, "error": str(e)}
-        
+
         val = bridge.call(
             protocol.CMD_PLUGIN_GET_PARAM, {"track": track, "slot": slot, "param": idx}
         )
@@ -189,7 +211,10 @@ def register(mcp: FastMCP) -> None:
             Field(ge=-1, le=9, description="Effect slot index. Use -1 for channel generators."),
         ],
     ) -> dict:
-        """Get the current preset name of a plugin."""
+        """Get the current preset name of a plugin.
+
+        Safety: Read-Only.
+        """
         bridge = get_bridge()
         val = bridge.call(protocol.CMD_PLUGIN_GET_PRESET_NAME, {"track": track, "slot": slot})
         return {

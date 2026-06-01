@@ -26,6 +26,15 @@ task.
 
 ## Current verification checkpoints
 
+- 2026-06-01: Plugin parameter tool safety-class docstrings and MCP
+  annotations added.
+  - Verified path: `compileall` for `src/fl_studio_mcp/tools/plugin.py`;
+    targeted `audit_file` check for every plugin tool's `safetyClass` and
+    `Safety:` docstring; `scripts/test_plugin.py`;
+    `scripts/audit_tool_safety.py --fail-on-gaps`.
+  - Result: plugin listing, parameter reads, preset-name reads, manual preset
+    navigation plans, and rollback-backed already-loaded plugin parameter
+    writes now report explicit safety classes.
 - 2026-06-01: Pattern and Playlist tool safety-class docstrings and MCP
   annotations added.
   - Verified path: `compileall` for `src/fl_studio_mcp/tools/phase3.py`;
@@ -315,10 +324,10 @@ Before adding the API-backed production suite:
       transforms route through `safety.safe_piano_roll_write` and FL undo
       rollback. Readback remains explicitly API-limited.
 - [ ] Document each tool's safety class in its docstring and MCP annotations.
-      Audit support and the Effect Slot/Native EQ, Transport, and
-      Pattern/Playlist modules are complete; the strict doc gate is available
-      but intentionally not part of the standard gate until the remaining
-      modules are migrated.
+      Audit support and the Effect Slot/Native EQ, Transport,
+      Pattern/Playlist, and Plugin Parameter modules are complete; the strict
+      doc gate is available but intentionally not part of the standard gate
+      until the remaining modules are migrated.
 - [x] Add tests for planned restore payloads where FL-live tests are not
       practical.
 
