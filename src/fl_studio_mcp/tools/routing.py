@@ -134,12 +134,18 @@ def detect_cleanup(bridge, *, max_plugin_checks: int = 60) -> dict:
 
 
 def register(mcp: FastMCP) -> None:
-    _RO = {"readOnlyHint": True, "idempotentHint": True, "openWorldHint": True}
+    _RO = {
+        "readOnlyHint": True,
+        "idempotentHint": True,
+        "openWorldHint": True,
+        "safetyClass": "read-only",
+    }
     _WR = {
         "readOnlyHint": False,
         "destructiveHint": False,
         "idempotentHint": True,
         "openWorldHint": True,
+        "safetyClass": "write-safe",
     }
 
     @mcp.tool(annotations={"title": "Get mixer track routing", **_RO})
@@ -147,26 +153,38 @@ def register(mcp: FastMCP) -> None:
         track: Annotated[int, Field(ge=0, description="Mixer track index (0 = Master).")],
     ) -> dict:
         """Which destination tracks this mixer track sends to:
-        {track, name, routes_to:[{dst, dst_name, level?}]}."""
+        {track, name, routes_to:[{dst, dst_name, level?}]}.
+
+        Safety: Read-Only.
+        """
         return get_bridge().call(protocol.CMD_MIXER_GET_ROUTING, {"track": track})
 
     @mcp.tool(annotations={"title": "Get full routing matrix", **_RO})
     def fl_get_routing_all() -> dict:
         """Routing for every mixer track (paginated under the hood, returned
-        whole): {total, routing:[{i, name, routes_to:[...]}]}."""
+        whole): {total, routing:[{i, name, routes_to:[...]}]}.
+
+        Safety: Read-Only.
+        """
         return fetch_all_pages(get_bridge(), protocol.CMD_MIXER_GET_ROUTING_ALL, "routing")
 
     @mcp.tool(annotations={"title": "Get channel->mixer routing", **_RO})
     def fl_get_channel_routing() -> dict:
         """Which mixer track each channel-rack channel is linked to:
-        {total, channels:[{channel, name, target_mixer_track, target_name}]}."""
+        {total, channels:[{channel, name, target_mixer_track, target_name}]}.
+
+        Safety: Read-Only.
+        """
         return fetch_all_pages(get_bridge(), protocol.CMD_CHANNEL_ROUTING_SUMMARY, "channels")
 
     @mcp.tool(annotations={"title": "Detect cleanup candidates (read-only)", **_RO})
     def fl_detect_cleanup_candidates() -> dict:
         """Flag (do NOT touch) empty channels + unused mixer tracks, each with a
         reason. Judgement is computed server-side from cheap controller reads.
-        Channel emptiness is a name heuristic; unused-track detection is reliable."""
+        Channel emptiness is a name heuristic; unused-track detection is reliable.
+
+        Safety: Read-Only.
+        """
         return detect_cleanup(get_bridge())
 
     @mcp.tool(annotations={"title": "Set mixer routing (src -> dst)", **_WR})
@@ -176,7 +194,10 @@ def register(mcp: FastMCP) -> None:
         enabled: Annotated[bool, Field(description="True = route on, False = off.")] = True,
     ) -> dict:
         """Enable/disable a send from src -> dst (calls afterRoutingChanged on the
-        FL side). Snapshot + readback; undo with fl_rollback_last_change."""
+        FL side). Snapshot + readback; undo with fl_rollback_last_change.
+
+        Safety: Write-Safe with Rollback.
+        """
         return safety.safe_write(
             get_bridge(),
             tool="mixer_set_route",
@@ -202,7 +223,11 @@ def register(mcp: FastMCP) -> None:
     ) -> dict:
         """Group sources into a bus, EXCLUSIVELY: each source -> bus ON and its
         direct -> Master OFF; bus -> Master ON; optional bus rename. Applied as
-        ONE rollback unit -- fl_rollback_last_change undoes the whole grouping."""
+        ONE rollback unit -- fl_rollback_last_change undoes the whole grouping.
+
+        Safety: Write-Safe with Rollback. The routing and optional rename are
+        persisted as one named rollback unit.
+        """
         bridge = get_bridge()
         srcs = [int(s) for s in sources if int(s) not in (bus, 0)]
         writes = []
