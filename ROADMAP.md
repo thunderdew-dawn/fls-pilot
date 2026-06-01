@@ -26,6 +26,15 @@ task.
 
 ## Current verification checkpoints
 
+- 2026-06-02: Prompt-level eval suite added for the FLStudioMCP production
+  tool surface.
+  - Verified path: `python3 -m json.tool evals/evals.json`; manual coverage
+    check confirms 10 scenarios spanning bridge/transport, project reports,
+    channel steps, mixer/routing/bulk/color, patterns/playlist/arrangement,
+    Piano Roll/scale composition, plugin/effect intents, Mix Doctor,
+    audio/preset/chain planning, and documented-API false-positive handling.
+  - Result: `evals/evals.json` now captures expected tool choices and safety
+    expectations for regression review.
 - 2026-06-02: FL Studio production skill orchestration layer updated.
   - Verified path: `wc -l` confirms `skills/flstudio-production/SKILL.md` is
     under 500 lines; frontmatter/reference existence check passed; all `fl_*`
@@ -779,7 +788,7 @@ so it ships inside the wheel.
 
 - [x] `skills/flstudio-production/SKILL.md` orchestration layer with deep
       content in `references/`. Under 500 lines.
-- [ ] `evals/evals.json` — 10 questions exercising the full tool surface.
+- [x] `evals/evals.json` — 10 questions exercising the full tool surface.
 - [ ] `.claude-plugin/marketplace.json` so this can live in
       `rosasynthesiz-skills` as an installable plugin.
 - [ ] `AGENTS.md` describing the agentic workflow for future Claude sessions
