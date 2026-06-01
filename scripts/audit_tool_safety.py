@@ -96,6 +96,8 @@ class ToolAudit:
     line: int
     read_only_hint: bool | None
     destructive_hint: bool | None
+    safety_class_annotation: str | None
+    has_safety_doc: bool
     status: str
     evidence: str
 
@@ -107,6 +109,8 @@ class ToolAudit:
             "line": self.line,
             "read_only_hint": self.read_only_hint,
             "destructive_hint": self.destructive_hint,
+            "safety_class_annotation": self.safety_class_annotation,
+            "has_safety_doc": self.has_safety_doc,
             "status": self.status,
             "evidence": self.evidence,
         }
@@ -281,6 +285,18 @@ def _classify_tool(
     return "needs-review", "; ".join(evidence_bits) or "no static evidence"
 
 
+def _expected_safety_class(status: str) -> str:
+    return {
+        "read-only": "read-only",
+        "transient": "transient",
+        "external-write": "external-write",
+        "server-state": "server-state",
+        "write-safe": "write-safe",
+        "write-gap": "write-gap",
+        "needs-review": "needs-review",
+    }.get(status, status)
+
+
 def audit_file(path: Path) -> list[ToolAudit]:
     tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
     known_dicts = _collect_known_dicts(tree)
@@ -299,6 +315,15 @@ def audit_file(path: Path) -> list[ToolAudit]:
             continue
         annotations = _tool_annotations(decos[0], known_dicts)
         status, evidence = _classify_tool(node, annotations, helper_effects)
+        doc = ast.get_docstring(node) or ""
+        safety_class = annotations.get("safetyClass")
+        expected_safety = _expected_safety_class(status)
+        if safety_class:
+            evidence = f"{evidence}; safetyClass={safety_class!r}" if evidence else f"safetyClass={safety_class!r}"
+        if safety_class and safety_class != expected_safety:
+            evidence = f"{evidence}; safetyClass expected {expected_safety!r}"
+        if "Safety:" in doc:
+            evidence = f"{evidence}; doc_safety=True" if evidence else "doc_safety=True"
         audits.append(
             ToolAudit(
                 name=node.name,
@@ -307,6 +332,8 @@ def audit_file(path: Path) -> list[ToolAudit]:
                 line=node.lineno,
                 read_only_hint=annotations.get("readOnlyHint"),
                 destructive_hint=annotations.get("destructiveHint"),
+                safety_class_annotation=safety_class,
+                has_safety_doc="Safety:" in doc,
                 status=status,
                 evidence=evidence,
             )
@@ -366,6 +393,11 @@ def main() -> int:
         default="markdown",
         help="Output format. Default: markdown.",
     )
+    parser.add_argument(
+        "--fail-on-missing-safety-docs",
+        action="store_true",
+        help="Exit non-zero if tools lack Safety: docstrings or safetyClass annotations.",
+    )
     args = parser.parse_args()
 
     audits: list[ToolAudit] = []
@@ -382,6 +414,15 @@ def main() -> int:
     gap_count = count_by_status(audits).get("write-gap", 0)
     if args.fail_on_gaps and any(a.status == "write-gap" for a in audits):
         return 1
+    if args.fail_on_missing_safety_docs:
+        missing = [
+            a
+            for a in audits
+            if not a.has_safety_doc
+            or a.safety_class_annotation != _expected_safety_class(a.status)
+        ]
+        if missing:
+            return 1
     if args.max_write_gaps is not None and gap_count > args.max_write_gaps:
         return 1
     return 0

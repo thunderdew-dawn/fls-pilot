@@ -26,6 +26,19 @@ task.
 
 ## Current verification checkpoints
 
+- 2026-06-01: Safety-class documentation audit support added offline, with
+  the Effect Slot and Native EQ tool module updated as the first annotated
+  module.
+  - Verified path: `compileall` for `scripts/audit_tool_safety.py` and
+    `src/fl_studio_mcp/tools/effects.py`;
+    `scripts/test_effects_pattern_extensions.py`;
+    `scripts/audit_tool_safety.py --fail-on-gaps`;
+    `scripts/audit_tool_safety.py --fail-on-missing-safety-docs --format json`.
+  - Result: the audit output now reports each tool's `safetyClass` annotation
+    and whether the function docstring contains a `Safety:` section. The new
+    strict doc gate intentionally remains non-standard for now because the
+    remaining modules still need migration; the existing write-gap gate stays
+    green.
 - 2026-06-01: Native EQ type mapping probe ran on FL Studio Producer Edition
   v25.2.5 (build 5055), controller build marker `channels-v38`; no working
   high-pass type mapping found.
@@ -283,6 +296,9 @@ Before adding the API-backed production suite:
       transforms route through `safety.safe_piano_roll_write` and FL undo
       rollback. Readback remains explicitly API-limited.
 - [ ] Document each tool's safety class in its docstring and MCP annotations.
+      Audit support and the Effect Slot/Native EQ module are complete; the
+      strict doc gate is available but intentionally not part of the standard
+      gate until the remaining modules are migrated.
 - [x] Add tests for planned restore payloads where FL-live tests are not
       practical.
 

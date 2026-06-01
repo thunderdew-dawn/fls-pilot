@@ -23,12 +23,18 @@ def _band_before(before: dict, band: int) -> dict:
 
 
 def register(mcp: FastMCP) -> None:
-    _RO = {"readOnlyHint": True, "idempotentHint": True, "openWorldHint": True}
+    _RO = {
+        "readOnlyHint": True,
+        "idempotentHint": True,
+        "openWorldHint": True,
+        "safetyClass": "read-only",
+    }
     _WR = {
         "readOnlyHint": False,
         "destructiveHint": False,
         "idempotentHint": True,
         "openWorldHint": True,
+        "safetyClass": "write-safe",
     }
 
     @mcp.tool(annotations={"title": "Get effect slot details", **_RO})
@@ -36,14 +42,20 @@ def register(mcp: FastMCP) -> None:
         track: Annotated[int, Field(ge=0, description="Mixer track index.")],
         slot: Annotated[int, Field(ge=0, le=9, description="Effect slot index (0-9).")],
     ) -> dict:
-        """Read one mixer effect slot."""
+        """Read one mixer effect slot.
+
+        Safety: Read-Only.
+        """
         return get_bridge().call(protocol.CMD_MIXER_GET_SLOT, {"track": track, "slot": slot})
 
     @mcp.tool(annotations={"title": "List effect slots on a track", **_RO})
     def fl_effect_list_slots(
         track: Annotated[int, Field(ge=0, description="Mixer track index.")],
     ) -> dict:
-        """Read all 10 effect slots on a mixer track."""
+        """Read all 10 effect slots on a mixer track.
+
+        Safety: Read-Only.
+        """
         bridge = get_bridge()
         slots = []
         for slot in range(10):
@@ -56,7 +68,10 @@ def register(mcp: FastMCP) -> None:
         slot: Annotated[int, Field(ge=0, le=9, description="Effect slot index (0-9).")],
         mix: Annotated[float, Field(ge=0.0, le=1.0, description="Wet mix 0..1.")],
     ) -> dict:
-        """Set one slot mix amount. Rollback restores the previous mix."""
+        """Set one slot mix amount. Rollback restores the previous mix.
+
+        Safety: Write-Safe with Rollback.
+        """
         return safety.safe_write(
             get_bridge(),
             tool="effect_set_slot_mix",
@@ -73,7 +88,10 @@ def register(mcp: FastMCP) -> None:
     def fl_effect_get_track_slots_enabled(
         track: Annotated[int, Field(ge=0, description="Mixer track index.")],
     ) -> dict:
-        """Read whether all effect slots are enabled on a mixer track."""
+        """Read whether all effect slots are enabled on a mixer track.
+
+        Safety: Read-Only.
+        """
         return get_bridge().call(protocol.CMD_MIXER_GET_TRACK_SLOTS, {"track": track})
 
     @mcp.tool(annotations={"title": "Enable or bypass all track effect slots", **_WR})
@@ -81,7 +99,10 @@ def register(mcp: FastMCP) -> None:
         track: Annotated[int, Field(ge=0, description="Mixer track index.")],
         enabled: bool,
     ) -> dict:
-        """Enable or bypass all effect slots on a track. Rollback restores prior state."""
+        """Enable or bypass all effect slots on a track. Rollback restores prior state.
+
+        Safety: Write-Safe with Rollback.
+        """
         return safety.safe_write(
             get_bridge(),
             tool="effect_set_track_slots_enabled",
@@ -101,7 +122,10 @@ def register(mcp: FastMCP) -> None:
         slot: Annotated[int, Field(ge=0, le=9, description="Effect slot index (0-9).")],
         enabled: bool,
     ) -> dict:
-        """Enable or bypass one effect slot. Rollback restores prior enabled state."""
+        """Enable or bypass one effect slot. Rollback restores prior enabled state.
+
+        Safety: Write-Safe with Rollback.
+        """
         return safety.safe_write(
             get_bridge(),
             tool="effect_set_slot_enabled",
@@ -119,7 +143,10 @@ def register(mcp: FastMCP) -> None:
     def fl_eq_get(
         track: Annotated[int, Field(ge=0, description="Mixer track index.")],
     ) -> dict:
-        """Read the native mixer EQ bands for one track."""
+        """Read the native mixer EQ bands for one track.
+
+        Safety: Read-Only.
+        """
         return get_bridge().call(protocol.CMD_MIXER_GET_EQ, {"track": track})
 
     @mcp.tool(annotations={"title": "Set one native EQ band", **_WR})
@@ -131,7 +158,12 @@ def register(mcp: FastMCP) -> None:
         bandwidth: Annotated[float | None, Field(description="Optional bandwidth/Q value.")] = None,
         eq_type: Annotated[int | None, Field(description="Optional EQ type integer.")] = None,
     ) -> dict:
-        """Set one native EQ band parameter set. Rollback restores all three bands."""
+        """Set one native EQ band parameter set. Rollback restores all three bands.
+
+        Safety: Write-Safe with Rollback. Native EQ type/high-pass writes are
+        documented-unconfirmed on FL Studio Producer Edition v25.2.5 build
+        5055; use this only where readback verifies the changed parameter.
+        """
         params: dict = {"track": track, "band": band}
         if gain is not None:
             params["gain"] = float(gain)
