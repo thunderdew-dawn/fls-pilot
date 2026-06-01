@@ -26,13 +26,17 @@ def register(mcp: FastMCP) -> None:
         "destructiveHint": False,
         "idempotentHint": False,
         "openWorldHint": True,
+        "safetyClass": "write-safe",
     }
 
     @mcp.tool(annotations={"title": "New named pattern (selects it)", **_WR})
     def fl_arrange_new_pattern(
         name: Annotated[str, Field(description="Pattern name, e.g. 'INTRO'.")],
     ) -> dict:
-        """Create + select + name the next empty pattern. Rollback uses FL undo."""
+        """Create + select + name the next empty pattern. Rollback uses FL undo.
+
+        Safety: Write-Safe with Rollback.
+        """
         return safety.safe_write(
             get_bridge(),
             tool="arrange_new_pattern",
@@ -46,7 +50,10 @@ def register(mcp: FastMCP) -> None:
     def fl_arrange_select_channel(
         channel: Annotated[int, Field(ge=0, description="Channel-rack channel index.")],
     ) -> dict:
-        """Make a channel active; rollback restores the previously selected channel."""
+        """Make a channel active; rollback restores the previously selected channel.
+
+        Safety: Write-Safe with Rollback.
+        """
         return safety.safe_write(
             get_bridge(),
             tool="arrange_select_channel",
@@ -64,7 +71,10 @@ def register(mcp: FastMCP) -> None:
         src: Annotated[int, Field(ge=1, description="Source pattern index.")],
         new_name: Annotated[str, Field(description="Name for the clone.")],
     ) -> dict:
-        """Clone a pattern and rename the clone. Rollback uses FL undo."""
+        """Clone a pattern and rename the clone. Rollback uses FL undo.
+
+        Safety: Write-Safe with Rollback.
+        """
         return safety.safe_write(
             get_bridge(),
             tool="arrange_clone_pattern",
@@ -79,7 +89,10 @@ def register(mcp: FastMCP) -> None:
         bar: Annotated[int, Field(ge=1, description="Bar number (1 = song start).")],
         name: Annotated[str, Field(description="Marker name, e.g. 'Verse'.")],
     ) -> dict:
-        """Add a named timeline marker at a bar. Rollback uses FL undo."""
+        """Add a named timeline marker at a bar. Rollback uses FL undo.
+
+        Safety: Write-Safe with Rollback.
+        """
         return safety.safe_write(
             get_bridge(),
             tool="arrange_add_marker",

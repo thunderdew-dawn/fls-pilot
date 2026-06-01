@@ -26,6 +26,16 @@ task.
 
 ## Current verification checkpoints
 
+- 2026-06-02: Arrangement tools now have safety-class docstrings and MCP
+  annotations.
+  - Verified path: `compileall` for `src/fl_studio_mcp/tools/arrange.py`;
+    targeted `audit_file` check for every Arrangement tool's `safetyClass`
+    and `Safety:` docstring; `scripts/audit_tool_safety.py --fail-on-gaps`.
+  - Result: rollback-backed pattern creation, pattern clone, channel selection,
+    and marker-add tools now report explicit safety classes. The existing
+    `scripts/test_arrange_mechanic.py` live script was not counted for this
+    slice because it directly creates patterns/markers and is explicitly not a
+    rollback-safe smoke test.
 - 2026-06-02: Mix Doctor and Mixing Intent tools now have safety-class
   docstrings and MCP annotations.
   - Verified path: `compileall` for
@@ -379,9 +389,9 @@ Before adding the API-backed production suite:
 - [ ] Document each tool's safety class in its docstring and MCP annotations.
       Audit support and the Effect Slot/Native EQ, Transport,
       Pattern/Playlist, Plugin Parameter, Routing, Phase 1, Piano Roll, and
-      Channel/Step Sequencer, Mix Doctor, and Mixing Intent modules are
-      complete; the strict doc gate is available but intentionally not part of
-      the standard gate until the remaining modules are migrated.
+      Channel/Step Sequencer, Mix Doctor, Mixing Intent, and Arrangement
+      modules are complete; the strict doc gate is available but intentionally
+      not part of the standard gate until the remaining modules are migrated.
 - [x] Add tests for planned restore payloads where FL-live tests are not
       practical.
 
