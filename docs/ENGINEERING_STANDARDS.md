@@ -93,6 +93,8 @@ manual.
 Before implementing a capability, classify the evidence level:
 
 - `documented`: official Image-Line documentation exposes the API.
+- `documented-unconfirmed`: official documentation exposes the API, but a live
+  smoke failed or behaved differently from the documentation.
 - `live-probed`: the current FL build exposes and executes the API.
 - `existing`: the current MCP already exposes it safely.
 - `probe-needed`: documentation or names imply a path, but behavior is not
@@ -101,8 +103,12 @@ Before implementing a capability, classify the evidence level:
 
 Only `documented`, `live-probed`, or `existing` capabilities should become
 write tools, and only after the rollback contract is satisfied. `probe-needed`
-capabilities should become probes first. `api-limited` capabilities should stay
-read-only, dry-run, or manual-instruction-only.
+capabilities should become probes first. If a documented API fails a broad live
+test, classify it as `documented-unconfirmed` and run a targeted false-positive
+probe before demoting it. The probe must check API presence, target
+selection/focus, indexing, readback timing, and rollback on the current FL
+build. `api-limited` capabilities should stay read-only, dry-run, or
+manual-instruction-only.
 
 Normalize and Stretch Pro defaults for audio channels remain probe-dependent.
 Do not promise them until a stable API path is proven.

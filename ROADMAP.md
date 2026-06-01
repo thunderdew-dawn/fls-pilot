@@ -26,6 +26,42 @@ task.
 
 ## Current verification checkpoints
 
+- 2026-06-01: Documented-API false-positive live probe ran on FL Studio
+  Producer Edition v25.2.5 (build 5055), controller build marker
+  `channels-v37`; did not fully pass, but produced narrower evidence.
+  - Verified path: daemon started locally via `.venv/bin/fl-studio-mcp-daemon`,
+    `fl_ping`, `scripts/probe_documented_api_live.py`, and
+    `scripts/test_effect_targets_live.py`.
+  - Result: `patterns.setPatternLength` is documented but not exposed by
+    `dir(patterns)` on this runtime, and the rollback-safe write command
+    returned API unavailable without mutating state. Keep it
+    `documented-unconfirmed` for this build rather than deleting support.
+  - Result: `mixer.setPluginMixLevel` is documented and works on at least one
+    occupied target (Master track 0, slot 8, `Fruity parametric EQ 2`) in both
+    direct and selected-track variants with rollback verified. It still did not
+    stick on track 49 slot 0 `Fruity Limiter` or track 50 slot 0 `Fruity
+    parametric EQ 2`; treat failures as target/plugin/state dependent, not
+    globally `api-limited`.
+  - Result: native mixer EQ setters are present, but gain writes did not stick
+    on tracks 0, 1, 49, or 50 while rollback/restore remained safe. Keep Native
+    EQ writes `documented-unconfirmed` until a narrower target/state probe
+    proves a working path.
+  - Result: Fruity Limiter generic parameter writes still did not stick across
+    exposed parameters; Fruity Parametric EQ 2 plugin parameter write/readback
+    still passed on Band 4 level.
+- 2026-06-01: Documented-API false-positive probe infrastructure added
+  offline.
+  - Verified path: `compileall` for `src/fl_studio_mcp`, controller script,
+    `scripts/probe_documented_api_live.py`, and
+    `scripts/run_live_capability_sweep.py`;
+    `scripts/test_effects_pattern_extensions.py`;
+    `scripts/test_safety_scopes.py`;
+    `scripts/audit_tool_safety.py --fail-on-gaps`.
+  - Result: broad live-sweep failures for officially documented APIs must now
+    stay `documented-unconfirmed` until `scripts/probe_documented_api_live.py`
+    checks API presence, target selection/focus, indexing, readback timing, and
+    rollback. The live capability sweep now includes this probe plus the
+    targeted effect-plugin probe before any documented API is demoted.
 - 2026-06-01: Piano Roll retargeting infrastructure slice passed offline.
   - Verified path: `compileall` for `src/fl_studio_mcp`, controller script, and focused scripts; `scripts/test_pianoroll.py`; `scripts/test_compose.py`; `scripts/audit_tool_safety.py --fail-on-gaps`.
   - Result: existing undo-backed Piano Roll write tools can optionally pass a channel/pattern target through the bridge to the controller, which uses `ui.openEventEditor` when available and falls back to `ui.showWindow`.
@@ -33,11 +69,11 @@ task.
 - 2026-06-01: Live capability sweep rerun on FL Studio Producer Edition v25.2.5 (build 5055), controller build marker `channels-v37`, did not fully pass.
   - Verified path: `scripts/run_live_capability_sweep.py` over TCP after FL MIDI script reload and ping confirmation.
   - Result: patterns/playlist, mixer, step sequencer, Piano Roll duplicate, and Piano Roll velocity ramp paths passed with rollback checks; `pattern_set_length` skipped because this FL build does not expose a working length write API; plugin-parameter probe skipped because no plugin was loaded on the probe tracks.
-  - Live API limits observed: effect slot mix and native EQ band writes did not stick on the auto-selected mixer target (track 1, slot 0), so readback verification failed while rollback/restore checks remained safe. Treat these as build/state-dependent live limits until a narrower target-selection probe proves otherwise.
+  - Live API limits observed: effect slot mix and native EQ band writes did not stick on the auto-selected mixer target (track 1, slot 0), so readback verification failed while rollback/restore checks remained safe. Because these APIs are officially documented, treat them as `documented-unconfirmed` until a narrower false-positive probe proves whether the issue is target selection, indexing, readback timing, stale state, or a real build limit.
 - 2026-06-01: Targeted effect-plugin live probe against track 49/50 did not fully pass.
   - Verified path: `scripts/test_effect_targets_live.py` over TCP against track 49 slot 0 `Fruity Limiter` with route 1->49 active, and track 50 slot 0 `Fruity parametric EQ 2`.
   - Result: Fruity Parametric EQ 2 plugin parameter write/readback/rollback passed on Band 4 level; Fruity Limiter generic plugin parameters did not stick across all 18 exposed parameters; per-slot mix did not stick for either plugin; per-slot enabled write is unavailable on this FL build. All attempted writes used immediate rollback/restore checks.
-  - Next action: treat effect slot mix and Fruity Limiter parameter writes as live API-limited for this build/state; prefer plugin-specific EQ2 parameter writes where readback is proven, and keep Limiter sidechain configuration manual until a stable parameter path is proven.
+  - Next action: treat effect slot mix and Fruity Limiter parameter writes as `documented-unconfirmed`/probe-gated for this build/state; prefer plugin-specific EQ2 parameter writes where readback is proven, and keep Limiter sidechain configuration manual until a stable parameter path is proven.
 - 2026-06-01: Priority 1/2 live smoke suite attempted, blocked by stale FL controller build.
   - Verified path: daemon up, bridge ping ok (`build=channels-v35`), then
     `scripts/test_priority12_live.py`.

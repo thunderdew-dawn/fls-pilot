@@ -31,6 +31,7 @@ Use these labels before implementing a feature:
 | Level | Meaning | Allowed implementation |
 |---|---|---|
 | `documented` | Official Image-Line docs expose the API. | Implement after live smoke test. |
+| `documented-unconfirmed` | Official docs expose the API, but a live smoke failed or was state-dependent. | Keep behind targeted probes/manual guidance until a false-positive check verifies target state, focus/selection, indexing, readback timing, and rollback. |
 | `live-probed` | Current FL build exposes and executes the API. | Implement with version/capability reporting. |
 | `existing` | Current MCP already exposes it safely. | Reuse; do not duplicate. |
 | `probe-needed` | Name exists or docs imply a path, but behavior is unverified. | Build a probe first, not a user tool. |
@@ -166,7 +167,10 @@ Safety requirement:
 
 ### Pattern Management
 
-Status: `documented`, `live-probed`.
+Status: `documented`, `live-probed`; `setPatternLength` is
+`documented-unconfirmed` on FL Studio Producer Edition v25.2.5 build 5055 until
+the targeted false-positive probe verifies whether the documented v39 API is
+absent, stale-controller related, target-state dependent, or readback delayed.
 
 Useful API:
 
@@ -197,6 +201,15 @@ Current next slice:
 - Current pattern selection snapshot/restore for grouped organizer changes.
 - Find-empty-pattern as read-only planning support. ✅ shipped
 - Clone/move only after live smoke verifies stable readback and restore.
+
+Live evidence and false-positive probes:
+
+- 2026-06-01, controller `channels-v37`: `patterns.setPatternLength` is
+  documented, but `api_probe dir` did not expose `setPatternLength` on FL
+  Studio Producer Edition v25.2.5 build 5055, and the rollback-safe write
+  command returned API unavailable before mutation. Keep the tool
+  `documented-unconfirmed` on this build; do not remove support solely from
+  this runtime result.
 
 ### Playlist Track Organizer
 
@@ -230,9 +243,11 @@ Not currently supported:
 ### Effect Slot Control and Native Mixer EQ
 
 Status: `documented`, partially `live-probed`. Track-slot enable has passed
-live smoke. Slot mix and per-slot mute are build/state dependent on FL Studio
-Producer Edition v25.2.5 build 5055 and must be treated as live-limited until
-readback sticks on the intended target.
+live smoke. Slot mix and per-slot mute are `documented-unconfirmed` on FL Studio
+Producer Edition v25.2.5 build 5055 until the targeted false-positive probe
+checks API presence, occupied-slot targeting, selected-track variants, readback
+timing, and rollback. Native EQ writes remain `live-probed` where readback
+sticks on the tested build/state.
 
 Useful API:
 
@@ -270,17 +285,31 @@ Current next slice:
 - Live-smoke slot mix, track-slot enable, EQ gain/frequency/bandwidth, and
   rollback before promoting per-slot bypass or EQ type changes.
 
-Live limits:
+Live evidence and false-positive probes:
 
 - 2026-06-01, controller `channels-v37`: `mixer.setPluginMixLevel` did not
   stick on track 49 slot 0 (`Fruity Limiter`) or track 50 slot 0 (`Fruity
-  parametric EQ 2`), although rollback restore remained safe.
+  parametric EQ 2`), although rollback restore remained safe. Because the API
+  is officially documented, this remains `documented-unconfirmed`, not final
+  `api-limited`, until `scripts/probe_documented_api_live.py` checks direct and
+  selected-track variants.
+- 2026-06-01, controller `channels-v37`: the false-positive probe verified
+  `mixer.setPluginMixLevel` on Master track 0, slot 8 (`Fruity parametric EQ
+  2`) in both direct and selected-track variants, with rollback verified. Slot
+  mix is therefore target/plugin/state dependent, not globally `api-limited`.
 - 2026-06-01, controller `channels-v37`: per-slot mute/enable returned API
-  unavailable on the same targets.
+  unavailable on the same targets. This stays probe-gated because the exposed
+  `plugins.getPluginMuteState` / `setPluginMuteState` path is live-probed but
+  not part of the documented mixer slot API surface.
+- 2026-06-01, controller `channels-v37`: native EQ setter names were present,
+  but gain writes did not stick on tracks 0, 1, 49, or 50 while rollback/restore
+  remained safe. Keep Native EQ writes `documented-unconfirmed` until a narrower
+  target/state probe proves a working path.
 - 2026-06-01, controller `channels-v37`: generic plugin parameter writes did
   not stick for any of Fruity Limiter's 18 exposed parameters on track 49 slot
   0; keep Limiter sidechain configuration manual until a stable parameter path
-  is proven.
+  is proven. Do not generalize this result to all plugin parameters; EQ2 passed
+  below.
 - 2026-06-01, controller `channels-v37`: Fruity Parametric EQ 2 plugin
   parameter write/readback/rollback passed on track 50 slot 0, Band 4 level.
 

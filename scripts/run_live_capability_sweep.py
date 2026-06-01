@@ -2,8 +2,8 @@
 """LIVE: Run a focused capability sweep against the current FL project.
 
 This script answers: "What can the MCP server reliably do on THIS FL build,
-right now?" by executing the existing live smoke scripts plus a small plugin
-param write/readback/rollback probe.
+right now?" by executing the existing live smoke scripts plus plugin and
+documented-API false-positive probes.
 
 Pre-req:
 - FL Studio open with the fixture project copy loaded.
@@ -38,6 +38,14 @@ def main() -> int:
     rc |= _run("Mixer live", [py, "scripts/test_mixer_live.py"])
     rc |= _run("Step sequencer live", [py, "scripts/test_step_sequencer_live.py"])
     rc |= _run("Plugin param live probe (track 49/50)", [py, "scripts/test_plugin_param_live.py"])
+    rc |= _run(
+        "Documented API false-positive probes",
+        [py, "scripts/probe_documented_api_live.py"],
+    )
+    rc |= _run(
+        "Targeted effect plugin probes (track 49/50)",
+        [py, "scripts/test_effect_targets_live.py"],
+    )
 
     print("\n=== Summary ===")
     if rc == 0:
