@@ -26,13 +26,14 @@ task.
 
 ## Current verification checkpoints
 
-- 2026-06-02: `AGENTS.md` Phase 7 item is blocked by local workspace
-  instructions.
-  - Verified path: local `AGENTS.md` operating guide states it is local-only
-    and must not be committed.
-  - Result: do not implement or commit the roadmap's `AGENTS.md` item in this
-    branch unless that instruction is explicitly changed. Other Phase 7
-    shippable items continue normally.
+- 2026-06-02: `AGENTS.md` repository workflow guide updated and approved for
+  commit.
+  - Verified path: `AGENTS.md` reviewed for repo-safe relative paths and no
+    remaining local-only/no-commit instruction.
+  - Result: future AI-assisted sessions now have a committed workflow guide
+    covering first reads, rollback-first safety posture, documented-API
+    false-positive handling, roadmap discipline, verification expectations,
+    and live FL procedure.
 - 2026-06-02: README now pins the known-working FL Studio build range.
   - Verified path: README requirements section reviewed with `rg` check for
     `v25.2.5`, `build 5055`, and controller marker `channels-v38`.
@@ -818,9 +819,8 @@ so it ships inside the wheel.
 - [x] `evals/evals.json` — 10 questions exercising the full tool surface.
 - [ ] `.claude-plugin/marketplace.json` so this can live in
       `rosasynthesiz-skills` as an installable plugin.
-- [ ] `AGENTS.md` describing the agentic workflow for future Claude sessions
-      working on this codebase. Blocked locally: the workspace `AGENTS.md`
-      instructions say the file is local-only and must not be committed.
+- [x] `AGENTS.md` describing the agentic workflow for future Claude sessions
+      working on this codebase.
 - [ ] Demo video and screenshots in `docs/`.
 - [x] GitHub Actions for linting and the standalone bridge tests (mock FL).
 - [x] Pin a known-working FL Studio version range in README.
