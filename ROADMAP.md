@@ -27,7 +27,8 @@ task.
 ## Current verification checkpoints
 
 - 2026-06-01: Targeted Native EQ high-pass write on mixer track 8 `Drums`
-  did not pass; rollback restored the original EQ state.
+  did not pass; visual check confirmed no visible mixer EQ change, and rollback
+  restored the original EQ state.
   - Verified path: daemon started locally via `.venv/bin/fl-studio-mcp-daemon`,
     `fl_ping` on FL Studio Producer Edition v25.2.5 (build 5055), controller
     build marker `channels-v37`; read mixer track 8; attempted
@@ -35,8 +36,9 @@ task.
     Hz and high-pass type value `3`.
   - Result: frequency readback changed from `0.0882` to `0.2594`, but EQ type
     stayed `0` instead of `3`, so the write was not a verified high-pass.
-    `fl_rollback_last_change` restored band 0 to frequency `0.0882`, bandwidth
-    `0.267`, gain `0.5`, type `0`.
+    User visual inspection found no visible change on mixer track 8. Rollback
+    by change ID `chg_1780338910870602000_e18e5076` restored band 0 to
+    frequency `0.0882`, bandwidth `0.267`, gain `0.5`, type `0`.
   - Next action: Native EQ type writes need a narrower REC event/value mapping
     probe before user-facing high-pass configuration can be promised. Track 8
     had no loaded plugin slots, so no already-loaded EQ2 fallback was available

@@ -308,8 +308,10 @@ Live evidence and false-positive probes:
 - 2026-06-01, controller `channels-v37`: targeted Native EQ high-pass attempt
   on mixer track 8 `Drums` partially stuck: band 0 frequency moved to the
   normalized 120 Hz value (`0.2594`), but type stayed `0` instead of the
-  attempted high-pass value `3`. Rollback restored the original band state.
-  Native EQ type writes need a dedicated REC event/value mapping probe.
+  attempted high-pass value `3`. User visual inspection found no visible mixer
+  EQ change on track 8. Rollback by change ID restored the original band state.
+  Native EQ type writes need a dedicated REC event/value mapping probe before
+  user-facing high-pass configuration can be promised.
 - 2026-06-01, controller `channels-v37`: generic plugin parameter writes did
   not stick for any of Fruity Limiter's 18 exposed parameters on track 49 slot
   0; keep Limiter sidechain configuration manual until a stable parameter path
