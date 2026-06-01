@@ -26,6 +26,19 @@ task.
 
 ## Current verification checkpoints
 
+- 2026-06-02: Read-only Audio Analysis, Chain Planning, Preset Suggestion, and
+  Project Doctor tools now have safety-class docstrings and MCP annotations.
+  - Verified path: `compileall` for `src/fl_studio_mcp/tools/audio.py`,
+    `src/fl_studio_mcp/tools/chains.py`,
+    `src/fl_studio_mcp/tools/presets.py`, and
+    `src/fl_studio_mcp/tools/project_doctor.py`; targeted `audit_file` check
+    for every touched tool's `safetyClass` and `Safety:` docstring;
+    `scripts/test_audio_analysis.py`; `scripts/test_chains.py`;
+    `scripts/test_preset_library.py`; `scripts/test_project_doctor.py`;
+    `scripts/audit_tool_safety.py --fail-on-gaps`.
+  - Result: offline audio/key analysis, monophonic melody extraction, genre
+    chain planning, installed-plugin/preset library reads, and project/export
+    readiness reports now report explicit read-only safety classes.
 - 2026-06-02: Arrangement tools now have safety-class docstrings and MCP
   annotations.
   - Verified path: `compileall` for `src/fl_studio_mcp/tools/arrange.py`;
@@ -390,8 +403,10 @@ Before adding the API-backed production suite:
       Audit support and the Effect Slot/Native EQ, Transport,
       Pattern/Playlist, Plugin Parameter, Routing, Phase 1, Piano Roll, and
       Channel/Step Sequencer, Mix Doctor, Mixing Intent, and Arrangement
-      modules are complete; the strict doc gate is available but intentionally
-      not part of the standard gate until the remaining modules are migrated.
+      modules are complete. Read-only Audio Analysis, Chain Planning, Preset
+      Suggestion, and Project Doctor modules are also complete; the strict doc
+      gate is available but intentionally not part of the standard gate until
+      the remaining modules are migrated.
 - [x] Add tests for planned restore payloads where FL-live tests are not
       practical.
 

@@ -26,11 +26,19 @@ def _suggest_pattern_name(index: int) -> str:
 
 
 def register(mcp: FastMCP) -> None:
-    _RO = {"readOnlyHint": True, "idempotentHint": True, "openWorldHint": True}
+    _RO = {
+        "readOnlyHint": True,
+        "idempotentHint": True,
+        "openWorldHint": True,
+        "safetyClass": "read-only",
+    }
 
     @mcp.tool(annotations={"title": "Project health report", **_RO})
     def fl_project_health_report() -> dict:
-        """Build a read-only project health report from safe low-level reads."""
+        """Build a read-only project health report from safe low-level reads.
+
+        Safety: Read-Only.
+        """
         bridge = get_bridge()
         project = bridge.call(protocol.CMD_GET_PROJECT_STATE)
         channels = fetch_all_pages(bridge, protocol.CMD_CHANNEL_LIST, "channels").get("channels", [])
@@ -120,7 +128,10 @@ def register(mcp: FastMCP) -> None:
 
     @mcp.tool(annotations={"title": "Export readiness report", **_RO})
     def fl_export_readiness_report() -> dict:
-        """Build a read-only readiness report for stem/mix export prep."""
+        """Build a read-only readiness report for stem/mix export prep.
+
+        Safety: Read-Only.
+        """
         report = fl_project_health_report()
         findings = list(report.get("findings", []))
         blockers = [f for f in findings if f.get("severity") in ("high", "medium")]
@@ -136,7 +147,10 @@ def register(mcp: FastMCP) -> None:
     def fl_project_dry_run_fix_plan(
         include_low_priority: bool = True,
     ) -> dict:
-        """Build a read-only, ordered fix plan over existing rollback-safe tools."""
+        """Build a read-only, ordered fix plan over existing rollback-safe tools.
+
+        Safety: Read-Only.
+        """
         report = fl_project_health_report()
         findings = list(report.get("findings", []))
         details = report.get("details", {})

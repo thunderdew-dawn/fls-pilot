@@ -327,7 +327,12 @@ def audio_extract_melody(
 
 
 def register(mcp: FastMCP) -> None:
-    _RO = {"readOnlyHint": True, "idempotentHint": True, "openWorldHint": True}
+    _RO = {
+        "readOnlyHint": True,
+        "idempotentHint": True,
+        "openWorldHint": True,
+        "safetyClass": "read-only",
+    }
 
     @mcp.tool(annotations={"title": "Analyze audio (tempo/key)", **_RO})
     def fl_analyze_audio(
@@ -336,7 +341,10 @@ def register(mcp: FastMCP) -> None:
         ],
     ) -> dict:
         """Estimate tempo + key (+ duration, beats, onsets) of an audio file.
-        Pure offline analysis -- does NOT touch FL. Key is ESTIMATED."""
+        Pure offline analysis -- does NOT touch FL. Key is ESTIMATED.
+
+        Safety: Read-Only.
+        """
         import os
 
         if not os.path.isfile(path):
@@ -377,7 +385,10 @@ def register(mcp: FastMCP) -> None:
         """Transcribe a monophonic melody to quantized notes; engine-selectable
         (CREPE = accurate/heavy, pyin = light). Returns ALL notes with confidence
         + a `kept` flag; bridge_notes holds only the confident notes, ready for
-        fl_write_piano_roll_notes. Does NOT write to FL -- review first."""
+        fl_write_piano_roll_notes. Does NOT write to FL -- review first.
+
+        Safety: Read-Only.
+        """
         import os
 
         if not os.path.isfile(path):

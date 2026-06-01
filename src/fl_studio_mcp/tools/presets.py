@@ -19,7 +19,12 @@ _CAP = 200
 
 
 def register(mcp: FastMCP) -> None:
-    _RO = {"readOnlyHint": True, "idempotentHint": True, "openWorldHint": True}
+    _RO = {
+        "readOnlyHint": True,
+        "idempotentHint": True,
+        "openWorldHint": True,
+        "safetyClass": "read-only",
+    }
 
     @mcp.tool(annotations={"title": "List presets (from disk)", **_RO})
     def fl_list_presets(
@@ -38,7 +43,10 @@ def register(mcp: FastMCP) -> None:
         filter -> a SUMMARY (which plugins have presets + counts). With
         plugin_filter -> that plugin's full preset list. Read-only. FL can't LOAD
         presets via the API -- this is for suggestions (you load the named preset,
-        then Claude can tweak it)."""
+        then Claude can tweak it).
+
+        Safety: Read-Only.
+        """
         lib = pre.list_presets(plugin_filter=plugin_filter)
         if not lib.get("found"):
             return {"ok": False, **lib}
@@ -74,7 +82,10 @@ def register(mcp: FastMCP) -> None:
         Name-only (can't hear the sound) -- apply your own knowledge of preset
         naming. FL can't LOAD presets via the API: recommend which to load in the
         plugin manually; AFTER the user loads it you can tweak its params via
-        fl_plugin_set_param / fl_apply_*_intent."""
+        fl_plugin_set_param / fl_apply_*_intent.
+
+        Safety: Read-Only.
+        """
         lib = pre.list_presets(plugin_filter=plugin)
         if not lib.get("found"):
             return {"ok": False, **lib}

@@ -21,12 +21,20 @@ from ..music import plugin_library as pl
 
 
 def register(mcp: FastMCP) -> None:
-    _RO = {"readOnlyHint": True, "idempotentHint": True, "openWorldHint": True}
+    _RO = {
+        "readOnlyHint": True,
+        "idempotentHint": True,
+        "openWorldHint": True,
+        "safetyClass": "read-only",
+    }
 
     @mcp.tool(annotations={"title": "List genre chains", **_RO})
     def fl_list_chains() -> dict:
         """List the built-in genre processing-chain recipes (vocal, drum_bus,
-        bass, master) and their ordered steps."""
+        bass, master) and their ordered steps.
+
+        Safety: Read-Only.
+        """
         return {"ok": True, "chains": ch.describe()}
 
     @mcp.tool(annotations={"title": "List installed plugins (FL DB on disk)", **_RO})
@@ -38,7 +46,10 @@ def register(mcp: FastMCP) -> None:
         you OWN. Bypasses the FL API (which only sees LOADED plugins). FL still
         can't LOAD these -- it's for library-aware suggestions. effects_by_role is
         a rough keyword grouping (Claude should apply its own plugin knowledge).
-        Read-only (directory listing only)."""
+        Read-only (directory listing only).
+
+        Safety: Read-Only.
+        """
         lib = pl.list_installed()
         if not lib.get("found"):
             return {"ok": False, **lib}
@@ -65,7 +76,10 @@ def register(mcp: FastMCP) -> None:
         the user approves, apply each step by calling its 'apply' tool+args
         (fl_apply_eq_intent / fl_apply_compression_intent / fl_apply_reverb_intent
         -- each logged + rollback-able). e.g. vocal: HP -> comp -> presence ->
-        air -> reverb."""
+        air -> reverb.
+
+        Safety: Read-Only.
+        """
         try:
             pl = get_bridge().call(protocol.CMD_PLUGIN_LIST, {"track": track}) or {}
         except Exception as e:
