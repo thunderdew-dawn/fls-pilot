@@ -26,6 +26,21 @@ task.
 
 ## Current verification checkpoints
 
+- 2026-06-01: Native EQ type mapping probe ran on FL Studio Producer Edition
+  v25.2.5 (build 5055), controller build marker `channels-v38`; no working
+  high-pass type mapping found.
+  - Verified path: installed updated controller script into
+    `~/Documents/Image-Line/FL Studio/Settings/Hardware/FLStudioMCP/`,
+    reloaded FL MIDI scripts, confirmed `fl_ping` build `channels-v38`, then
+    ran `scripts/probe_native_eq_type_live.py`.
+  - Result: raw integer, update-only, MIDI-scaled, and candidate type values
+    all read back as Native EQ `type=0` on mixer track 8 `Drums`, band 0.
+    Float variants were rejected by FL's `processRECEvent` binding because the
+    value must be an integer. Each attempted write used immediate rollback.
+  - Decision: do not expose Native EQ high-pass/type configuration as a
+    user-facing tool on this build. Keep Native EQ type writes
+    `documented-unconfirmed`/manual until a different FL build or API path
+    proves a visible, rollback-safe type mutation.
 - 2026-06-01: Native EQ type mapping probe infrastructure added offline.
   - Verified path: `compileall` for `src/fl_studio_mcp/protocol.py`,
     `fl_controller/FLStudioMCP/device_FLStudioMCP.py`,

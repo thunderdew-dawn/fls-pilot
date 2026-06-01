@@ -317,6 +317,12 @@ Live evidence and false-positive probes:
   `scripts/probe_native_eq_type_live.py`). The probe tries documented
   REC_Mixer_EQ_Type value/flag variants with immediate rollback and is not
   exposed as a user-facing MCP tool.
+- 2026-06-01, controller `channels-v38`: Native EQ type mapping probe found no
+  working high-pass type write on mixer track 8 `Drums`, band 0. Raw integer,
+  update-only, MIDI-scaled, and candidate type values all read back as
+  `type=0`; float values were rejected by `processRECEvent` because the value
+  must be an integer. Do not expose Native EQ high-pass/type configuration as a
+  user-facing tool on this build.
 - 2026-06-01, controller `channels-v37`: generic plugin parameter writes did
   not stick for any of Fruity Limiter's 18 exposed parameters on track 49 slot
   0; keep Limiter sidechain configuration manual until a stable parameter path
