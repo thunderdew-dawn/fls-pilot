@@ -28,14 +28,21 @@ def main() -> int:
 
     pong = b.call("ping", {})
     build = pong.get("build")
-    print(f"FL: {pong.get('fl_version')} | build={build} (want channels-v26)")
-    if build != "channels-v26":
-        print("\n[WARNING] Controller not reloaded yet. Please in FL Studio:")
-        print("  1. Open Options > MIDI Settings (F10).")
-        print("  2. Click 'Refresh device list' at the bottom.")
-        print("  Or open View > Script output and click 'Reload script'.")
-        print("  Then re-run this test script.")
-        return 1
+    print(f"FL: {pong.get('fl_version')} | build={build}")
+
+    # Preflight: if the controller is stale, these commands will be unknown.
+    try:
+        _ = b.call("channel_get_steps", {"channel": 0})
+    except Exception as e:
+        msg = str(e)
+        if "Unknown command" in msg:
+            print(
+                "\n[BLOCKED] Controller script is stale (missing step sequencer handlers). "
+                "Reload FL MIDI scripts and restart the daemon, then re-run."
+            )
+            print(f"Details: {e}")
+            return 2
+        raise
 
     channel = 0
     step = 0

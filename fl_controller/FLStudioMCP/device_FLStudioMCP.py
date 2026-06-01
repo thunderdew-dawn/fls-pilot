@@ -1437,6 +1437,8 @@ def _h_pattern_set_length(p):
         raise _ClientError("pattern index out of range")
     if beats <= 0:
         raise _ClientError("beats must be > 0")
+    if not hasattr(patterns, "setPatternLength"):
+        raise _ClientError("pattern length write API unavailable on this FL build")
     patterns.setPatternLength(idx, beats)
     return _h_pattern_get_length({"index": idx})
 

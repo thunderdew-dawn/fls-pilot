@@ -33,6 +33,10 @@ task.
     because FL still runs an older script build that does not include the new
     controller handlers. Required next step: reload FL MIDI scripts and rerun
     the live smoke suite.
+- 2026-06-01: Fixture hard-standardize + live capability sweep passed on FL Studio Producer Edition v25.2.5 (build 5055), controller build marker `channels-v36`.
+  - Verified path: `scripts/fixture_hard_standardize_live.py` (names/colors/markers) then `scripts/run_live_capability_sweep.py`.
+  - Result: core rollback-safe writes verified (patterns color, playlist track props, mixer routing/selection, effects slot mix + enabled, native EQ band edit, step sequencer grid bit, plugin param write) with immediate rollback confirmation.
+  - Known limits on this build: `pattern_set_length` is API-unavailable (skipped); `mixer_set_stereo_sep` call executes but does not stick (treated as API-limited in live sweep).
 - 2026-06-01: Priority 1 + Priority 2 implementation slice (offline) passed.
   - Verified path: `compileall` for `src/` + controller script, safety audit
     gate (`scripts/audit_tool_safety.py --fail-on-gaps`), focused offline tests:
