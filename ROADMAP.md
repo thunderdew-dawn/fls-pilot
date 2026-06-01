@@ -30,6 +30,10 @@ task.
   - Verified path: `compileall` for `src/fl_studio_mcp`, controller script, and focused scripts; `scripts/test_pianoroll.py`; `scripts/test_compose.py`; `scripts/audit_tool_safety.py --fail-on-gaps`.
   - Result: existing undo-backed Piano Roll write tools can optionally pass a channel/pattern target through the bridge to the controller, which uses `ui.openEventEditor` when available and falls back to `ui.showWindow`.
   - Live verification passed on FL Studio Producer Edition v25.2.5 (build 5055), controller build marker `channels-v37`: targeted append write to channel 1 / pattern 4 returned `retargeted=True` via `ui.openEventEditor`, then `fl_rollback_last_change` restored through FL undo.
+- 2026-06-01: Live capability sweep rerun on FL Studio Producer Edition v25.2.5 (build 5055), controller build marker `channels-v37`, did not fully pass.
+  - Verified path: `scripts/run_live_capability_sweep.py` over TCP after FL MIDI script reload and ping confirmation.
+  - Result: patterns/playlist, mixer, step sequencer, Piano Roll duplicate, and Piano Roll velocity ramp paths passed with rollback checks; `pattern_set_length` skipped because this FL build does not expose a working length write API; plugin-parameter probe skipped because no plugin was loaded on the probe tracks.
+  - Live API limits observed: effect slot mix and native EQ band writes did not stick on the auto-selected mixer target (track 1, slot 0), so readback verification failed while rollback/restore checks remained safe. Treat these as build/state-dependent live limits until a narrower target-selection probe proves otherwise.
 - 2026-06-01: Priority 1/2 live smoke suite attempted, blocked by stale FL controller build.
   - Verified path: daemon up, bridge ping ok (`build=channels-v35`), then
     `scripts/test_priority12_live.py`.
