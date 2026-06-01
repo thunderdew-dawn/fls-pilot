@@ -26,6 +26,15 @@ task.
 
 ## Current verification checkpoints
 
+- 2026-06-02: Phase 1 project/mixer/channel/safety tools now have
+  safety-class docstrings and MCP annotations.
+  - Verified path: `compileall` for `src/fl_studio_mcp/tools/phase1.py`;
+    targeted `audit_file` check for every Phase 1 tool's `safetyClass` and
+    `Safety:` docstring; `scripts/test_mixer.py`;
+    `scripts/audit_tool_safety.py --fail-on-gaps`.
+  - Result: project, mixer, channel, changelog, rollback, dry-run, and
+    external changelog-export tools now report explicit safety classes without
+    changing their rollback behavior.
 - 2026-06-01: Routing tool safety-class docstrings and MCP annotations added.
   - Verified path: `compileall` for `src/fl_studio_mcp/tools/routing.py`;
     targeted `audit_file` check for every routing tool's `safetyClass` and
@@ -332,9 +341,9 @@ Before adding the API-backed production suite:
       rollback. Readback remains explicitly API-limited.
 - [ ] Document each tool's safety class in its docstring and MCP annotations.
       Audit support and the Effect Slot/Native EQ, Transport,
-      Pattern/Playlist, Plugin Parameter, and Routing modules are complete;
-      the strict doc gate is available but intentionally not part of the
-      standard gate until the remaining modules are migrated.
+      Pattern/Playlist, Plugin Parameter, Routing, and Phase 1 modules are
+      complete; the strict doc gate is available but intentionally not part of
+      the standard gate until the remaining modules are migrated.
 - [x] Add tests for planned restore payloads where FL-live tests are not
       practical.
 
