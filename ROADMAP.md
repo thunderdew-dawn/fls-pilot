@@ -26,6 +26,17 @@ task.
 
 ## Current verification checkpoints
 
+- 2026-06-02: Bulk mute/solo and Color tools now have safety-class docstrings
+  and MCP annotations.
+  - Verified path: `compileall` for `src/fl_studio_mcp/tools/bulk.py` and
+    `src/fl_studio_mcp/tools/color.py`; targeted `audit_file` check for every
+    Bulk and Color tool's `safetyClass` and `Safety:` docstring;
+    `scripts/test_bulk.py`; `scripts/test_color.py`;
+    `scripts/audit_tool_safety.py --fail-on-gaps`.
+  - Result: rollback-backed grouped mixer mute/solo reset, mixer-track color,
+    and channel-color tools now report explicit write-safe safety classes. The
+    manual `scripts/test_color_live.py` probe was not counted for this
+    metadata-only slice.
 - 2026-06-02: Read-only Audio Analysis, Chain Planning, Preset Suggestion, and
   Project Doctor tools now have safety-class docstrings and MCP annotations.
   - Verified path: `compileall` for `src/fl_studio_mcp/tools/audio.py`,
@@ -404,9 +415,9 @@ Before adding the API-backed production suite:
       Pattern/Playlist, Plugin Parameter, Routing, Phase 1, Piano Roll, and
       Channel/Step Sequencer, Mix Doctor, Mixing Intent, and Arrangement
       modules are complete. Read-only Audio Analysis, Chain Planning, Preset
-      Suggestion, and Project Doctor modules are also complete; the strict doc
-      gate is available but intentionally not part of the standard gate until
-      the remaining modules are migrated.
+      Suggestion, Project Doctor, Bulk, and Color modules are also complete;
+      the strict doc gate is available but intentionally not part of the
+      standard gate until the remaining modules are migrated.
 - [x] Add tests for planned restore payloads where FL-live tests are not
       practical.
 

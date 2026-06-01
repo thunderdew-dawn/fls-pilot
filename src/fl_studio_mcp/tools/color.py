@@ -99,6 +99,7 @@ def register(mcp: FastMCP) -> None:
         "destructiveHint": False,
         "idempotentHint": False,
         "openWorldHint": True,
+        "safetyClass": "write-safe",
     }
 
     @mcp.tool(annotations={"title": "Color mixer tracks", **_WR})
@@ -130,7 +131,10 @@ def register(mcp: FastMCP) -> None:
         """Set the color of mixer tracks. Pick targets by category ('drums',
         'bass', ...) or an explicit tracks list; choose a color by name or hex.
         All writes are ONE rollback unit -- fl_rollback_last_change reverts them.
-        (Master is never colored.)"""
+        (Master is never colored.)
+
+        Safety: Write-Safe with Rollback.
+        """
         rgb = parse_color(color)
         if rgb is None:
             return {
@@ -192,7 +196,10 @@ def register(mcp: FastMCP) -> None:
     ) -> dict:
         """Set the color of channel-rack channels (separate from mixer-track
         color). Target by index or name substring. ONE rollback unit --
-        fl_rollback_last_change reverts it."""
+        fl_rollback_last_change reverts it.
+
+        Safety: Write-Safe with Rollback.
+        """
         rgb = parse_color(color)
         if rgb is None:
             return {
