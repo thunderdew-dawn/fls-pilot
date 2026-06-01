@@ -26,6 +26,16 @@ task.
 
 ## Current verification checkpoints
 
+- 2026-06-01: Transport tool safety-class docstrings and MCP annotations added.
+  - Verified path: `compileall` for `src/fl_studio_mcp/tools/transport.py`;
+    targeted `audit_file` check for every transport tool's `safetyClass` and
+    `Safety:` docstring; `scripts/audit_tool_safety.py --fail-on-gaps`;
+    `scripts/test_bridge.py` against FL Studio Producer Edition v25.2.5 (build
+    5055), controller build marker `channels-v38`.
+  - Result: read-only, transient runtime, and rollback-backed transport tools
+    now report explicit safety classes. The live bridge test restored tempo
+    from 147 BPM back to 142 BPM and ended with playback stopped and recording
+    disarmed.
 - 2026-06-01: Safety-class documentation audit support added offline, with
   the Effect Slot and Native EQ tool module updated as the first annotated
   module.
@@ -296,9 +306,9 @@ Before adding the API-backed production suite:
       transforms route through `safety.safe_piano_roll_write` and FL undo
       rollback. Readback remains explicitly API-limited.
 - [ ] Document each tool's safety class in its docstring and MCP annotations.
-      Audit support and the Effect Slot/Native EQ module are complete; the
-      strict doc gate is available but intentionally not part of the standard
-      gate until the remaining modules are migrated.
+      Audit support and the Effect Slot/Native EQ plus Transport modules are
+      complete; the strict doc gate is available but intentionally not part of
+      the standard gate until the remaining modules are migrated.
 - [x] Add tests for planned restore payloads where FL-live tests are not
       practical.
 

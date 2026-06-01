@@ -25,6 +25,7 @@ def register(mcp: FastMCP) -> None:
             "readOnlyHint": True,
             "idempotentHint": True,
             "openWorldHint": True,
+            "safetyClass": "read-only",
         },
     )
     def fl_ping() -> dict:
@@ -33,6 +34,8 @@ def register(mcp: FastMCP) -> None:
         Returns the controller's reported FL Studio version, the age of the
         last heartbeat in seconds, and the MIDI port names in use. Call this
         first when something seems wrong.
+
+        Safety: Read-Only.
         """
         bridge = get_bridge()
         port_info = {
@@ -73,10 +76,14 @@ def register(mcp: FastMCP) -> None:
             "readOnlyHint": True,
             "idempotentHint": True,
             "openWorldHint": True,
+            "safetyClass": "read-only",
         },
     )
     def fl_get_tempo() -> dict:
-        """Return the current FL Studio project tempo in beats per minute."""
+        """Return the current FL Studio project tempo in beats per minute.
+
+        Safety: Read-Only.
+        """
         data = _safe_call(protocol.CMD_GET_TEMPO)
         return {"bpm": data["bpm"]}
 
@@ -87,6 +94,7 @@ def register(mcp: FastMCP) -> None:
             "destructiveHint": False,
             "idempotentHint": True,
             "openWorldHint": True,
+            "safetyClass": "write-safe",
         },
     )
     def fl_set_tempo(
@@ -117,10 +125,14 @@ def register(mcp: FastMCP) -> None:
             "destructiveHint": False,
             "idempotentHint": True,
             "openWorldHint": True,
+            "safetyClass": "transient",
         },
     )
     def fl_play() -> dict:
-        """Start playback. Idempotent — calling while already playing is a no-op."""
+        """Start playback. Idempotent; calling while already playing is a no-op.
+
+        Safety: Transient Runtime Control.
+        """
         return _safe_call(protocol.CMD_PLAY)
 
     @mcp.tool(
@@ -130,10 +142,14 @@ def register(mcp: FastMCP) -> None:
             "destructiveHint": False,
             "idempotentHint": True,
             "openWorldHint": True,
+            "safetyClass": "transient",
         },
     )
     def fl_stop() -> dict:
-        """Stop playback. Idempotent."""
+        """Stop playback. Idempotent.
+
+        Safety: Transient Runtime Control.
+        """
         return _safe_call(protocol.CMD_STOP)
 
     @mcp.tool(
@@ -143,10 +159,14 @@ def register(mcp: FastMCP) -> None:
             "destructiveHint": False,
             "idempotentHint": False,
             "openWorldHint": True,
+            "safetyClass": "transient",
         },
     )
     def fl_toggle_play() -> dict:
-        """Toggle between play and stop, mirroring the spacebar in FL."""
+        """Toggle between play and stop, mirroring the spacebar in FL.
+
+        Safety: Transient Runtime Control.
+        """
         return _safe_call(protocol.CMD_TOGGLE_PLAY)
 
     @mcp.tool(
@@ -156,10 +176,14 @@ def register(mcp: FastMCP) -> None:
             "destructiveHint": True,  # Recording can overwrite material.
             "idempotentHint": False,
             "openWorldHint": True,
+            "safetyClass": "transient",
         },
     )
     def fl_record() -> dict:
-        """Toggle FL Studio's record-arm state."""
+        """Toggle FL Studio's record-arm state.
+
+        Safety: Transient Runtime Control.
+        """
         return _safe_call(protocol.CMD_RECORD)
 
     @mcp.tool(
@@ -168,10 +192,14 @@ def register(mcp: FastMCP) -> None:
             "readOnlyHint": True,
             "idempotentHint": True,
             "openWorldHint": True,
+            "safetyClass": "read-only",
         },
     )
     def fl_get_play_state() -> dict:
-        """Return whether FL is currently playing and / or recording."""
+        """Return whether FL is currently playing and / or recording.
+
+        Safety: Read-Only.
+        """
         return _safe_call(protocol.CMD_GET_PLAY_STATE)
 
     @mcp.tool(
@@ -180,10 +208,14 @@ def register(mcp: FastMCP) -> None:
             "readOnlyHint": True,
             "idempotentHint": True,
             "openWorldHint": True,
+            "safetyClass": "read-only",
         },
     )
     def fl_get_song_position() -> dict:
-        """Return the current playhead position in beats from the song start."""
+        """Return the current playhead position in beats from the song start.
+
+        Safety: Read-Only.
+        """
         return _safe_call(protocol.CMD_GET_SONG_POS)
 
     @mcp.tool(
@@ -193,12 +225,16 @@ def register(mcp: FastMCP) -> None:
             "destructiveHint": False,
             "idempotentHint": True,
             "openWorldHint": True,
+            "safetyClass": "transient",
         },
     )
     def fl_set_song_position(
         beats: Annotated[float, Field(ge=0.0, description="Position in beats from song start.")],
     ) -> dict:
-        """Move the playhead to the given beat position."""
+        """Move the playhead to the given beat position.
+
+        Safety: Transient Runtime Control.
+        """
         return _safe_call(protocol.CMD_SET_SONG_POS, {"beats": float(beats)})
 
     @mcp.tool(
@@ -207,10 +243,14 @@ def register(mcp: FastMCP) -> None:
             "readOnlyHint": True,
             "idempotentHint": True,
             "openWorldHint": True,
+            "safetyClass": "read-only",
         },
     )
     def fl_get_time_signature() -> dict:
-        """Return the current project time signature numerator and denominator."""
+        """Return the current project time signature numerator and denominator.
+
+        Safety: Read-Only.
+        """
         return _safe_call(protocol.CMD_GET_TIME_SIG)
 
     @mcp.tool(
@@ -220,6 +260,7 @@ def register(mcp: FastMCP) -> None:
             "destructiveHint": False,
             "idempotentHint": True,
             "openWorldHint": True,
+            "safetyClass": "write-safe",
         },
     )
     def fl_set_time_signature(
