@@ -262,17 +262,25 @@ class FLBridge:
         velocity_ramp=None,
         marker_add=None,
         marker_clear=False,
+        channel=None,
+        pattern=None,
     ):
         """Author piano-roll notes locally (direct mode: this process writes
         the generated .pyscript and triggers FL itself). Auto-opens the Piano
-        roll first so the trigger has a target. ``quantize`` (grid in bars)
-        instead snaps existing notes to that grid."""
+        roll first so the trigger has a target. If ``channel`` or ``pattern``
+        is supplied, the controller retargets the editor before triggering.
+        ``quantize`` (grid in bars) instead snaps existing notes to that grid."""
         from .pianoroll import apply_notes as _apply
 
         ensured = None
         if trigger:
             try:
-                ensured = self.call(protocol.CMD_ENSURE_PIANO_ROLL, {}, timeout=5.0)
+                ensure_params = {}
+                if channel is not None:
+                    ensure_params["channel"] = int(channel)
+                if pattern is not None:
+                    ensure_params["pattern"] = int(pattern)
+                ensured = self.call(protocol.CMD_ENSURE_PIANO_ROLL, ensure_params, timeout=5.0)
             except Exception as e:
                 ensured = {"ok": False, "error": f"{type(e).__name__}: {e}"}
         res = _apply(
@@ -436,10 +444,13 @@ class TCPBridge:
         velocity_ramp=None,
         marker_add=None,
         marker_clear=False,
+        channel=None,
+        pattern=None,
     ):
         """Author piano-roll notes via the daemon (write generated .pyscript +
         force-focus FL + Ctrl+Alt+Y). ``quantize`` (grid in bars) instead snaps
-        existing notes."""
+        existing notes. ``channel`` and ``pattern`` optionally retarget the
+        Piano Roll before the script hotkey is sent."""
         try:
             return self._rpc(
                 {
@@ -454,6 +465,8 @@ class TCPBridge:
                     "velocity_ramp": velocity_ramp,
                     "marker_add": marker_add,
                     "marker_clear": marker_clear,
+                    "channel": channel,
+                    "pattern": pattern,
                 },
                 timeout=30.0,
             )

@@ -41,7 +41,7 @@ def _write(notes, channel, mode):
                     protocol.CMD_CHANNEL_SELECT, {"channel": channel}
                 )
         try:
-            out["notes"] = bridge.apply_notes(dumped, mode)
+            out["notes"] = bridge.apply_notes(dumped, mode, channel=channel)
         finally:
             if previous_channel is not None:
                 selected = previous_channel.get("selected")

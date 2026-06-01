@@ -32,6 +32,7 @@ Dependencies inside FL Studio:
 """
 
 import base64
+import contextlib
 import json
 import math
 import time
@@ -303,7 +304,7 @@ def _h_ping(params):
     return {
         "fl_version": _fl_version,
         "protocol_version": PROTOCOL_VERSION,
-        "build": "channels-v36",  # reload marker -- bump to verify reloads take
+        "build": "channels-v37",  # reload marker -- bump to verify reloads take
         "ts": time.time(),
     }
 
@@ -1179,16 +1180,57 @@ def _h_arrange_clone_pattern(p):
 
 
 def _h_ensure_piano_roll(p):
-    """Open/focus the Piano roll from the controller (ui.showWindow), so the
-    Ctrl+Alt+Y note-bridge trigger has a piano roll to act on -- no manual open.
-    Defensive: reports the widget constant + visibility so we can confirm."""
+    """Open/focus the Piano roll, optionally retargeted to a channel/pattern."""
     wid = getattr(midi, "widPianoRoll", None)
     out = {"wid_pianoroll": wid}
+    pattern = p.get("pattern")
+    channel = p.get("channel")
+
     try:
         if wid is not None and hasattr(ui, "getVisible"):
             out["visible_before"] = bool(ui.getVisible(wid))
     except Exception:
         out["visible_before"] = None
+
+    if pattern is not None:
+        try:
+            patterns.jumpToPattern(int(pattern))
+            out["pattern"] = patterns.patternNumber()
+        except Exception as e:
+            out["pattern_error"] = f"jumpToPattern: {e}"
+
+    if channel is not None and hasattr(ui, "openEventEditor"):
+        ch = int(channel)
+        try:
+            try:
+                channels.selectOneChannel(ch, True)
+            except TypeError:
+                channels.selectOneChannel(ch)
+            event_id = channels.getRecEventId(ch) + getattr(midi, "REC_Chan_PianoRoll", 0)
+            editor = getattr(midi, "EE_PR", 1)
+            visible = False
+            try:
+                if wid is not None and hasattr(ui, "getVisible"):
+                    visible = bool(ui.getVisible(wid))
+            except Exception:
+                visible = False
+            ui.openEventEditor(event_id, editor, 0 if visible else 1)
+            if wid is not None and hasattr(ui, "setFocused"):
+                with contextlib.suppress(Exception):
+                    ui.setFocused(wid)
+            out.update(
+                {
+                    "ok": True,
+                    "channel": ch,
+                    "event_id": event_id,
+                    "method": "ui.openEventEditor(piano_roll)",
+                    "retargeted": True,
+                }
+            )
+            return out
+        except Exception as e:
+            out["retarget_error"] = f"openEventEditor: {e}"
+
     if wid is None or not hasattr(ui, "showWindow"):
         out["ok"] = False
         out["error"] = "ui.showWindow / midi.widPianoRoll unavailable"
@@ -1197,6 +1239,7 @@ def _h_ensure_piano_roll(p):
         ui.showWindow(wid)
         out["ok"] = True
         out["method"] = "ui.showWindow(widPianoRoll)"
+        out["retargeted"] = False
     except Exception as e:
         out["ok"] = False
         out["error"] = f"showWindow: {e}"

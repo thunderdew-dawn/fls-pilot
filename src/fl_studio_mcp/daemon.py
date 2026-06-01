@@ -121,7 +121,16 @@ def _handle_request(req: dict) -> dict:
             ensured = None
             if trigger:  # auto-open the piano roll first
                 try:
-                    ensured = _get_bridge().call(protocol.CMD_ENSURE_PIANO_ROLL, {}, timeout=5.0)
+                    ensure_params = {}
+                    if req.get("channel") is not None:
+                        ensure_params["channel"] = int(req["channel"])
+                    if req.get("pattern") is not None:
+                        ensure_params["pattern"] = int(req["pattern"])
+                    ensured = _get_bridge().call(
+                        protocol.CMD_ENSURE_PIANO_ROLL,
+                        ensure_params,
+                        timeout=5.0,
+                    )
                 except Exception as e:
                     ensured = {"ok": False, "error": f"{type(e).__name__}: {e}"}
             from .pianoroll import apply_notes

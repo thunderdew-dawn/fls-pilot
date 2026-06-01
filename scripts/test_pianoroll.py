@@ -13,16 +13,15 @@ from pathlib import Path
 # Add src/ to path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from fl_studio_mcp import safety  # noqa: E402
-from fl_studio_mcp import protocol  # noqa: E402
-from fl_studio_mcp.tools import pianoroll as pr_tools  # noqa: E402
+from fl_studio_mcp import protocol, safety  # noqa: E402
 from fl_studio_mcp.pyscript_gen import (  # noqa: E402
     render_apply_script,
-    write_marker_add_script,
-    write_marker_clear_script,
     render_quantize_script,
     render_transpose_script,
+    write_marker_add_script,
+    write_marker_clear_script,
 )
+from fl_studio_mcp.tools import pianoroll as pr_tools  # noqa: E402
 
 _P = _F = 0
 
@@ -39,6 +38,8 @@ class FakeBridge:
         self.last_velocity_ramp = None
         self.last_marker_add = None
         self.last_marker_clear = None
+        self.last_channel = None
+        self.last_pattern = None
 
     def call(self, command, params=None):
         params = params or {}
@@ -57,6 +58,8 @@ class FakeBridge:
         velocity_ramp=None,
         marker_add=None,
         marker_clear=False,
+        channel=None,
+        pattern=None,
     ):
         self.last_notes = notes
         self.last_mode = mode
@@ -67,6 +70,8 @@ class FakeBridge:
         self.last_velocity_ramp = velocity_ramp
         self.last_marker_add = marker_add
         self.last_marker_clear = marker_clear
+        self.last_channel = channel
+        self.last_pattern = pattern
         return {"ok": True, "count": len(notes), "triggered": trigger}
 
 
@@ -82,7 +87,7 @@ def check(label, cond, detail=""):
 def main() -> int:
     # 1. Test Note Name Parser
     print("Testing Note Name Parser...")
-    
+
     # C5 is 60 (FL Studio standard middle C)
     check("C5 parses to 60", pr_tools.parse_root_note("C5") == 60)
     check("c5 parses to 60 (case-insensitive)", pr_tools.parse_root_note("c5") == 60)
@@ -92,7 +97,7 @@ def main() -> int:
     check("B4 parses to 59", pr_tools.parse_root_note("B4") == 59)
     check("C0 parses to 0", pr_tools.parse_root_note("C0") == 0)
     check("G10 parses to 127", pr_tools.parse_root_note("G10") == 127)
-    
+
     # Integers
     check("Integer 60 remains 60", pr_tools.parse_root_note(60) == 60)
     check("String '60' remains 60", pr_tools.parse_root_note("60") == 60)
@@ -119,7 +124,7 @@ def main() -> int:
 
     # 2. Test Pyscript Generation Rendering
     print("\nTesting Pyscript Generation Rendering...")
-    
+
     notes = [{"pitch": 60, "time_bars": 0.0, "length_bars": 1.0, "velocity": 0.8}]
     apply_src = render_apply_script(notes, mode="replace")
     check("render_apply_script generates valid headers", '# Script.Name = "MCP Apply"' in apply_src)
@@ -133,14 +138,20 @@ def main() -> int:
     trans_src = render_transpose_script(4)
     check("render_transpose_script bakes in SEMITONES", "SEMITONES = 4" in trans_src)
     marker_path = write_marker_add_script(2.0, "Verse", mode=0)
-    check("write_marker_add_script writes MCP_Apply.pyscript", marker_path.endswith("MCP_Apply.pyscript"))
+    check(
+        "write_marker_add_script writes MCP_Apply.pyscript",
+        marker_path.endswith("MCP_Apply.pyscript"),
+    )
     marker_clear_path = write_marker_clear_script()
-    check("write_marker_clear_script writes MCP_Apply.pyscript", marker_clear_path.endswith("MCP_Apply.pyscript"))
+    check(
+        "write_marker_clear_script writes MCP_Apply.pyscript",
+        marker_clear_path.endswith("MCP_Apply.pyscript"),
+    )
 
 
     # 3. Test Core Rollback / safe_piano_roll_write
     print("\nTesting Core Rollback & Undo generation...")
-    
+
     class MockMCP:
         def __init__(self):
             self.tools = {}
@@ -152,6 +163,7 @@ def main() -> int:
 
     mcp = MockMCP()
     pr_tools.register(mcp)
+    fl_piano_write_notes = mcp.tools["fl_piano_write_notes"]
     fl_piano_write_chord = mcp.tools["fl_piano_write_chord"]
     fl_piano_clear = mcp.tools["fl_piano_clear"]
     fl_piano_transpose = mcp.tools["fl_piano_transpose"]
@@ -172,7 +184,7 @@ def main() -> int:
         # min7 intervals are [0, 3, 7, 10] -> root 60 -> notes 60, 63, 67, 70
         res = fl_piano_write_chord("min7", "C5", time_bars=0.0, length_bars=1.0)
         check("fl_piano_write_chord returned ok", res.get("ok") is True)
-        
+
         # Verify Cmd+Opt+Y trigger was logged in change log
         check(
             "CMD_ENSURE_PIANO_ROLL was called before writing",
@@ -180,6 +192,16 @@ def main() -> int:
         )
         check("apply_notes received 4 notes for min7", len(bridge.last_notes) == 4)
         check("notes list pitch match", [n["pitch"] for n in bridge.last_notes] == [60, 63, 67, 70])
+
+        targeted_note = pr_tools.PianoRollNote(pitch=62, time_bars=0.0, length_bars=0.25)
+        res_target = fl_piano_write_notes([targeted_note], mode="append", channel=3, pattern=2)
+        check("fl_piano_write_notes target returned ok", res_target.get("ok") is True)
+        check(
+            "CMD_ENSURE_PIANO_ROLL received channel/pattern",
+            bridge.calls[-1] == (protocol.CMD_ENSURE_PIANO_ROLL, {"channel": 3, "pattern": 2}),
+        )
+        check("apply_notes received target channel", bridge.last_channel == 3)
+        check("apply_notes received target pattern", bridge.last_pattern == 2)
 
         # Test Rollback of note-write
         # Note write uses FL Studio's undo stack via general_undo (undoUp)
@@ -210,7 +232,10 @@ def main() -> int:
 
         res_marker = fl_piano_add_marker(time_bars=2.0, name="Verse")
         check("fl_piano_add_marker returned ok", res_marker.get("ok") is True)
-        check("apply_notes received marker_add payload", bridge.last_marker_add.get("name") == "Verse")
+        check(
+            "apply_notes received marker_add payload",
+            bridge.last_marker_add.get("name") == "Verse",
+        )
 
         res_clear_markers = fl_piano_clear_markers()
         check("fl_piano_clear_markers returned ok", res_clear_markers.get("ok") is True)

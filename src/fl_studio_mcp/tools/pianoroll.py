@@ -54,6 +54,19 @@ CHORD_TEMPLATES = {
 }
 
 
+def _target_payload(channel: int | None, pattern: int | None) -> dict:
+    payload = {}
+    if channel is not None:
+        payload["channel"] = int(channel)
+    if pattern is not None:
+        payload["pattern"] = int(pattern)
+    return payload
+
+
+def _ensure_piano_roll(bridge, channel: int | None, pattern: int | None) -> dict:
+    return bridge.call(protocol.CMD_ENSURE_PIANO_ROLL, _target_payload(channel, pattern))
+
+
 def register(mcp: FastMCP) -> None:
     _RO = {"readOnlyHint": True, "idempotentHint": True, "openWorldHint": True}
     _WR = {
@@ -114,21 +127,32 @@ def register(mcp: FastMCP) -> None:
             float,
             Field(description="Optional grid (bars) to snap note starts to: 0.0625=1/16, 0=off."),
         ] = 0.0,
+        channel: Annotated[
+            int | None,
+            Field(ge=0, description="Optional channel-rack index to retarget before writing."),
+        ] = None,
+        pattern: Annotated[
+            int | None,
+            Field(ge=1, description="Optional FL pattern index to select before writing."),
+        ] = None,
     ) -> dict:
         """Write notes into the currently active pattern's Piano roll."""
         arr = [n.model_dump() for n in notes]
         if quantize and quantize > 0:
             arr = quantize_notes(arr, float(quantize))
         bridge = get_bridge()
-        
-        # Ensure piano roll is open
-        bridge.call(protocol.CMD_ENSURE_PIANO_ROLL)
-        
+        _ensure_piano_roll(bridge, channel, pattern)
+
         return safety.safe_piano_roll_write(
             bridge,
             tool="piano_write_notes",
-            params={"notes": arr, "mode": mode, "quantize": quantize},
-            apply=lambda: bridge.apply_notes(arr, mode),
+            params={
+                "notes": arr,
+                "mode": mode,
+                "quantize": quantize,
+                **_target_payload(channel, pattern),
+            },
+            apply=lambda: bridge.apply_notes(arr, mode, channel=channel, pattern=pattern),
         )
 
     @mcp.tool(annotations={"title": "Write chord to Piano roll", **_WR})
@@ -154,13 +178,21 @@ def register(mcp: FastMCP) -> None:
             str,
             Field(description="'replace' clears first; 'append' adds."),
         ] = "append",
+        channel: Annotated[
+            int | None,
+            Field(ge=0, description="Optional channel-rack index to retarget before writing."),
+        ] = None,
+        pattern: Annotated[
+            int | None,
+            Field(ge=1, description="Optional FL pattern index to select before writing."),
+        ] = None,
     ) -> dict:
         """Write a named chord into the Piano roll at the active pattern."""
         try:
             root = parse_root_note(root_note)
         except ValueError as e:
             return {"ok": False, "error": f"Invalid root note: {e}"}
-            
+
         chord_type = chord_name.strip().lower()
         if chord_type not in CHORD_TEMPLATES:
             return {
@@ -170,7 +202,7 @@ def register(mcp: FastMCP) -> None:
                     f"Supported types: {list(CHORD_TEMPLATES.keys())}"
                 ),
             }
-            
+
         intervals = CHORD_TEMPLATES[chord_type]
         chord_notes = []
         for offset in intervals:
@@ -184,10 +216,10 @@ def register(mcp: FastMCP) -> None:
                         "velocity": float(velocity),
                     }
                 )
-        
+
         bridge = get_bridge()
-        bridge.call(protocol.CMD_ENSURE_PIANO_ROLL)
-        
+        _ensure_piano_roll(bridge, channel, pattern)
+
         return safety.safe_piano_roll_write(
             bridge,
             tool="piano_write_chord",
@@ -198,20 +230,30 @@ def register(mcp: FastMCP) -> None:
                 "length_bars": length_bars,
                 "velocity": velocity,
                 "mode": mode,
+                **_target_payload(channel, pattern),
             },
-            apply=lambda: bridge.apply_notes(chord_notes, mode),
+            apply=lambda: bridge.apply_notes(chord_notes, mode, channel=channel, pattern=pattern),
         )
 
     @mcp.tool(annotations={"title": "Clear all notes in Piano roll", **_WR})
-    def fl_piano_clear() -> dict:
+    def fl_piano_clear(
+        channel: Annotated[
+            int | None,
+            Field(ge=0, description="Optional channel-rack index to retarget before clearing."),
+        ] = None,
+        pattern: Annotated[
+            int | None,
+            Field(ge=1, description="Optional FL pattern index to select before clearing."),
+        ] = None,
+    ) -> dict:
         """Clear all notes in the currently active pattern's Piano roll."""
         bridge = get_bridge()
-        bridge.call(protocol.CMD_ENSURE_PIANO_ROLL)
+        _ensure_piano_roll(bridge, channel, pattern)
         return safety.safe_piano_roll_write(
             bridge,
             tool="piano_clear",
-            params={},
-            apply=lambda: bridge.apply_notes([], mode="replace"),
+            params=_target_payload(channel, pattern),
+            apply=lambda: bridge.apply_notes([], mode="replace", channel=channel, pattern=pattern),
         )
 
     @mcp.tool(annotations={"title": "Quantize piano-roll notes", **_WR})
@@ -222,16 +264,33 @@ def register(mcp: FastMCP) -> None:
         snap_ends: Annotated[
             bool, Field(description="Also snap note lengths to the grid.")
         ] = False,
+        channel: Annotated[
+            int | None,
+            Field(ge=0, description="Optional channel-rack index to retarget before quantizing."),
+        ] = None,
+        pattern: Annotated[
+            int | None,
+            Field(ge=1, description="Optional FL pattern index to select before quantizing."),
+        ] = None,
     ) -> dict:
         """Quantize the notes in the active Piano roll (snaps starts/ends to grid resolution)."""
         bridge = get_bridge()
-        bridge.call(protocol.CMD_ENSURE_PIANO_ROLL)
+        _ensure_piano_roll(bridge, channel, pattern)
         return safety.safe_piano_roll_write(
             bridge,
             tool="piano_quantize",
-            params={"grid_bars": float(grid_bars), "snap_ends": bool(snap_ends)},
+            params={
+                "grid_bars": float(grid_bars),
+                "snap_ends": bool(snap_ends),
+                **_target_payload(channel, pattern),
+            },
             apply=lambda: bridge.apply_notes(
-                [], trigger=True, quantize=float(grid_bars), snap_ends=snap_ends
+                [],
+                trigger=True,
+                quantize=float(grid_bars),
+                snap_ends=snap_ends,
+                channel=channel,
+                pattern=pattern,
             ),
         )
 
@@ -241,15 +300,25 @@ def register(mcp: FastMCP) -> None:
             int,
             Field(description="Number of semitones to shift notes."),
         ],
+        channel: Annotated[
+            int | None,
+            Field(ge=0, description="Optional channel-rack index to retarget before transposing."),
+        ] = None,
+        pattern: Annotated[
+            int | None,
+            Field(ge=1, description="Optional FL pattern index to select before transposing."),
+        ] = None,
     ) -> dict:
         """Transpose all notes in the active pattern's Piano roll."""
         bridge = get_bridge()
-        bridge.call(protocol.CMD_ENSURE_PIANO_ROLL)
+        _ensure_piano_roll(bridge, channel, pattern)
         return safety.safe_piano_roll_write(
             bridge,
             tool="piano_transpose",
-            params={"semitones": semitones},
-            apply=lambda: bridge.apply_notes([], trigger=True, transpose=semitones),
+            params={"semitones": semitones, **_target_payload(channel, pattern)},
+            apply=lambda: bridge.apply_notes(
+                [], trigger=True, transpose=semitones, channel=channel, pattern=pattern
+            ),
         )
 
     @mcp.tool(annotations={"title": "Duplicate Piano roll notes forward", **_WR})
@@ -258,31 +327,57 @@ def register(mcp: FastMCP) -> None:
             float,
             Field(gt=0.0, description="How far forward to duplicate notes, in bars."),
         ] = 1.0,
+        channel: Annotated[
+            int | None,
+            Field(ge=0, description="Optional channel-rack index to retarget before duplicating."),
+        ] = None,
+        pattern: Annotated[
+            int | None,
+            Field(ge=1, description="Optional FL pattern index to select before duplicating."),
+        ] = None,
     ) -> dict:
         """Duplicate all notes in the active Piano roll forward by a bar offset."""
         bridge = get_bridge()
-        bridge.call(protocol.CMD_ENSURE_PIANO_ROLL)
+        _ensure_piano_roll(bridge, channel, pattern)
         return safety.safe_piano_roll_write(
             bridge,
             tool="piano_duplicate",
-            params={"offset_bars": float(offset_bars)},
-            apply=lambda: bridge.apply_notes([], trigger=True, duplicate_bars=float(offset_bars)),
+            params={"offset_bars": float(offset_bars), **_target_payload(channel, pattern)},
+            apply=lambda: bridge.apply_notes(
+                [],
+                trigger=True,
+                duplicate_bars=float(offset_bars),
+                channel=channel,
+                pattern=pattern,
+            ),
         )
 
     @mcp.tool(annotations={"title": "Apply Piano roll velocity ramp", **_WR})
     def fl_piano_velocity_ramp(
         start: Annotated[float, Field(ge=0.0, le=1.0, description="Start velocity 0..1.")],
         end: Annotated[float, Field(ge=0.0, le=1.0, description="End velocity 0..1.")],
+        channel: Annotated[
+            int | None,
+            Field(ge=0, description="Optional channel-rack index to retarget before editing."),
+        ] = None,
+        pattern: Annotated[
+            int | None,
+            Field(ge=1, description="Optional FL pattern index to select before editing."),
+        ] = None,
     ) -> dict:
         """Apply a linear velocity ramp over note order in the active Piano roll."""
         bridge = get_bridge()
-        bridge.call(protocol.CMD_ENSURE_PIANO_ROLL)
+        _ensure_piano_roll(bridge, channel, pattern)
         return safety.safe_piano_roll_write(
             bridge,
             tool="piano_velocity_ramp",
-            params={"start": float(start), "end": float(end)},
+            params={"start": float(start), "end": float(end), **_target_payload(channel, pattern)},
             apply=lambda: bridge.apply_notes(
-                [], trigger=True, velocity_ramp=(float(start), float(end))
+                [],
+                trigger=True,
+                velocity_ramp=(float(start), float(end)),
+                channel=channel,
+                pattern=pattern,
             ),
         )
 
@@ -308,18 +403,33 @@ def register(mcp: FastMCP) -> None:
         time_bars: Annotated[float, Field(ge=0.0, description="Marker position in bars.")],
         name: Annotated[str, Field(min_length=1, description="Marker label.")],
         mode: Annotated[int, Field(description="Marker mode/type integer.", ge=0)] = 0,
+        channel: Annotated[
+            int | None,
+            Field(ge=0, description="Optional channel-rack index to retarget first."),
+        ] = None,
+        pattern: Annotated[
+            int | None,
+            Field(ge=1, description="Optional FL pattern index to select before adding marker."),
+        ] = None,
     ) -> dict:
         """Add one marker in the active Piano roll. Undo-backed write, readback-limited."""
         bridge = get_bridge()
-        bridge.call(protocol.CMD_ENSURE_PIANO_ROLL)
+        _ensure_piano_roll(bridge, channel, pattern)
         return safety.safe_piano_roll_write(
             bridge,
             tool="piano_add_marker",
-            params={"time_bars": float(time_bars), "name": name, "mode": int(mode)},
+            params={
+                "time_bars": float(time_bars),
+                "name": name,
+                "mode": int(mode),
+                **_target_payload(channel, pattern),
+            },
             apply=lambda: bridge.apply_notes(
                 [],
                 trigger=True,
                 marker_add={"time_bars": float(time_bars), "name": name, "mode": int(mode)},
+                channel=channel,
+                pattern=pattern,
             ),
         )
 
@@ -331,10 +441,18 @@ def register(mcp: FastMCP) -> None:
         name: Annotated[
             str, Field(description="Optional marker label, defaults to 'Time Signature'.")
         ] = "Time Signature",
+        channel: Annotated[
+            int | None,
+            Field(ge=0, description="Optional channel-rack index to retarget first."),
+        ] = None,
+        pattern: Annotated[
+            int | None,
+            Field(ge=1, description="Optional FL pattern index to select before adding marker."),
+        ] = None,
     ) -> dict:
         """Add a time-signature marker in the active Piano roll (undo-backed, readback-limited)."""
         bridge = get_bridge()
-        bridge.call(protocol.CMD_ENSURE_PIANO_ROLL)
+        _ensure_piano_roll(bridge, channel, pattern)
         return safety.safe_piano_roll_write(
             bridge,
             tool="piano_add_time_signature_marker",
@@ -343,6 +461,7 @@ def register(mcp: FastMCP) -> None:
                 "numerator": int(numerator),
                 "denominator": int(denominator),
                 "name": name,
+                **_target_payload(channel, pattern),
             },
             apply=lambda: bridge.apply_notes(
                 [],
@@ -354,19 +473,32 @@ def register(mcp: FastMCP) -> None:
                     "ts_num": int(numerator),
                     "ts_den": int(denominator),
                 },
+                channel=channel,
+                pattern=pattern,
             ),
         )
 
     @mcp.tool(annotations={"title": "Clear Piano roll markers", **_WR})
-    def fl_piano_clear_markers() -> dict:
+    def fl_piano_clear_markers(
+        channel: Annotated[
+            int | None,
+            Field(ge=0, description="Optional channel-rack index to retarget first."),
+        ] = None,
+        pattern: Annotated[
+            int | None,
+            Field(ge=1, description="Optional FL pattern index to select before clearing markers."),
+        ] = None,
+    ) -> dict:
         """Clear all markers in the active Piano roll (undo-backed, readback-limited)."""
         bridge = get_bridge()
-        bridge.call(protocol.CMD_ENSURE_PIANO_ROLL)
+        _ensure_piano_roll(bridge, channel, pattern)
         return safety.safe_piano_roll_write(
             bridge,
             tool="piano_clear_markers",
-            params={},
-            apply=lambda: bridge.apply_notes([], trigger=True, marker_clear=True),
+            params=_target_payload(channel, pattern),
+            apply=lambda: bridge.apply_notes(
+                [], trigger=True, marker_clear=True, channel=channel, pattern=pattern
+            ),
         )
 
     @mcp.tool(annotations={"title": "Get notes in active Piano roll (API Limited)", **_RO})

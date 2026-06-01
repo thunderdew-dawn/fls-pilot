@@ -55,13 +55,13 @@ def main() -> int:
     print("\nselect ch %d (A) -> write mid chord C-E-G" % CH_A)
     print("   ", b.call(protocol.CMD_CHANNEL_SELECT, {"channel": CH_A}))
     time.sleep(0.4)
-    print("    fill:", b.apply_notes(CHORD, "replace"))
+    print("    fill:", b.apply_notes(CHORD, "replace", channel=CH_A))
     time.sleep(SETTLE)
 
     print("\nselect ch %d (B) -> write low bass C2-G2" % CH_B)
     print("   ", b.call(protocol.CMD_CHANNEL_SELECT, {"channel": CH_B}))
     time.sleep(0.4)
-    print("    fill:", b.apply_notes(BASS, "replace"))
+    print("    fill:", b.apply_notes(BASS, "replace", channel=CH_B))
     time.sleep(SETTLE)
 
     print("\nWATCH FL (pattern CHANTEST) + report:")

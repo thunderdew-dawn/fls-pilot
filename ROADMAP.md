@@ -26,6 +26,10 @@ task.
 
 ## Current verification checkpoints
 
+- 2026-06-01: Piano Roll retargeting infrastructure slice passed offline.
+  - Verified path: `compileall` for `src/fl_studio_mcp`, controller script, and focused scripts; `scripts/test_pianoroll.py`; `scripts/test_compose.py`; `scripts/audit_tool_safety.py --fail-on-gaps`.
+  - Result: existing undo-backed Piano Roll write tools can optionally pass a channel/pattern target through the bridge to the controller, which uses `ui.openEventEditor` when available and falls back to `ui.showWindow`.
+  - Live verification passed on FL Studio Producer Edition v25.2.5 (build 5055), controller build marker `channels-v37`: targeted append write to channel 1 / pattern 4 returned `retargeted=True` via `ui.openEventEditor`, then `fl_rollback_last_change` restored through FL undo.
 - 2026-06-01: Priority 1/2 live smoke suite attempted, blocked by stale FL controller build.
   - Verified path: daemon up, bridge ping ok (`build=channels-v35`), then
     `scripts/test_priority12_live.py`.

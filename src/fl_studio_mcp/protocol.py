@@ -159,7 +159,7 @@ CMD_ARRANGE_CLONE_PATTERN = "arrange_clone_pattern"  # clonePattern + rename
 CMD_ARRANGE_ADD_MARKER = "arrange_add_marker"  # addAutoTimeMarker at a bar
 
 # Note-bridge hardening -- ensure the Piano roll is open before a note-write
-CMD_ENSURE_PIANO_ROLL = "ensure_piano_roll"  # ui.showWindow(widPianoRoll)
+CMD_ENSURE_PIANO_ROLL = "ensure_piano_roll"  # open/focus Piano Roll, optionally retarget
 
 # Phase A safety baseline expansion commands
 CMD_CHANNEL_GET_STEPS = "channel_get_steps"

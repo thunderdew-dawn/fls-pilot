@@ -337,6 +337,10 @@ Current shipped slice:
 - `duplicate` and `velocity_ramp` transforms are shipped as undo-backed writes.
 - Initial marker helpers are shipped as generated-script writes:
   add marker, add time-signature marker, clear markers.
+- Piano Roll writes can optionally retarget a channel/pattern through the
+  controller before the generated script is triggered. The controller uses
+  `ui.openEventEditor` with `channels.getRecEventId(...)` when available and
+  falls back to `ui.showWindow`.
 - Marker and note readback remain API-limited; rollback uses FL undo.
 
 Safety requirement:
