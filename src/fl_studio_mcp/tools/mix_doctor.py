@@ -23,12 +23,18 @@ from ..music import mix_doctor as md
 
 
 def register(mcp: FastMCP) -> None:
-    _RO = {"readOnlyHint": True, "idempotentHint": True, "openWorldHint": True}
+    _RO = {
+        "readOnlyHint": True,
+        "idempotentHint": True,
+        "openWorldHint": True,
+        "safetyClass": "read-only",
+    }
     _WR = {
         "readOnlyHint": False,
         "destructiveHint": False,
         "idempotentHint": False,
         "openWorldHint": True,
+        "safetyClass": "write-safe",
     }
 
     def _result(snap):
@@ -76,6 +82,8 @@ def register(mcp: FastMCP) -> None:
         full-song-accurate levels use WATCH mode: fl_mix_watch_start -> play the
         whole song -> fl_mix_watch_stop. If stopped, level rules are skipped
         (needs_playback). Applies nothing.
+
+        Safety: Read-Only.
         """
         try:
             snap = md.gather_snapshot(get_bridge())
@@ -117,6 +125,8 @@ def register(mcp: FastMCP) -> None:
         (Mix Doctor never auto-applies). 'trim_volume' sets a mixer track's fader
         to target_db. For grouping use fl_group_tracks; for EQ use
         fl_apply_eq_intent.
+
+        Safety: Write-Safe with Rollback.
         """
         if kind != "trim_volume":
             return {
@@ -166,7 +176,10 @@ def register(mcp: FastMCP) -> None:
         """Begin a peak-HOLD watch: continuously sample every mixer track's peak,
         keeping a RUNNING MAX per track, until fl_mix_watch_stop. Tell the user to
         PLAY the whole song (or at least the loudest section / the drop) while this
-        runs -- then stop for full-song-accurate level diagnosis. Read-only."""
+        runs -- then stop for full-song-accurate level diagnosis. Read-only.
+
+        Safety: Read-Only.
+        """
         try:
             bridge = get_bridge()
             tracks = fetch_all_pages(bridge, protocol.CMD_MIXER_LIST_TRACKS, "tracks").get(
@@ -192,14 +205,20 @@ def register(mcp: FastMCP) -> None:
 
     @mcp.tool(annotations={"title": "Peak watch status (Mix Doctor)", **_RO})
     def fl_mix_watch_status() -> dict:
-        """Is a peak watch running, and for how long / how many polls so far?"""
+        """Is a peak watch running, and for how long / how many polls so far?
+
+        Safety: Read-Only.
+        """
         return {"ok": True, **md.get_watcher().status()}
 
     @mcp.tool(annotations={"title": "Stop peak watch + diagnose (Mix Doctor)", **_RO})
     def fl_mix_watch_stop() -> dict:
         """Stop the peak watch and diagnose on the FULL-SONG running-max peaks
         captured across the whole watch (accurate clipping/headroom/imbalance vs
-        the ~1.2s snapshot). Read-only -- proposes fixes, applies nothing."""
+        the ~1.2s snapshot). Read-only -- proposes fixes, applies nothing.
+
+        Safety: Read-Only.
+        """
         try:
             peaks_lin, reads, elapsed = md.get_watcher().stop()
             if not peaks_lin or reads == 0 or max(peaks_lin.values(), default=0.0) <= 0.0:
@@ -229,7 +248,10 @@ def register(mcp: FastMCP) -> None:
         Uses FULL-SONG peaks from a recent watch (fl_mix_watch_start -> play ->
         fl_mix_watch_stop) when available; else a ~1.2s snapshot (prefer watch).
         FL's fader is POST-chain, so this sets a track's OUTPUT level, not a true
-        pre-plugin input trim."""
+        pre-plugin input trim.
+
+        Safety: Read-Only.
+        """
         try:
             bridge = get_bridge()
             wmax = md.get_watcher().last_max()
@@ -285,7 +307,10 @@ def register(mcp: FastMCP) -> None:
         spectral-band shares) and your mix (Master peak for level + a ROUGH
         name-based band estimate). HONEST: a level/balance compare, NOT a spectral
         match -- FL doesn't expose its output audio, so the your-mix balance is
-        estimated from track names + peaks. Suggests adjustments; applies nothing."""
+        estimated from track names + peaks. Suggests adjustments; applies nothing.
+
+        Safety: Read-Only.
+        """
         import os
 
         if not os.path.isfile(reference_audio_path):

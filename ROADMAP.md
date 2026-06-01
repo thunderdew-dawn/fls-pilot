@@ -26,6 +26,24 @@ task.
 
 ## Current verification checkpoints
 
+- 2026-06-02: Mix Doctor and Mixing Intent tools now have safety-class
+  docstrings and MCP annotations.
+  - Verified path: `compileall` for
+    `src/fl_studio_mcp/tools/mix_doctor.py` and
+    `src/fl_studio_mcp/tools/mixing.py`; targeted `audit_file` check for
+    every Mix Doctor and Mixing Intent tool's `safetyClass` and `Safety:`
+    docstring; `scripts/test_mix_doctor.py`;
+    `scripts/audit_tool_safety.py --fail-on-gaps`; TCP live preflight with
+    `fl_ping` on FL Studio Producer Edition v25.2.5 (build 5055), controller
+    build marker `channels-v38`.
+  - Result: Mix Doctor read-only/gated-write tools and rollback-backed
+    grouped Mixing Intent writes now report explicit safety classes. Pure
+    curve/logic checks in `scripts/test_mixing_intents.py`,
+    `scripts/test_reverb_delay_intents.py`, and
+    `scripts/test_compression_intents.py` passed, but rollback-safe live plugin
+    writes were blocked by missing fixture plugins on the expected targets
+    (track 2 slot 0, no reverb/delay on track 2, and track 9 slot 4). No
+    plugin loading was attempted because loading plugins is prohibited.
 - 2026-06-02: Channel Organizer and Step Sequencer tools now have
   safety-class docstrings and MCP annotations.
   - Verified path: `compileall` for `src/fl_studio_mcp/tools/channels.py`;
@@ -361,9 +379,9 @@ Before adding the API-backed production suite:
 - [ ] Document each tool's safety class in its docstring and MCP annotations.
       Audit support and the Effect Slot/Native EQ, Transport,
       Pattern/Playlist, Plugin Parameter, Routing, Phase 1, Piano Roll, and
-      Channel/Step Sequencer modules are complete; the strict doc gate is
-      available but intentionally not part of the standard gate until the
-      remaining modules are migrated.
+      Channel/Step Sequencer, Mix Doctor, and Mixing Intent modules are
+      complete; the strict doc gate is available but intentionally not part of
+      the standard gate until the remaining modules are migrated.
 - [x] Add tests for planned restore payloads where FL-live tests are not
       practical.
 

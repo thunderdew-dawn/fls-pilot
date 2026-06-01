@@ -167,12 +167,18 @@ def _param_write(track, slot, idx, value):
 
 
 def register(mcp: FastMCP) -> None:
-    _RO = {"readOnlyHint": True, "idempotentHint": True, "openWorldHint": True}
+    _RO = {
+        "readOnlyHint": True,
+        "idempotentHint": True,
+        "openWorldHint": True,
+        "safetyClass": "read-only",
+    }
     _WR = {
         "readOnlyHint": False,
         "destructiveHint": False,
         "idempotentHint": False,
         "openWorldHint": True,
+        "safetyClass": "write-safe",
     }
 
     @mcp.tool(annotations={"title": "Apply an EQ mixing intent", **_WR})
@@ -194,7 +200,10 @@ def register(mcp: FastMCP) -> None:
     ) -> dict:
         """Apply a musical EQ move on a Fruity Parametric EQ 2 using a free band.
         Sets type/freq/gain/width as one undo-able group; returns the band used
-        and FL's readback strings. Revert with fl_rollback_last_change."""
+        and FL's readback strings. Revert with fl_rollback_last_change.
+
+        Safety: Write-Safe with Rollback.
+        """
         bridge = get_bridge()
 
         # 1. confirm the slot really holds a Parametric EQ 2 (curves are EQ2-only)
@@ -302,7 +311,10 @@ def register(mcp: FastMCP) -> None:
         intensity: Annotated[float, Field(ge=0.0, le=1.0)] = 0.5,
     ) -> dict:
         """Musical reverb moves on a Fruity Reeverb 2 (decay/wet/high-cut), as one
-        undo-able group. Returns readback strings. Revert: fl_rollback_last_change."""
+        undo-able group. Returns readback strings. Revert: fl_rollback_last_change.
+
+        Safety: Write-Safe with Rollback.
+        """
         bridge = get_bridge()
         pname = _plugin_name_at(bridge, track, slot)
         if not pname or not any(k in pname.lower() for k in ("reeverb", "reverb")):
@@ -388,7 +400,10 @@ def register(mcp: FastMCP) -> None:
     ) -> dict:
         """Musical delay moves on a Fruity Delay (time division / feedback / wet /
         feedback-cut), as one undo-able group. Feedback is clamped <=100% unless
-        intensity>0.9 (warns on self-oscillation risk). Returns readback strings."""
+        intensity>0.9 (warns on self-oscillation risk). Returns readback strings.
+
+        Safety: Write-Safe with Rollback.
+        """
         bridge = get_bridge()
         pname = _plugin_name_at(bridge, track, slot)
         if not pname or "delay" not in pname.lower():
@@ -464,7 +479,10 @@ def register(mcp: FastMCP) -> None:
     ) -> dict:
         """Measure a mixer track's level by sampling meter peaks over a short
         window. Requires PLAYBACK -- returns playing=False (avg/peak null) when
-        stopped/silent. {track, playing, avg_db, peak_db}."""
+        stopped/silent. {track, playing, avg_db, peak_db}.
+
+        Safety: Read-Only.
+        """
         return levels.measure_track_level(get_bridge(), track, samples=samples)
 
     @mcp.tool(annotations={"title": "Apply a compression intent", **_WR})
@@ -491,7 +509,10 @@ def register(mcp: FastMCP) -> None:
         Style) per intent, as ONE rollback unit. When level_aware and the track
         is playing, threshold is set relative to the MEASURED peak (a smart
         starting point, not exact gain-reduction); stopped -> preset fallback +
-        a note. Returns readback + the measured level / chosen threshold."""
+        a note. Returns readback + the measured level / chosen threshold.
+
+        Safety: Write-Safe with Rollback.
+        """
         bridge = get_bridge()
         pname = _plugin_name_at(bridge, track, slot)
         low = (pname or "").lower()
