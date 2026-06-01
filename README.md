@@ -82,7 +82,11 @@ These are properties of FL Studio's scripting API, stated plainly:
 ## Requirements
 
 - **Windows 10/11** (tested on Windows 11) or **macOS 12+** (Intel & Apple Silicon)
-- **FL Studio 2025** or newer (or FL Studio 20.7+ on Windows/macOS)
+- **Known-working FL Studio build:** Producer Edition v25.2.5, build 5055,
+  with controller build marker `channels-v38`.
+  FL Studio 20.7+ has the required MIDI scripting foundation, but individual
+  API behavior can be build-dependent; use `fl_ping` and the live smoke/probe
+  scripts before relying on a new FL build for writes.
 - **Claude Desktop** or **ChatGPT Desktop** (or any MCP client)
 - **Python 3.10+**
 - Virtual MIDI ports:

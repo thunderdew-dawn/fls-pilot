@@ -26,6 +26,13 @@ task.
 
 ## Current verification checkpoints
 
+- 2026-06-02: README now pins the known-working FL Studio build range.
+  - Verified path: README requirements section reviewed with `rg` check for
+    `v25.2.5`, `build 5055`, and controller marker `channels-v38`.
+  - Result: requirements now state the observed known-working FL Studio
+    Producer Edition v25.2.5 build 5055/controller `channels-v38` baseline and
+    keep FL 20.7+ as MIDI-scripting foundation rather than a guarantee that all
+    build-specific write APIs behave identically.
 - 2026-06-02: GitHub Actions CI for hard lint, safety audits, and mock bridge
   smoke test added.
   - Verified path: local run of CI commands: `compileall src
@@ -808,7 +815,7 @@ so it ships inside the wheel.
       working on this codebase.
 - [ ] Demo video and screenshots in `docs/`.
 - [x] GitHub Actions for linting and the standalone bridge tests (mock FL).
-- [ ] Pin a known-working FL Studio version range in README.
+- [x] Pin a known-working FL Studio version range in README.
 
 ## Out of scope (intentionally)
 
