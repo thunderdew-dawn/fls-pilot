@@ -15,33 +15,48 @@ from ..connection import fetch_all_pages, get_bridge
 
 
 def register(mcp: FastMCP) -> None:
-    _RO = {"readOnlyHint": True, "idempotentHint": True, "openWorldHint": True}
+    _RO = {
+        "readOnlyHint": True,
+        "idempotentHint": True,
+        "openWorldHint": True,
+        "safetyClass": "read-only",
+    }
     _WR = {
         "readOnlyHint": False,
         "destructiveHint": False,
         "idempotentHint": True,
         "openWorldHint": True,
+        "safetyClass": "write-safe",
     }
 
     # ---- Pattern Reads ------------------------------------------------------
 
     @mcp.tool(annotations={"title": "List patterns", **_RO})
     def fl_pattern_list() -> dict:
-        """List all patterns in the project with names, colors, and lengths."""
+        """List all patterns in the project with names, colors, and lengths.
+
+        Safety: Read-Only.
+        """
         return fetch_all_pages(get_bridge(), protocol.CMD_PATTERN_LIST, "patterns")
 
     @mcp.tool(annotations={"title": "Get pattern details", **_RO})
     def fl_pattern_get(
         index: Annotated[int, Field(ge=1, description="Pattern index.")],
     ) -> dict:
-        """Get one pattern with name, color, and length."""
+        """Get one pattern with name, color, and length.
+
+        Safety: Read-Only.
+        """
         return get_bridge().call(protocol.CMD_PATTERN_GET, {"index": index})
 
     @mcp.tool(annotations={"title": "Get pattern length", **_RO})
     def fl_pattern_get_length(
         index: Annotated[int, Field(ge=1, description="Pattern index.")],
     ) -> dict:
-        """Get the length of a pattern in beats and steps."""
+        """Get the length of a pattern in beats and steps.
+
+        Safety: Read-Only.
+        """
         return get_bridge().call(protocol.CMD_PATTERN_GET_LENGTH, {"index": index})
 
     # ---- Pattern Writes -----------------------------------------------------
@@ -50,7 +65,10 @@ def register(mcp: FastMCP) -> None:
     def fl_pattern_select(
         index: Annotated[int, Field(ge=1, description="Pattern index to select.")],
     ) -> dict:
-        """Make a pattern active; rollback restores the previously selected pattern."""
+        """Make a pattern active; rollback restores the previously selected pattern.
+
+        Safety: Write-Safe with Rollback.
+        """
         return safety.safe_write(
             get_bridge(),
             tool="pattern_select",
@@ -68,7 +86,10 @@ def register(mcp: FastMCP) -> None:
         index: Annotated[int, Field(ge=1, description="Pattern index to rename.")],
         name: Annotated[str, Field(description="New name for the pattern.")],
     ) -> dict:
-        """Rename a pattern; rollback restores the previous name."""
+        """Rename a pattern; rollback restores the previous name.
+
+        Safety: Write-Safe with Rollback.
+        """
         return safety.safe_write(
             get_bridge(),
             tool="pattern_rename",
@@ -89,7 +110,10 @@ def register(mcp: FastMCP) -> None:
         b: Annotated[int, Field(ge=0, le=255, description="Blue component.")] = 0,
         color: Annotated[int | None, Field(description="Optional FL color integer.")] = None,
     ) -> dict:
-        """Set a pattern color; rollback restores the previous color integer."""
+        """Set a pattern color; rollback restores the previous color integer.
+
+        Safety: Write-Safe with Rollback.
+        """
         params: dict = {"index": index}
         if color is not None:
             params["color"] = int(color)
@@ -112,7 +136,12 @@ def register(mcp: FastMCP) -> None:
         index: Annotated[int, Field(ge=1, description="Pattern index to resize.")],
         beats: Annotated[float, Field(gt=0.0, description="New pattern length in beats.")],
     ) -> dict:
-        """Set a pattern length; rollback restores the previous length."""
+        """Set a pattern length; rollback restores the previous length.
+
+        Safety: Write-Safe with Rollback. On FL builds where pattern length
+        writes are unavailable, readback failure prevents a persistent change
+        from being reported as successful.
+        """
         return safety.safe_write(
             get_bridge(),
             tool="pattern_set_length",
@@ -127,21 +156,30 @@ def register(mcp: FastMCP) -> None:
 
     @mcp.tool(annotations={"title": "Find next empty pattern", **_RO})
     def fl_pattern_find_empty() -> dict:
-        """Find the first empty pattern index (or next index after the current count)."""
+        """Find the first empty pattern index or next index after the current count.
+
+        Safety: Read-Only.
+        """
         return get_bridge().call(protocol.CMD_PATTERN_FIND_EMPTY, {})
 
     # ---- Playlist Reads -----------------------------------------------------
 
     @mcp.tool(annotations={"title": "List playlist tracks", **_RO})
     def fl_playlist_list_tracks() -> dict:
-        """List playlist tracks with names, colors, mute, solo, and selection state."""
+        """List playlist tracks with names, colors, mute, solo, and selection state.
+
+        Safety: Read-Only.
+        """
         return fetch_all_pages(get_bridge(), protocol.CMD_PLAYLIST_LIST_TRACKS, "tracks")
 
     @mcp.tool(annotations={"title": "Get playlist track details", **_RO})
     def fl_playlist_get_track(
         index: Annotated[int, Field(ge=1, description="Playlist track index.")],
     ) -> dict:
-        """Get details for a single playlist track (1-based index)."""
+        """Get details for a single playlist track using a 1-based index.
+
+        Safety: Read-Only.
+        """
         return get_bridge().call(protocol.CMD_PLAYLIST_GET_TRACK, {"index": index})
 
     # ---- Playlist Writes ----------------------------------------------------
@@ -151,7 +189,10 @@ def register(mcp: FastMCP) -> None:
         index: Annotated[int, Field(ge=1, description="Playlist track index.")],
         state: bool,
     ) -> dict:
-        """Mute or unmute a playlist track (state=True mutes)."""
+        """Mute or unmute a playlist track (state=True mutes).
+
+        Safety: Write-Safe with Rollback.
+        """
         return safety.safe_write(
             get_bridge(),
             tool="playlist_set_mute",
@@ -170,7 +211,10 @@ def register(mcp: FastMCP) -> None:
         index: Annotated[int, Field(ge=1, description="Playlist track index.")],
         state: bool,
     ) -> dict:
-        """Solo or unsolo a playlist track (state=True solos)."""
+        """Solo or unsolo a playlist track (state=True solos).
+
+        Safety: Write-Safe with Rollback.
+        """
         return safety.safe_write(
             get_bridge(),
             tool="playlist_set_solo",
@@ -189,7 +233,10 @@ def register(mcp: FastMCP) -> None:
         index: Annotated[int, Field(ge=1, description="Playlist track index.")],
         name: str,
     ) -> dict:
-        """Rename a playlist track."""
+        """Rename a playlist track.
+
+        Safety: Write-Safe with Rollback.
+        """
         return safety.safe_write(
             get_bridge(),
             tool="playlist_set_name",
@@ -213,7 +260,10 @@ def register(mcp: FastMCP) -> None:
             Field(description="Optional color integer, for example from rollback."),
         ] = None,
     ) -> dict:
-        """Set color for a playlist track."""
+        """Set color for a playlist track.
+
+        Safety: Write-Safe with Rollback.
+        """
         params: dict = {"index": index}
         if color is not None:
             params["color"] = color
@@ -239,7 +289,10 @@ def register(mcp: FastMCP) -> None:
         index: Annotated[int, Field(ge=1, description="Playlist track index.")],
         state: bool = True,
     ) -> dict:
-        """Select or deselect a playlist track."""
+        """Select or deselect a playlist track.
+
+        Safety: Write-Safe with Rollback.
+        """
         return safety.safe_write(
             get_bridge(),
             tool="playlist_select_track",
