@@ -19,6 +19,20 @@ flstudio-mcp is a Model Context Protocol (MCP) server that lets Claude Desktop d
 
 It is genre- and producer-agnostic: nothing about it assumes a particular style of music.
 
+## Maintained fork
+
+This repository is a materially extended fork of
+[`rosasynthesiz/flstudio-mcp`](https://github.com/rosasynthesiz/flstudio-mcp),
+now maintained at
+[`thunderdew-dawn/flstudio-mcp`](https://github.com/thunderdew-dawn/flstudio-mcp).
+The project keeps the `fl-studio-mcp` package and command names for
+compatibility, while the fork's engineering direction is now explicit:
+rollback-first FL Studio production tooling, documented API-evidence handling,
+live-probe discipline for build-dependent behavior, macOS support, CI safety
+audits, prompt evals, and a committed agent workflow guide.
+
+See [`NOTICE.md`](NOTICE.md) for provenance and attribution.
+
 ## Quickstart
 
 ```bat
@@ -113,14 +127,14 @@ These are properties of FL Studio's scripting API, stated plainly:
 
 #### Windows:
 ```bat
-git clone https://github.com/rosasynthesiz/flstudio-mcp
+git clone https://github.com/thunderdew-dawn/flstudio-mcp
 cd flstudio-mcp
 scripts\install_windows.bat
 ```
 
 #### macOS:
 ```bash
-git clone https://github.com/rosasynthesiz/flstudio-mcp
+git clone https://github.com/thunderdew-dawn/flstudio-mcp
 cd flstudio-mcp
 chmod +x scripts/install_macos.sh
 ./scripts/install_macos.sh
@@ -217,6 +231,8 @@ MIT — see [LICENSE](LICENSE).
 
 ## Status & contributing
 
-Beta — the public 1.0 release. Fully compatible with Windows and macOS. Issues and pull requests: [github.com/rosasynthesiz/flstudio-mcp](https://github.com/rosasynthesiz/flstudio-mcp).
+Beta — the public 1.0 release. Fully compatible with Windows and macOS.
+Issues and pull requests:
+[github.com/thunderdew-dawn/flstudio-mcp](https://github.com/thunderdew-dawn/flstudio-mcp).
 
-<!-- mcp-name: io.github.rosasynthesiz/flstudio-mcp -->
+<!-- mcp-name: io.github.thunderdew-dawn/flstudio-mcp -->

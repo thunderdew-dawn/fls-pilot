@@ -6,6 +6,11 @@ piano roll, routing, and project — through calibrated, safety-checked tools.
 Contributions of all kinds are welcome: bug reports, fixes, new tools, docs,
 and platform support.
 
+This repository is the maintained `thunderdew-dawn/flstudio-mcp` fork of
+`rosasynthesiz/flstudio-mcp`. The package and command names remain stable for
+compatibility, but contributions should follow this fork's rollback-first
+safety layer, API-evidence discipline, and roadmap in `ROADMAP.md`.
+
 ## Ways to contribute
 
 - **Report a bug** — open an issue with steps to reproduce, your FL Studio build, and the relevant Script output / server log.
@@ -27,11 +32,16 @@ A PR that tries to "fix" one of these by working around the sandbox will likely 
 
 You'll need the same environment as a user, plus an editable install:
 
-- Windows 10/11, FL Studio 2025+, Python 3.12
-- loopMIDI with two ports named exactly FLStudioMCP RX and FLStudioMCP TX
+- Windows 10/11 or macOS 12+, FL Studio 2025+, Python 3.12
+- loopMIDI on Windows or the IAC Driver on macOS, with two ports named exactly
+  FLStudioMCP RX and FLStudioMCP TX
 - Claude Desktop (or any MCP client) for end-to-end testing
 
-Install steps: clone the repo, cd into it, run scripts\install_windows.bat, then pip install -e ".[audio]" if you'll touch the audio analysis code. Wire the loopMIDI ports in FL (Options > MIDI Settings), confirm [FLStudioMCP] Ready in FL's Script output, start the bridge with fl-studio-mcp-daemon, then verify the link by asking Claude to call fl_ping.
+Install steps: clone the repo, cd into it, run `scripts\install_windows.bat` or
+`./scripts/install_macos.sh`, then `pip install -e ".[audio]"` if you'll touch
+the audio analysis code. Wire the MIDI ports in FL (Options > MIDI Settings),
+confirm `[FLStudioMCP] Ready` in FL's Script output, start the bridge with
+`fl-studio-mcp-daemon`, then verify the link by asking Claude to call `fl_ping`.
 
 ## Project layout
 

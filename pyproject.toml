@@ -11,6 +11,9 @@ license = { text = "MIT" }
 authors = [
     { name = "rosasynthesiz" },
 ]
+maintainers = [
+    { name = "thunderdew-dawn" },
+]
 requires-python = ">=3.10"
 keywords = ["mcp", "fl-studio", "music-production", "ai", "claude", "fruityloops"]
 classifiers = [
@@ -64,9 +67,10 @@ fl-studio-mcp = "fl_studio_mcp.server:main"
 fl-studio-mcp-daemon = "fl_studio_mcp.daemon:main"
 
 [project.urls]
-Homepage = "https://github.com/rosasynthesiz/flstudio-mcp"
-Repository = "https://github.com/rosasynthesiz/flstudio-mcp"
-Issues = "https://github.com/rosasynthesiz/flstudio-mcp/issues"
+Homepage = "https://github.com/thunderdew-dawn/flstudio-mcp"
+Repository = "https://github.com/thunderdew-dawn/flstudio-mcp"
+Issues = "https://github.com/thunderdew-dawn/flstudio-mcp/issues"
+Upstream = "https://github.com/rosasynthesiz/flstudio-mcp"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/fl_studio_mcp"]

@@ -26,6 +26,15 @@ task.
 
 ## Current verification checkpoints
 
+- 2026-06-02: Fork provenance and repository metadata aligned with the
+  maintained `thunderdew-dawn/flstudio-mcp` branch.
+  - Verified path: README, CONTRIBUTING, package metadata, MCP server metadata,
+    Glama metadata, LICENSE, and NOTICE reviewed for current maintainer,
+    upstream attribution, compatibility-preserving package names, and explicit
+    rollback-first fork direction.
+  - Result: public-facing source metadata now distinguishes this maintained
+    fork from upstream without breaking the existing `fl-studio-mcp` package or
+    command names.
 - 2026-06-02: `AGENTS.md` repository workflow guide updated and approved for
   commit.
   - Verified path: `AGENTS.md` reviewed for repo-safe relative paths and no
