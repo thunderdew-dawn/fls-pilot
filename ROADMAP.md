@@ -26,6 +26,19 @@ task.
 
 ## Current verification checkpoints
 
+- 2026-06-02: GitHub Actions CI for hard lint, safety audits, and mock bridge
+  smoke test added.
+  - Verified path: local run of CI commands: `compileall src
+    scripts/test_bridge_mock.py scripts/audit_tool_safety.py`; `ruff check
+    --select E9,F src fl_controller/FLStudioMCP/device_FLStudioMCP.py
+    scripts/audit_tool_safety.py scripts/test_bridge_mock.py`;
+    `scripts/audit_tool_safety.py --fail-on-gaps`;
+    `scripts/audit_tool_safety.py --fail-on-missing-safety-docs --format json`;
+    `scripts/test_bridge_mock.py`.
+  - Result: `.github/workflows/ci.yml` now runs a no-FL mock TCP bridge smoke
+    plus hard Python-error linting and safety gates. Full `ruff check .` still
+    has pre-existing style failures in older controller/live-test scripts, so
+    CI intentionally scopes linting to hard `E9,F` errors for the core surface.
 - 2026-06-02: Prompt-level eval suite added for the FLStudioMCP production
   tool surface.
   - Verified path: `python3 -m json.tool evals/evals.json`; manual coverage
@@ -794,7 +807,7 @@ so it ships inside the wheel.
 - [ ] `AGENTS.md` describing the agentic workflow for future Claude sessions
       working on this codebase.
 - [ ] Demo video and screenshots in `docs/`.
-- [ ] GitHub Actions for linting and the standalone bridge tests (mock FL).
+- [x] GitHub Actions for linting and the standalone bridge tests (mock FL).
 - [ ] Pin a known-working FL Studio version range in README.
 
 ## Out of scope (intentionally)
