@@ -26,6 +26,15 @@ task.
 
 ## Current verification checkpoints
 
+- 2026-06-02: User-facing value, workflow, and tool-reference documentation
+  added.
+  - Verified path: `docs/USER_GUIDE.md` reviewed against
+    `scripts/audit_tool_safety.py --format json` output; README usage entry
+    linked to the guide; stale pattern-creation limit language corrected in
+    server instructions and this roadmap.
+  - Result: public docs now explain the app's production value, natural-language
+    assistant interaction model, module-level examples, MCP resources, safety
+    classes, explicit product boundaries, and the current 138-tool catalog.
 - 2026-06-02: Fork provenance and repository metadata aligned with the
   maintained `thunderdew-dawn/flstudio-mcp` branch.
   - Verified path: README, CONTRIBUTING, package metadata, MCP server metadata,
@@ -759,8 +768,9 @@ gain, not 1.0. The tools accept dB and convert.
 - [x] `fl_arrange_add_marker` (previously implemented in arrangement slice) — Section markers.
 
 API limits worth surfacing in tool docs:
-- New patterns cannot be created from scratch; clone an existing pattern
-  instead (`fl_arrange_clone_pattern`).
+- Playlist clip placement, movement, and deletion remain out of scope; create
+  or clone patterns, write notes into them, add markers, and place clips
+  manually in FL Studio.
 
 ## Phase 4 — Piano Roll pyscript (~6 tools) [x] Completed
 

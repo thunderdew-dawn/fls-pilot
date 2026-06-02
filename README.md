@@ -78,9 +78,11 @@ Full setup is below.
 - Tempo and key estimation from an audio file.
 - Melody-to-MIDI transcription (CREPE pitch tracking, with a lighter fallback).
 
-The server exposes 117 tools across the production, mixing, composition, safety,
+The server exposes 138 tools across the production, mixing, composition, safety,
 and project-organization surface, plus 6 live resources (project, mixer,
 transport, channels, patterns, status) that the LLM assistant can read directly.
+For a user-facing value overview, workflow examples, and the full tool catalog,
+see [`docs/USER_GUIDE.md`](docs/USER_GUIDE.md).
 
 ## What sets it apart
 
@@ -219,6 +221,9 @@ Plain-language prompts:
 - "Compose an 8-bar melody in D Dorian and write it to the selected channel."
 - "Export this arrangement to a MIDI file."
 - "What tempo and key is this track?" (on an audio file)
+
+For examples by module, assistant, and diagnostic check, see the
+[`User Guide`](docs/USER_GUIDE.md).
 
 ## Architecture
 

@@ -72,8 +72,8 @@ REQUIREMENTS
 LIMITS YOU SHOULD KNOW ABOUT (these are FL API limitations, not server bugs)
   - Cannot load new VST/AU plugin instances. You can only control plugins
     that already exist in the project.
-  - Cannot create new patterns from scratch. Work with existing patterns,
-    or clone via the Piano Roll pyscript.
+  - Cannot place, move, or delete playlist clips. Build or clone patterns,
+    write notes into them, add markers, and place clips manually in FL Studio.
   - Tempo writes are sometimes ignored if FL is in a modal dialog.
 
 When the user asks for something outside these limits, explain the limit
