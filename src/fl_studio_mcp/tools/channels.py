@@ -14,6 +14,7 @@ from pydantic import Field
 
 from .. import protocol, safety
 from ..connection import fetch_all_pages, get_bridge
+from .targets import mixer_track_error, no_free_mixer_track_response
 
 
 def _target_restore(channel: int, before: dict) -> dict:
@@ -175,8 +176,14 @@ def register(mcp: FastMCP) -> None:
 
         Safety: Write-Safe with Rollback.
         """
+        bridge = get_bridge()
+        error = mixer_track_error(
+            bridge, mixer_track, purpose="channel mixer-target assignment"
+        )
+        if error is not None:
+            return error
         return safety.safe_write(
-            get_bridge(),
+            bridge,
             tool="channel_set_target",
             scope=f"channel:{channel}",
             command=protocol.CMD_CHANNEL_SET_TARGET,
@@ -200,7 +207,7 @@ def register(mcp: FastMCP) -> None:
         bridge = get_bridge()
         track = _find_free_mixer_track(bridge, start_track=start_track)
         if track is None:
-            return {"ok": False, "error": "no default empty mixer track found"}
+            return no_free_mixer_track_response(bridge, start_track=start_track)
         result = safety.safe_write(
             bridge,
             tool="channel_assign_free_mixer_track",

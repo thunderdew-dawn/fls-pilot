@@ -511,12 +511,66 @@ def reset_bridge() -> None:
     _bridge = None
 
 
+def call_with_retry(
+    bridge,
+    command: str,
+    params: dict | None = None,
+    *,
+    timeout: float | None = None,
+    attempts: int = 3,
+    delay: float = 0.12,
+):
+    """Call a read-only FL command with transient timeout retries.
+
+    Use this only for reads or known idempotent commands. A timed-out write may
+    still apply later inside FL, so write tools should use explicit safety-layer
+    readback instead of blind transport retries.
+    """
+    tries = max(1, int(attempts))
+    last: FLTimeout | None = None
+    for i in range(tries):
+        try:
+            return _call_bridge(bridge, command, params, timeout=timeout)
+        except FLTimeout as exc:
+            last = exc
+            if i + 1 >= tries:
+                break
+            time.sleep(max(0.0, delay) * (i + 1))
+    raise last or FLTimeout(f"FL Studio did not respond to {command!r}.")
+
+
+def _call_bridge(
+    bridge,
+    command: str,
+    params: dict | None = None,
+    *,
+    timeout: float | None = None,
+):
+    if timeout is None:
+        return bridge.call(command, params)
+    try:
+        return bridge.call(command, params, timeout=timeout)
+    except TypeError as exc:
+        if "timeout" not in str(exc):
+            raise
+        return bridge.call(command, params)
+
+
 # ---------------------------------------------------------------------------
 # Budget-paginated list helper
 # ---------------------------------------------------------------------------
 
 
-def fetch_all_pages(bridge, command, list_key, params=None, *, max_pages=500):
+def fetch_all_pages(
+    bridge,
+    command,
+    list_key,
+    params=None,
+    *,
+    max_pages=500,
+    timeout: float | None = None,
+    attempts: int = 1,
+):
     """Drive a payload-budget-paginated list command to completion.
 
     SysEx payloads above ~1.5 KB are dropped by the MIDI layer, so list
@@ -536,7 +590,10 @@ def fetch_all_pages(bridge, command, list_key, params=None, *, max_pages=500):
     start = 0
     for _ in range(max_pages):
         base["start"] = start
-        resp = bridge.call(command, base)
+        if attempts > 1:
+            resp = call_with_retry(bridge, command, base, timeout=timeout, attempts=attempts)
+        else:
+            resp = _call_bridge(bridge, command, base, timeout=timeout)
         total = resp.get("total", total)
         items.extend(resp.get(list_key) or [])
         nxt = resp.get("next_start")

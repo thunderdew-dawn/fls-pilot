@@ -273,6 +273,19 @@ def _verify_retry(bridge, command, params, result, verify, attempts=4, delay=0.0
     return result
 
 
+def _read_scope_with_poll(bridge, scope, verify=None, attempts=5, delay=0.08):
+    result = take_snapshot(bridge, scope)
+    if verify is None:
+        return result
+    field, expected = verify
+    n = 0
+    while result.get(field) != expected and n < attempts:
+        time.sleep(delay * (n + 1))
+        result = take_snapshot(bridge, scope)
+        n += 1
+    return result
+
+
 def safe_write(
     bridge,
     *,
@@ -301,7 +314,7 @@ def safe_write(
     # stale pre-write value. Re-read the scope on a FRESH tick for the TRUE
     # post-write state. Fall back to the echo if the scope can't be re-read.
     try:
-        after = take_snapshot(bridge, scope)
+        after = _read_scope_with_poll(bridge, scope, verify=verify)
     except Exception:
         after = echo
     entry = _log.append(

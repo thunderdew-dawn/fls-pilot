@@ -18,6 +18,7 @@ from pydantic import Field
 from .. import protocol, safety
 from ..connection import fetch_all_pages, get_bridge
 from ..music import levels
+from .targets import mixer_track_error
 
 
 def register(mcp: FastMCP) -> None:
@@ -72,8 +73,12 @@ def register(mcp: FastMCP) -> None:
 
         Safety: Write-Safe with Rollback.
         """
+        bridge = get_bridge()
+        error = mixer_track_error(bridge, track, purpose="mixer volume write")
+        if error is not None:
+            return error
         return safety.safe_write(
-            get_bridge(),
+            bridge,
             tool="mixer_set_volume",
             scope=f"mixer_track:{track}",
             command=protocol.CMD_MIXER_SET_VOLUME,
@@ -93,8 +98,12 @@ def register(mcp: FastMCP) -> None:
 
         Safety: Write-Safe with Rollback.
         """
+        bridge = get_bridge()
+        error = mixer_track_error(bridge, track, purpose="mixer pan write")
+        if error is not None:
+            return error
         return safety.safe_write(
-            get_bridge(),
+            bridge,
             tool="mixer_set_pan",
             scope=f"mixer_track:{track}",
             command=protocol.CMD_MIXER_SET_PAN,
@@ -111,8 +120,12 @@ def register(mcp: FastMCP) -> None:
 
         Safety: Write-Safe with Rollback.
         """
+        bridge = get_bridge()
+        error = mixer_track_error(bridge, track, purpose="mixer mute write")
+        if error is not None:
+            return error
         return safety.safe_write(
-            get_bridge(),
+            bridge,
             tool="mixer_set_mute",
             scope=f"mixer_track:{track}",
             command=protocol.CMD_MIXER_SET_MUTE,
@@ -130,8 +143,12 @@ def register(mcp: FastMCP) -> None:
 
         Safety: Write-Safe with Rollback.
         """
+        bridge = get_bridge()
+        error = mixer_track_error(bridge, track, purpose="mixer solo write")
+        if error is not None:
+            return error
         return safety.safe_write(
-            get_bridge(),
+            bridge,
             tool="mixer_set_solo",
             scope=f"mixer_track:{track}",
             command=protocol.CMD_MIXER_SET_SOLO,
@@ -149,8 +166,12 @@ def register(mcp: FastMCP) -> None:
 
         Safety: Write-Safe with Rollback.
         """
+        bridge = get_bridge()
+        error = mixer_track_error(bridge, track, purpose="mixer name write")
+        if error is not None:
+            return error
         return safety.safe_write(
-            get_bridge(),
+            bridge,
             tool="mixer_set_name",
             scope=f"mixer_track:{track}",
             command=protocol.CMD_MIXER_SET_NAME,
@@ -260,7 +281,11 @@ def register(mcp: FastMCP) -> None:
 
         Safety: Read-Only.
         """
-        return get_bridge().call(protocol.CMD_MIXER_GET_TRACK, {"index": track})
+        bridge = get_bridge()
+        error = mixer_track_error(bridge, track, purpose="mixer track read")
+        if error is not None:
+            return error
+        return bridge.call(protocol.CMD_MIXER_GET_TRACK, {"index": track})
 
     @mcp.tool(annotations={"title": "Set mixer track volume", **_WR})
     def fl_mixer_set_volume(
@@ -309,8 +334,12 @@ def register(mcp: FastMCP) -> None:
 
         Safety: Write-Safe with Rollback.
         """
+        bridge = get_bridge()
+        error = mixer_track_error(bridge, track, purpose="mixer track selection")
+        if error is not None:
+            return error
         return safety.safe_write(
-            get_bridge(),
+            bridge,
             tool="mixer_select_track",
             scope="mixer_selection",
             command=protocol.CMD_MIXER_SELECT_TRACK,
@@ -331,7 +360,11 @@ def register(mcp: FastMCP) -> None:
 
         Safety: Read-Only.
         """
-        return get_bridge().call(protocol.CMD_MIXER_GET_ROUTING, {"track": track})
+        bridge = get_bridge()
+        error = mixer_track_error(bridge, track, purpose="mixer routing read")
+        if error is not None:
+            return error
+        return bridge.call(protocol.CMD_MIXER_GET_ROUTING, {"track": track})
 
     @mcp.tool(annotations={"title": "Set mixer routing (src -> dst)", **_WR})
     def fl_mixer_set_route(
@@ -343,8 +376,13 @@ def register(mcp: FastMCP) -> None:
 
         Safety: Write-Safe with Rollback.
         """
+        bridge = get_bridge()
+        for track, purpose in ((src, "mixer route source"), (dst, "mixer route destination")):
+            error = mixer_track_error(bridge, track, purpose=purpose)
+            if error is not None:
+                return error
         return safety.safe_write(
-            get_bridge(),
+            bridge,
             tool="mixer_set_route",
             scope=f"route:{src}:{dst}",
             command=protocol.CMD_MIXER_SET_ROUTE,
@@ -366,7 +404,11 @@ def register(mcp: FastMCP) -> None:
 
         Safety: Read-Only.
         """
-        return levels.measure_track_level(get_bridge(), track, samples=samples)
+        bridge = get_bridge()
+        error = mixer_track_error(bridge, track, purpose="mixer level read")
+        if error is not None:
+            return error
+        return levels.measure_track_level(bridge, track, samples=samples)
 
     @mcp.tool(annotations={"title": "Set mixer track stereo separation", **_WR})
     def fl_mixer_set_stereo_separation(
@@ -385,8 +427,12 @@ def register(mcp: FastMCP) -> None:
         Safety: Write-Safe with Rollback. Some FL builds execute this command
         without persistent readback; safe_write prevents unverified success.
         """
+        bridge = get_bridge()
+        error = mixer_track_error(bridge, track, purpose="mixer stereo separation write")
+        if error is not None:
+            return error
         return safety.safe_write(
-            get_bridge(),
+            bridge,
             tool="mixer_set_stereo_separation",
             scope=f"mixer_track:{track}",
             command=protocol.CMD_MIXER_SET_STEREO_SEP,

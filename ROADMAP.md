@@ -26,6 +26,19 @@ task.
 
 ## Current verification checkpoints
 
+- 2026-06-02: Dynamic mixer-track guards and transient plugin-read retries
+  added.
+  - Verified path: `compileall` for connection, safety, target helpers, mixer,
+    channel, plugin, effect, and routing modules; focused offline tests
+    `scripts/test_dynamic_mixer_targets.py`, `scripts/test_channel_organizer.py`,
+    `scripts/test_plugin.py`, and `scripts/test_effects_pattern_extensions.py`.
+  - Result: mixer/plugin/effect/channel/routing tools now validate requested
+    mixer-track indices against the current dynamic `mixer_track_count` before
+    dispatching FL commands; missing tracks are reported as project/fixture
+    state rather than API failure. Plugin parameter reads retry transient
+    timeouts, and plugin parameter writes use idempotent value readback
+    verification. Creating new dynamic mixer tracks remains probe-gated until
+    a rollback-safe Image-Line API path is live-probed.
 - 2026-06-02: User-facing value, workflow, and tool-reference documentation
   added.
   - Verified path: `docs/USER_GUIDE.md` reviewed against

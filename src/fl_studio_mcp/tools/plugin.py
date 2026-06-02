@@ -24,7 +24,8 @@ from fastmcp import FastMCP
 from pydantic import Field
 
 from .. import protocol, safety
-from ..connection import fetch_all_pages, get_bridge
+from ..connection import FLTimeout, call_with_retry, fetch_all_pages, get_bridge
+from .targets import mixer_track_error
 
 
 class ParamNotFound(ValueError):
@@ -59,7 +60,12 @@ def resolve_param_index(bridge, track: int, slot: int, param):
         raise ParamNotFound("empty param name")
 
     dump = fetch_all_pages(
-        bridge, protocol.CMD_PLUGIN_GET_PARAMS, "params", {"track": track, "slot": slot}
+        bridge,
+        protocol.CMD_PLUGIN_GET_PARAMS,
+        "params",
+        {"track": track, "slot": slot},
+        timeout=10.0,
+        attempts=3,
     )
     params = dump.get("params", [])
 
@@ -111,7 +117,16 @@ def register(mcp: FastMCP) -> None:
 
         Safety: Read-Only.
         """
-        return get_bridge().call(protocol.CMD_PLUGIN_LIST, {"track": track})
+        bridge = get_bridge()
+        error = mixer_track_error(bridge, track, purpose="plugin slot listing")
+        if error is not None:
+            return error
+        try:
+            return call_with_retry(
+                bridge, protocol.CMD_PLUGIN_LIST, {"track": track}, timeout=8.0, attempts=3
+            )
+        except FLTimeout as e:
+            return {"ok": False, "retryable": True, "transient": True, "error": str(e)}
 
     @mcp.tool(annotations={"title": "Get plugin parameters", **_RO})
     def fl_plugin_get_params(
@@ -124,9 +139,21 @@ def register(mcp: FastMCP) -> None:
 
         Safety: Read-Only.
         """
-        return fetch_all_pages(
-            get_bridge(), protocol.CMD_PLUGIN_GET_PARAMS, "params", {"track": track, "slot": slot}
-        )
+        bridge = get_bridge()
+        error = mixer_track_error(bridge, track, purpose="plugin parameter listing")
+        if error is not None:
+            return error
+        try:
+            return fetch_all_pages(
+                bridge,
+                protocol.CMD_PLUGIN_GET_PARAMS,
+                "params",
+                {"track": track, "slot": slot},
+                timeout=10.0,
+                attempts=3,
+            )
+        except FLTimeout as e:
+            return {"ok": False, "retryable": True, "transient": True, "error": str(e)}
 
     @mcp.tool(annotations={"title": "Set plugin parameter", **_WR})
     def fl_plugin_set_param(
@@ -146,6 +173,9 @@ def register(mcp: FastMCP) -> None:
         plugins; plugin loading remains manual.
         """
         bridge = get_bridge()
+        error = mixer_track_error(bridge, track, purpose="plugin parameter write")
+        if error is not None:
+            return error
         idx, name = resolve_param_index(bridge, track, slot, param)
         scope = f"plugin_param:{track}:{slot}:{idx}"
         result = safety.safe_write(
@@ -154,6 +184,7 @@ def register(mcp: FastMCP) -> None:
             scope=scope,
             command=protocol.CMD_PLUGIN_SET_PARAM,
             params={"track": track, "slot": slot, "param": idx, "value": value},
+            verify=("v", round(float(value), 4)),
             build_restore=lambda b: {
                 "command": protocol.CMD_PLUGIN_SET_PARAM,
                 "params": {"track": track, "slot": slot, "param": idx, "value": b["v"]},
@@ -185,14 +216,24 @@ def register(mcp: FastMCP) -> None:
         Safety: Read-Only.
         """
         bridge = get_bridge()
+        error = mixer_track_error(bridge, track, purpose="plugin parameter read")
+        if error is not None:
+            return error
         try:
             idx, name = resolve_param_index(bridge, track, slot, param)
         except ParamNotFound as e:
             return {"ok": False, "error": str(e)}
 
-        val = bridge.call(
-            protocol.CMD_PLUGIN_GET_PARAM, {"track": track, "slot": slot, "param": idx}
-        )
+        try:
+            val = call_with_retry(
+                bridge,
+                protocol.CMD_PLUGIN_GET_PARAM,
+                {"track": track, "slot": slot, "param": idx},
+                timeout=8.0,
+                attempts=3,
+            )
+        except FLTimeout as e:
+            return {"ok": False, "retryable": True, "transient": True, "error": str(e)}
         return {
             "ok": True,
             "track": track,
@@ -216,7 +257,19 @@ def register(mcp: FastMCP) -> None:
         Safety: Read-Only.
         """
         bridge = get_bridge()
-        val = bridge.call(protocol.CMD_PLUGIN_GET_PRESET_NAME, {"track": track, "slot": slot})
+        error = mixer_track_error(bridge, track, purpose="plugin preset read")
+        if error is not None:
+            return error
+        try:
+            val = call_with_retry(
+                bridge,
+                protocol.CMD_PLUGIN_GET_PRESET_NAME,
+                {"track": track, "slot": slot},
+                timeout=8.0,
+                attempts=3,
+            )
+        except FLTimeout as e:
+            return {"ok": False, "retryable": True, "transient": True, "error": str(e)}
         return {
             "ok": True,
             "track": track,

@@ -20,6 +20,7 @@ from pydantic import Field
 
 from .. import protocol, safety
 from ..connection import fetch_all_pages, get_bridge
+from .targets import mixer_track_error
 
 
 def _route_write_entry(src: int, dst: int, enabled: bool) -> dict:
@@ -198,8 +199,13 @@ def register(mcp: FastMCP) -> None:
 
         Safety: Write-Safe with Rollback.
         """
+        bridge = get_bridge()
+        for track, purpose in ((src, "mixer route source"), (dst, "mixer route destination")):
+            error = mixer_track_error(bridge, track, purpose=purpose)
+            if error is not None:
+                return error
         return safety.safe_write(
-            get_bridge(),
+            bridge,
             tool="mixer_set_route",
             scope=f"route:{src}:{dst}",
             command=protocol.CMD_MIXER_SET_ROUTE,
@@ -229,7 +235,14 @@ def register(mcp: FastMCP) -> None:
         persisted as one named rollback unit.
         """
         bridge = get_bridge()
+        error = mixer_track_error(bridge, bus, allow_master=False, purpose="group bus track")
+        if error is not None:
+            return error
         srcs = [int(s) for s in sources if int(s) not in (bus, 0)]
+        for src in srcs:
+            error = mixer_track_error(bridge, src, allow_master=False, purpose="group source track")
+            if error is not None:
+                return error
         writes = []
         for s in srcs:
             writes.append(_route_write_entry(s, bus, True))  # source -> bus ON

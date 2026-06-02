@@ -12,7 +12,8 @@ from fastmcp import FastMCP
 from pydantic import Field
 
 from .. import protocol, safety
-from ..connection import get_bridge
+from ..connection import FLTimeout, call_with_retry, get_bridge
+from .targets import mixer_track_error
 
 
 def _band_before(before: dict, band: int) -> dict:
@@ -46,7 +47,16 @@ def register(mcp: FastMCP) -> None:
 
         Safety: Read-Only.
         """
-        return get_bridge().call(protocol.CMD_MIXER_GET_SLOT, {"track": track, "slot": slot})
+        bridge = get_bridge()
+        error = mixer_track_error(bridge, track, purpose="effect slot read")
+        if error is not None:
+            return error
+        try:
+            return call_with_retry(
+                bridge, protocol.CMD_MIXER_GET_SLOT, {"track": track, "slot": slot}, attempts=3
+            )
+        except FLTimeout as e:
+            return {"ok": False, "retryable": True, "transient": True, "error": str(e)}
 
     @mcp.tool(annotations={"title": "List effect slots on a track", **_RO})
     def fl_effect_list_slots(
@@ -57,9 +67,22 @@ def register(mcp: FastMCP) -> None:
         Safety: Read-Only.
         """
         bridge = get_bridge()
+        error = mixer_track_error(bridge, track, purpose="effect slot listing")
+        if error is not None:
+            return error
         slots = []
         for slot in range(10):
-            slots.append(bridge.call(protocol.CMD_MIXER_GET_SLOT, {"track": track, "slot": slot}))
+            try:
+                slots.append(
+                    call_with_retry(
+                        bridge,
+                        protocol.CMD_MIXER_GET_SLOT,
+                        {"track": track, "slot": slot},
+                        attempts=3,
+                    )
+                )
+            except FLTimeout as e:
+                return {"ok": False, "retryable": True, "transient": True, "error": str(e)}
         return {"ok": True, "track": track, "slots": slots}
 
     @mcp.tool(annotations={"title": "Set effect slot mix", **_WR})
@@ -72,8 +95,12 @@ def register(mcp: FastMCP) -> None:
 
         Safety: Write-Safe with Rollback.
         """
+        bridge = get_bridge()
+        error = mixer_track_error(bridge, track, purpose="effect slot mix write")
+        if error is not None:
+            return error
         return safety.safe_write(
-            get_bridge(),
+            bridge,
             tool="effect_set_slot_mix",
             scope=f"effect_slot:{track}:{slot}",
             command=protocol.CMD_MIXER_SET_SLOT_MIX,
@@ -92,7 +119,16 @@ def register(mcp: FastMCP) -> None:
 
         Safety: Read-Only.
         """
-        return get_bridge().call(protocol.CMD_MIXER_GET_TRACK_SLOTS, {"track": track})
+        bridge = get_bridge()
+        error = mixer_track_error(bridge, track, purpose="effect slot enabled read")
+        if error is not None:
+            return error
+        try:
+            return call_with_retry(
+                bridge, protocol.CMD_MIXER_GET_TRACK_SLOTS, {"track": track}, attempts=3
+            )
+        except FLTimeout as e:
+            return {"ok": False, "retryable": True, "transient": True, "error": str(e)}
 
     @mcp.tool(annotations={"title": "Enable or bypass all track effect slots", **_WR})
     def fl_effect_set_track_slots_enabled(
@@ -103,8 +139,12 @@ def register(mcp: FastMCP) -> None:
 
         Safety: Write-Safe with Rollback.
         """
+        bridge = get_bridge()
+        error = mixer_track_error(bridge, track, purpose="effect slot enabled write")
+        if error is not None:
+            return error
         return safety.safe_write(
-            get_bridge(),
+            bridge,
             tool="effect_set_track_slots_enabled",
             scope=f"track_slots:{track}",
             command=protocol.CMD_MIXER_SET_TRACK_SLOTS,
@@ -126,8 +166,12 @@ def register(mcp: FastMCP) -> None:
 
         Safety: Write-Safe with Rollback.
         """
+        bridge = get_bridge()
+        error = mixer_track_error(bridge, track, purpose="effect slot enabled write")
+        if error is not None:
+            return error
         return safety.safe_write(
-            get_bridge(),
+            bridge,
             tool="effect_set_slot_enabled",
             scope=f"effect_slot:{track}:{slot}",
             command=protocol.CMD_MIXER_SET_SLOT_ENABLED,
@@ -147,7 +191,14 @@ def register(mcp: FastMCP) -> None:
 
         Safety: Read-Only.
         """
-        return get_bridge().call(protocol.CMD_MIXER_GET_EQ, {"track": track})
+        bridge = get_bridge()
+        error = mixer_track_error(bridge, track, purpose="native mixer EQ read")
+        if error is not None:
+            return error
+        try:
+            return call_with_retry(bridge, protocol.CMD_MIXER_GET_EQ, {"track": track}, attempts=3)
+        except FLTimeout as e:
+            return {"ok": False, "retryable": True, "transient": True, "error": str(e)}
 
     @mcp.tool(annotations={"title": "Set one native EQ band", **_WR})
     def fl_eq_set_band(
@@ -173,8 +224,12 @@ def register(mcp: FastMCP) -> None:
             params["bandwidth"] = float(bandwidth)
         if eq_type is not None:
             params["type"] = int(eq_type)
+        bridge = get_bridge()
+        error = mixer_track_error(bridge, track, purpose="native mixer EQ write")
+        if error is not None:
+            return error
         return safety.safe_write(
-            get_bridge(),
+            bridge,
             tool="eq_set_band",
             scope=f"mixer_eq:{track}",
             command=protocol.CMD_MIXER_SET_EQ,

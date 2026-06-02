@@ -94,6 +94,35 @@ They now route through the safety layer. Piano Roll writes are backed by FL
 Studio undo: the generated scripts wrap edits in `flp.score.undoSection()` when
 available, and MCP rollback invokes `general.undoUp()`.
 
+## Dynamic Mixer Track Handling
+
+Status: `documented` for reading the current mixer-track count; `probe-needed`
+for creating or inserting new dynamic mixer tracks.
+
+FL Studio 2025 projects may expose far fewer mixer tracks until additional
+tracks are created in FL. Tools must treat out-of-range mixer targets as
+project/fixture state, not as proof that mixer, plugin, routing, or effect-slot
+APIs failed.
+
+Current shipped behavior:
+
+- Mixer, plugin, effect-slot, native EQ, channel-target, and routing write/read
+  tools validate requested mixer tracks against the current `mixer_track_count`
+  before dispatching controller commands.
+- `fl_assign_channel_to_free_mixer_track` only assigns channels to existing
+  empty default mixer tracks. If none exist, it returns manual/probe-needed
+  guidance instead of pretending it can create one.
+- Plugin parameter reads use transient timeout retries, and plugin parameter
+  writes use idempotent value readback verification before success is reported.
+
+Not currently supported:
+
+- User-facing creation or insertion of new dynamic mixer tracks. If a current
+  FL build exposes a mixer-track create/insert API through `api_probe`, add a
+  rollback-safe live probe first: confirm API presence, create the smallest
+  possible track, verify count/readback, restore/delete/undo immediately, and
+  record the exact FL build and rollback result before promoting the capability.
+
 The current static baseline reports:
 
 - 57 `write-safe` tools.
