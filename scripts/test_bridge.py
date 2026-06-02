@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Standalone bridge tester.
 
-Run this BEFORE wiring Claude up to confirm the file-queue bridge works:
+Run this BEFORE wiring up the MCP Client to confirm the file-queue bridge works:
 
     python scripts/test_bridge.py
 

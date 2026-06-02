@@ -19,8 +19,10 @@ os.environ.setdefault("FLSTUDIO_MCP_TRANSPORT", "tcp")
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
 from fl_studio_mcp import protocol, safety  # noqa: E402
-from fl_studio_mcp.connection import get_bridge  # noqa: E402
-from fl_studio_mcp.connection import FLCommandFailed  # noqa: E402
+from fl_studio_mcp.connection import (
+    FLCommandFailed,  # noqa: E402
+    get_bridge,  # noqa: E402
+)
 from fl_studio_mcp.tools import effects, phase3, pianoroll  # noqa: E402
 
 
@@ -217,7 +219,11 @@ def main() -> int:
             try:
                 res = mcp.tools["fl_eq_set_band"](track, 1, gain=temp_gain)
                 b1_after = next(
-                    (b for b in res.get("after", {}).get("bands", []) if int(b.get("band", -1)) == 1),
+                    (
+                        b
+                        for b in res.get("after", {}).get("bands", [])
+                        if int(b.get("band", -1)) == 1
+                    ),
                     None,
                 )
                 if res.get("ok") and b1_after and abs(float(b1_after["gain"]) - temp_gain) <= 0.02:

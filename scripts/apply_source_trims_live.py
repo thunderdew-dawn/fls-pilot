@@ -61,13 +61,19 @@ def main() -> int:
                 "restore": (
                     lambda before, track=track: {
                         "command": protocol.CMD_MIXER_SET_VOLUME,
-                        "params": {"track": track, "value": before["vol_norm"], "unit": "normalized"},
+                        "params": {
+                            "track": track,
+                            "value": before["vol_norm"],
+                            "unit": "normalized",
+                        },
                     }
                 ),
             }
         )
 
-    res = safety.safe_write_group(b, tool="gain_stage_sources", scope="mixer:gain_stage_sources", writes=writes)
+    res = safety.safe_write_group(
+        b, tool="gain_stage_sources", scope="mixer:gain_stage_sources", writes=writes
+    )
     if not res.get("ok"):
         print("[FAIL] write failed:", res)
         return 1
@@ -80,4 +86,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-

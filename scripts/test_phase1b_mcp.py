@@ -2,7 +2,7 @@
 """Phase 1B end-to-end via the REAL registered MCP tools (in-process).
 
 Builds the FastMCP server and invokes the tools by name through call_tool --
-the same path Claude Desktop uses -- so this also proves the Pydantic
+the same path an MCP client uses -- so this also proves the Pydantic
 Union[int,str] coercion of `param` and the result assembly, not just the
 underlying helper. Non-destructive: it sets Reeverb 'Dry level' then rolls
 back to the original.

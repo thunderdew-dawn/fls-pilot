@@ -132,11 +132,11 @@ tools**, in-process — also proves the Pydantic `Union[int,str]` coercion):
 
 ---
 
-## 6. Using it from Claude Desktop
+## 6. Using it from an MCP Client
 
 - The FL **controller is already reloaded** (has `plugin_get_param`).
 - The **daemon does NOT need restarting** — it forwards arbitrary commands.
-- **Restart Claude Desktop once** so the spawned MCP server re-registers and the
+- **Restart your MCP client once** so the spawned MCP server re-registers and the
   3 new tools (`fl_plugin_list`, `fl_plugin_get_params`, `fl_plugin_set_param`)
   appear. Total tools now **29**.
 

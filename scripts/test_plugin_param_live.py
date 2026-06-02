@@ -74,7 +74,9 @@ def main() -> int:
     # Read preset name (read-only)
     try:
         preset = b.call(protocol.CMD_PLUGIN_GET_PRESET_NAME, {"track": track, "slot": slot})
-        _pass(f"preset name read: {preset.get('plugin_name')!r} / {preset.get('name_f3') or preset.get('name_f6')}")
+        _pass(
+            f"preset name read: {preset.get('plugin_name')!r} / {preset.get('name_f3') or preset.get('name_f6')}"
+        )
     except Exception as e:
         _fail(f"preset name read failed: {type(e).__name__}: {e}")
         ok = False
@@ -93,7 +95,12 @@ def main() -> int:
         params={"track": track, "slot": slot, "param": param, "value": want},
         build_restore=lambda snap: {
             "command": protocol.CMD_PLUGIN_SET_PARAM,
-            "params": {"track": track, "slot": slot, "param": param, "value": float(snap.get("v", before_v))},
+            "params": {
+                "track": track,
+                "slot": slot,
+                "param": param,
+                "value": float(snap.get("v", before_v)),
+            },
         },
     )
     if not res.get("ok"):

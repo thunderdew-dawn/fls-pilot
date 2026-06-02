@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Phase 1B tool-layer test: name resolution + safe_write + rollback.
 
-Exercises the server-side tool logic WITHOUT needing Claude Desktop to reload
+Exercises the server-side tool logic WITHOUT needing an MCP client to reload
 the MCP server: it calls the real module-level resolve_param_index() helper and
 drives safety.safe_write / rollback_last_change exactly the way the
 fl_plugin_set_param tool does internally.

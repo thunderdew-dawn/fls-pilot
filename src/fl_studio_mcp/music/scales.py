@@ -66,7 +66,6 @@ SCALES_CATALOGUE: dict[str, dict] = {
         "intervals": [0, 2, 3, 5, 7, 9, 11],
         "mood": "mysterious, sophisticated, jazz minor",
     },
-
     # -- Pentatonics --
     "major_pentatonic": {
         "name": "Major Pentatonic",
@@ -80,7 +79,6 @@ SCALES_CATALOGUE: dict[str, dict] = {
         "intervals": [0, 3, 5, 7, 10],
         "mood": "bluesy, earthy, rock solo staple",
     },
-
     # -- Arabic Maqams (12-TET Approximations) --
     "maqam_rast": {
         "name": "Maqam Rast",
@@ -118,7 +116,6 @@ SCALES_CATALOGUE: dict[str, dict] = {
         "intervals": [0, 1, 3, 5, 7, 8, 10],
         "mood": "dreamy, direct, poignant",
     },
-
     # -- Indian Ragas: Melakarta (Parent Scales) --
     "mayamalavagowla": {
         "name": "Mayamalavagowla (Raga Bhairav Thaat)",
@@ -156,7 +153,6 @@ SCALES_CATALOGUE: dict[str, dict] = {
         "intervals": [0, 2, 4, 5, 7, 8, 10],
         "mood": "sweet, poignant, cinematic, mix of joy and sadness",
     },
-
     # -- Indian Ragas: Janya (Derived Scales, some with asymmetric asc/desc) --
     "mohanam": {
         "name": "Mohanam (Raga Bhupali)",
@@ -180,7 +176,7 @@ SCALES_CATALOGUE: dict[str, dict] = {
         "name": "Abheri (Raga Bhimpalasi)",
         "family": "Janya Raga",
         "intervals_asc": [0, 3, 5, 7, 10],  # pentatonic ascending (Sa Ga Ma Pa Ni)
-        "intervals_desc": [0, 2, 3, 5, 7, 9, 10], # heptatonic descending (Sa Ni Dha Pa Ma Ga Ri)
+        "intervals_desc": [0, 2, 3, 5, 7, 9, 10],  # heptatonic descending (Sa Ni Dha Pa Ma Ga Ri)
         "mood": "tender, romantic, devotional, afternoon",
     },
     "bhairavi": {
@@ -194,7 +190,7 @@ SCALES_CATALOGUE: dict[str, dict] = {
     "sriranjani": {
         "name": "Sriranjani",
         "family": "Janya Raga",
-        "intervals": [0, 2, 3, 5, 9, 10], # No Pa (Sa Ri Ga Ma Dha Ni)
+        "intervals": [0, 2, 3, 5, 9, 10],  # No Pa (Sa Ri Ga Ma Dha Ni)
         "mood": "scholarly, beautiful, pleasant, light",
     },
 }
@@ -206,36 +202,46 @@ def parse_root_note(val: str | int) -> int:
         if 0 <= val <= 127:
             return val
         raise ValueError(f"MIDI note {val} out of range [0, 127]")
-    
+
     val_str = str(val).strip().upper()
     if not val_str:
         raise ValueError("Empty root note")
-        
+
     if val_str.isdigit():
         n = int(val_str)
         if 0 <= n <= 127:
             return n
         raise ValueError(f"MIDI note {n} out of range [0, 127]")
-        
+
     m = re.match(r"^([A-G]#?|D[B]?|E[B]?|G[B]?|A[B]?|B[B]?)(-?\d+)$", val_str)
     if not m:
         raise ValueError(f"Invalid note format: {val!r}. Use names like 'C5' or integers.")
-        
+
     name, octave_str = m.groups()
     octave = int(octave_str)
-    
+
     flats = {"DB": "C#", "EB": "D#", "GB": "F#", "AB": "G#", "BB": "A#"}
     if name in flats:
         name = flats[name]
-        
+
     offsets = {
-        "C": 0, "C#": 1, "D": 2, "D#": 3, "E": 4, "F": 5,
-        "F#": 6, "G": 7, "G#": 8, "A": 9, "A#": 10, "B": 11
+        "C": 0,
+        "C#": 1,
+        "D": 2,
+        "D#": 3,
+        "E": 4,
+        "F": 5,
+        "F#": 6,
+        "G": 7,
+        "G#": 8,
+        "A": 9,
+        "A#": 10,
+        "B": 11,
     }
-    
+
     base = offsets[name]
     midi_num = base + octave * 12
-    
+
     if 0 <= midi_num <= 127:
         return midi_num
     raise ValueError(f"Calculated MIDI note {midi_num} out of range [0, 127]")
@@ -254,22 +260,22 @@ def midi_to_note_name(midi_num: int) -> str:
 def find_scale(query: str) -> tuple[str, dict] | None:
     """Find a scale in the catalogue, using forgiving case-insensitive lookup."""
     normalized = query.strip().lower().replace(" ", "_").replace("-", "_")
-    
+
     # Try exact match
     if normalized in SCALES_CATALOGUE:
         return normalized, SCALES_CATALOGUE[normalized]
-        
+
     # Try match without 'raga_' or 'maqam_' prefix
     for prefix in ["raga_", "maqam_"]:
-        if normalized.startswith(prefix) and normalized[len(prefix):] in SCALES_CATALOGUE:
-            k = normalized[len(prefix):]
+        if normalized.startswith(prefix) and normalized[len(prefix) :] in SCALES_CATALOGUE:
+            k = normalized[len(prefix) :]
             return k, SCALES_CATALOGUE[k]
-            
+
     # Try matching keys that contain query
     matches = [k for k in SCALES_CATALOGUE if normalized in k]
     if len(matches) == 1:
         return matches[0], SCALES_CATALOGUE[matches[0]]
-        
+
     return None
 
 
@@ -281,10 +287,10 @@ def get_scale_notes(scale_name: str, root_note: str | int, octave_range: int = 1
             f"Scale/Raga {scale_name!r} not found. "
             f"Available scales: {list(SCALES_CATALOGUE.keys())}"
         )
-    
+
     key, sdef = found
     root_midi = parse_root_note(root_note)
-    
+
     # Extract intervals
     if "intervals" in sdef:
         asc_ints = sdef["intervals"]
@@ -292,11 +298,11 @@ def get_scale_notes(scale_name: str, root_note: str | int, octave_range: int = 1
     else:
         asc_ints = sdef["intervals_asc"]
         desc_ints = sdef["intervals_desc"]
-        
+
     # Build MIDI notes across the octave range
     notes_asc = []
     notes_desc = []
-    
+
     for oct_idx in range(octave_range):
         offset = oct_idx * 12
         for val in asc_ints:
@@ -307,14 +313,14 @@ def get_scale_notes(scale_name: str, root_note: str | int, octave_range: int = 1
             midi = root_midi + offset + val
             if 0 <= midi <= 127:
                 notes_desc.append(midi)
-                
+
     # Sort ascending notes; keep descending notes top-down.
     notes_asc = sorted(list(set(notes_asc)))
-    
+
     # Descending notes are usually played top-down. Let's make desc notes descending in pitch order
     # (reversing sorted unique values)
     notes_desc = sorted(list(set(notes_desc)), reverse=True)
-    
+
     return {
         "key": key,
         "scale_name": sdef["name"],

@@ -45,7 +45,7 @@ def register(mcp: FastMCP) -> None:
         writes for every scanned plugin) -> a de-duped, categorized list of what
         you OWN. Bypasses the FL API (which only sees LOADED plugins). FL still
         can't LOAD these -- it's for library-aware suggestions. effects_by_role is
-        a rough keyword grouping (Claude should apply its own plugin knowledge).
+        a rough keyword grouping (the LLM assistant should apply its own plugin knowledge).
         Read-only (directory listing only).
 
         Safety: Read-Only.

@@ -1507,6 +1507,7 @@ def _h_playlist_list_tracks(p):
             "solo": bool(playlist.isTrackSolo(track_num)),
             "selected": bool(playlist.isTrackSelected(track_num)),
         }
+
     return _paginate(playlist.trackCount(), p.get("start", 0), entry, "tracks")
 
 
@@ -1621,13 +1622,17 @@ def _h_mixer_get_eq(p):
     track = int(p["track"])
     bands = []
     for b in range(3):
-        bands.append({
-            "band": b,
-            "gain": round(mixer.getEqGain(track, b), 4),
-            "frequency": round(mixer.getEqFrequency(track, b), 4),
-            "bandwidth": round(mixer.getEqBandwidth(track, b), 4) if hasattr(mixer, "getEqBandwidth") else 1.0,
-            "type": _get_eq_type(track, b),
-        })
+        bands.append(
+            {
+                "band": b,
+                "gain": round(mixer.getEqGain(track, b), 4),
+                "frequency": round(mixer.getEqFrequency(track, b), 4),
+                "bandwidth": round(mixer.getEqBandwidth(track, b), 4)
+                if hasattr(mixer, "getEqBandwidth")
+                else 1.0,
+                "type": _get_eq_type(track, b),
+            }
+        )
     return {"track": track, "bands": bands}
 
 

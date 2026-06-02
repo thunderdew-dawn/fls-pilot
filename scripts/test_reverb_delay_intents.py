@@ -2,7 +2,7 @@
 """Slice C-2 test: reverb/delay curve unit tests + intents end-to-end.
 
 Unit tests are pure. The intent tests build the real FastMCP server and call
-the registered tools in-process (same path Claude Desktop uses), then roll
+the registered tools in-process (same path an MCP client uses), then roll
 everything back and assert both plugins' full param dumps match pre-state.
 
     set FLSTUDIO_MCP_TRANSPORT=tcp

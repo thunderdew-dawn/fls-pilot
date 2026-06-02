@@ -265,25 +265,33 @@ def main() -> int:
         route = _route_active(bridge, KICK_TRACK, LIMITER_TRACK)
         if route is None:
             _warn(
-                f"route {KICK_TRACK}->{LIMITER_TRACK} is not active; "
-                "sidechain state not verified"
+                f"route {KICK_TRACK}->{LIMITER_TRACK} is not active; sidechain state not verified"
             )
         else:
             _pass(f"route {KICK_TRACK}->{LIMITER_TRACK} active: {route}")
 
-        ok = _safe_slot_mix_probe(
-            bridge, track=LIMITER_TRACK, slot=limiter_slot, label="fruity_limiter"
-        ) and ok
-        ok = _safe_slot_enabled_probe(
-            bridge, track=LIMITER_TRACK, slot=limiter_slot, label="fruity_limiter"
-        ) and ok
-        ok = _safe_plugin_param_probe(
-            bridge,
-            track=LIMITER_TRACK,
-            slot=limiter_slot,
-            label="fruity_limiter",
-            preferred_names=("Comp threshold", "Comp ratio", "Gain", "Limiter ceiling"),
-        ) and ok
+        ok = (
+            _safe_slot_mix_probe(
+                bridge, track=LIMITER_TRACK, slot=limiter_slot, label="fruity_limiter"
+            )
+            and ok
+        )
+        ok = (
+            _safe_slot_enabled_probe(
+                bridge, track=LIMITER_TRACK, slot=limiter_slot, label="fruity_limiter"
+            )
+            and ok
+        )
+        ok = (
+            _safe_plugin_param_probe(
+                bridge,
+                track=LIMITER_TRACK,
+                slot=limiter_slot,
+                label="fruity_limiter",
+                preferred_names=("Comp threshold", "Comp ratio", "Gain", "Limiter ceiling"),
+            )
+            and ok
+        )
 
     if eq2 is None:
         _fail(f"track {EQ2_TRACK}: Fruity Parametric EQ 2 not found")

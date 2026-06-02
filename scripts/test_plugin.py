@@ -66,6 +66,7 @@ def main() -> int:
 
     # Inject mock bridge
     from fl_studio_mcp import connection
+
     orig_get_bridge = connection.get_bridge
     connection.get_bridge = lambda: bridge
     pl_tools.get_bridge = lambda: bridge
@@ -73,10 +74,12 @@ def main() -> int:
     class MockMCP:
         def __init__(self):
             self.tools = {}
+
         def tool(self, annotations=None):
             def decorator(func):
                 self.tools[func.__name__] = func
                 return func
+
             return decorator
 
     mcp = MockMCP()
@@ -89,7 +92,7 @@ def main() -> int:
 
     try:
         print("Testing Parameter Resolution...")
-        
+
         # Exact Index
         idx, name = pl_tools.resolve_param_index(bridge, 0, 0, 1)
         check("Exact index 1 resolved", idx == 1 and name == "Decay Time")
@@ -128,13 +131,12 @@ def main() -> int:
         except pl_tools.ParamNotFound:
             check("Nonexistent name throws ParamNotFound", True)
 
-
         print("\nTesting Get Parameter & Preset info...")
-        
+
         # Test fl_plugin_list_params
         res_list = fl_plugin_list_params(0, 0)
         check("fl_plugin_list_params returned params list", "params" in res_list)
-        
+
         # Test fl_plugin_get_param
         res_get = fl_plugin_get_param(0, 0, "decay")
         check("fl_plugin_get_param returned ok", res_get.get("ok") is True)
@@ -146,9 +148,8 @@ def main() -> int:
         check("fl_plugin_get_preset_name returned ok", res_preset.get("ok") is True)
         check("preset name is correct", res_preset.get("preset_name") == "Default Large Room")
 
-
         print("\nTesting Preset navigation safety limits...")
-        
+
         # Clean recent changelog
         changelog = safety.get_changelog()
         while changelog.pop_last() is not None:

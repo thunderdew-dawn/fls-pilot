@@ -321,7 +321,9 @@ def register(mcp: FastMCP) -> None:
         elif key == "pitch":
             payload["pitch"] = int(value)
         else:
-            raise ValueError("parameter must be one of: velocity, pan, shift, repeat, release, mod, pitch")
+            raise ValueError(
+                "parameter must be one of: velocity, pan, shift, repeat, release, mod, pitch"
+            )
 
         bridge = get_bridge()
         selected = bridge.call(protocol.CMD_PATTERN_SELECTED)
@@ -341,9 +343,7 @@ def register(mcp: FastMCP) -> None:
         channel: Annotated[int, Field(ge=0, description="Channel-rack channel index.")],
         steps: Annotated[
             list[dict],
-            Field(
-                description="Step dicts with step, value, velocity, pan, shift, repeat."
-            ),
+            Field(description="Step dicts with step, value, velocity, pan, shift, repeat."),
         ],
         pattern: Annotated[
             int | None,

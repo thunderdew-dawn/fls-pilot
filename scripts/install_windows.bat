@@ -62,10 +62,10 @@ echo        Output ^> "FLStudioMCP TX": Enable, Port = 42  (the SAME number)
 echo        View ^> Script output should show  [FLStudioMCP] Ready
 echo   3. Start the bridge daemon and keep it running:
 echo        fl-studio-mcp-daemon
-echo   4. Register with Claude Desktop  (%%APPDATA%%\Claude\claude_desktop_config.json):
+echo   4. Register with an MCP Client like Claude Desktop  (%%APPDATA%%\Claude\claude_desktop_config.json):
 echo        "fl-studio": { "command": "fl-studio-mcp", "env": { "FLSTUDIO_MCP_TRANSPORT": "tcp" } }
 echo   5. Each session: open the Piano roll, and from its Scripting menu run "MCP_Apply"
-echo        once (this arms note-writing). Then ask Claude to call fl_ping.
+echo        once (this arms note-writing). Then ask your AI assistant to call fl_ping.
 echo.
 echo  Optional audio features:   pip install -e ".[audio]"      (tempo/key + melody)
 echo                             pip install -e ".[audio,audio-accurate]"  (+ CREPE)

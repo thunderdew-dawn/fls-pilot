@@ -1,21 +1,22 @@
 # flstudio-mcp
 
-**Control FL Studio with Claude: AI mixing, composition, and mix diagnosis through natural language.**
+**Control FL Studio with any MCP-compatible LLM: AI mixing, composition, and mix diagnosis through natural language.**
 
 ![version](https://img.shields.io/badge/version-1.0.0-blue)
-![status](https://img.shields.io/badge/status-beta-yellow)
+![status](https://img.shields.io/badge/status-stable-green)
 ![license](https://img.shields.io/badge/license-MIT-green)
 ![python](https://img.shields.io/badge/python-3.10+-blue)
-![platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS-blue)
+![Windows](https://img.shields.io/badge/Windows-0078D6?style=flat&logo=windows&logoColor=white)
+![macOS](https://img.shields.io/badge/macOS-000000?style=flat&logo=apple&logoColor=white)
 ![FL Studio](https://img.shields.io/badge/FL%20Studio-2025%2B-orange)
 
-![Claude diagnosing and fixing a mix in FL Studio](docs/demo.gif)
+![The LLM assistant diagnosing and fixing a mix in FL Studio](docs/demo.gif)
 
-*Claude diagnosing and fixing a mix in FL Studio through natural language.*
+*The LLM assistant diagnosing and fixing a mix in FL Studio through natural language.*
 
 ## Overview
 
-flstudio-mcp is a Model Context Protocol (MCP) server that lets Claude Desktop drive FL Studio 2025 directly — the mixer, plugins, piano roll, routing, and project — from plain-language requests. Ask for a mix diagnosis, a vocal chain, a chord progression in a particular scale, or a full arrangement, and Claude carries it out through FL's scripting API and a set of calibrated, safety-checked tools.
+flstudio-mcp is a Model Context Protocol (MCP) server that lets any MCP client (like Claude Desktop, ChatGPT, or Cursor) drive FL Studio 2025 directly — the mixer, plugins, piano roll, routing, and project — from plain-language requests. Ask for a mix diagnosis, a vocal chain, a chord progression in a particular scale, or a full arrangement, and the LLM assistant carries it out through FL's scripting API and a set of calibrated, safety-checked tools.
 
 It is genre- and producer-agnostic: nothing about it assumes a particular style of music.
 
@@ -45,7 +46,7 @@ fl-studio-mcp-daemon               :: start the bridge, keep it running
 .venv/bin/fl-studio-mcp-daemon     # start the bridge, keep it running
 ```
 
-Wire the two loopMIDI ports in FL (Options > MIDI Settings), arm `MCP_Apply` once in the piano roll, then ask Claude in plain language:
+Wire the two loopMIDI ports in FL (Options > MIDI Settings), arm `MCP_Apply` once in the piano roll, then ask the LLM assistant in plain language:
 
 > "Scan my mix and tell me what's wrong." — "Set up a vocal chain from my plugins." — "Export this arrangement to MIDI."
 
@@ -71,7 +72,7 @@ Full setup is below.
 - **Multi-track MIDI export** — generate a complete arrangement as a standard MIDI file to import.
 - **Multi-pattern arrangement** — create, name, clone, and mark sections.
 - **Note and chord writing** into the piano roll, with quantize to a grid (for new notes and existing ones).
-- **Composition in any scale or mode** — Western modes, pentatonic, ragas, maqam, and beyond — through the scale composer, where Claude supplies the notes for the requested scale.
+- **Composition in any scale or mode** — Western modes, pentatonic, ragas, maqam, and beyond — through the scale composer, where the LLM assistant supplies the notes for the requested scale.
 
 ### Audio analysis
 - Tempo and key estimation from an audio file.
@@ -79,7 +80,7 @@ Full setup is below.
 
 The server exposes 117 tools across the production, mixing, composition, safety,
 and project-organization surface, plus 6 live resources (project, mixer,
-transport, channels, patterns, status) that Claude can read directly.
+transport, channels, patterns, status) that the LLM assistant can read directly.
 
 ## What sets it apart
 
@@ -89,7 +90,7 @@ flstudio-mcp is built as a mixing and production assistant, not only a note send
 
 These are properties of FL Studio's scripting API, stated plainly:
 
-- **Plugins, audio files, and rendering are UI-only.** FL's API cannot load a plugin, load an audio file, or render audio. The plugin and preset tools therefore *suggest* — you load the chosen plugin or preset, and Claude then configures it. Audio export is done manually (File > Export); Claude can analyze the rendered file afterward.
+- **Plugins, audio files, and rendering are UI-only.** FL's API cannot load a plugin, load an audio file, or render audio. The plugin and preset tools therefore *suggest* — you load the chosen plugin or preset, and the LLM assistant then configures it. Audio export is done manually (File > Export); the LLM assistant can analyze the rendered file afterward.
 - **Note writing is armed once per session.** A generated pyscript writes notes into the piano roll; FL exposes no API to run a pyscript, so you run "MCP_Apply" once from the piano roll's scripting menu at the start of a session.
 - **Micro-tonal and gamaka-heavy music is approximated.** Scales with intervals smaller than a semitone (e.g. Arabic maqam) are rounded to the nearest semitone, and traditions built on gamaka/ornamentation (e.g. Carnatic) get the *scale framework* — the correct swaras and intervals — not gamaka or micro-tonal rendering. That's a limit of 12-tone MIDI, not of the tools.
 
@@ -142,7 +143,7 @@ chmod +x scripts/install_macos.sh
 This script will copy the controller script, create a virtual environment (`.venv`), install the server inside it, and verify that the IAC Driver ports are online. It also pre-seeds the note-bridge script (`MCP_Apply.pyscript`) inside your FL Studio user data directory.
 
 > [!IMPORTANT]
-> **macOS Accessibility Permissions**: Since the note-writing tool simulates keyboard shortcuts (`Cmd+Opt+Y`) via `pyautogui` to trigger script runs in FL Studio, the application executing the MCP server (e.g., your terminal, iTerm, Warp, or the Claude/ChatGPT Desktop client app) must be granted Accessibility permissions. Go to **System Settings > Privacy & Security > Accessibility** and ensure the app you are running is enabled.
+> **macOS Accessibility Permissions**: Since the note-writing tool simulates keyboard shortcuts (`Cmd+Opt+Y`) via `pyautogui` to trigger script runs in FL Studio, the application executing the MCP server (e.g., your terminal, iTerm, Warp, or your MCP client app like Claude Desktop/ChatGPT) must be granted Accessibility permissions. Go to **System Settings > Privacy & Security > Accessibility** and ensure the app you are running is enabled.
 
 For optional audio/melody analysis extras:
 * Windows: `pip install -e ".[audio,audio-accurate]"`
@@ -158,11 +159,11 @@ For optional audio/melody analysis extras:
 
 ### 4. Connect to your MCP Client
 
-#### Option A: Claude Desktop (stdio)
+#### Option A: Claude Desktop, Cursor, or other stdio clients
 1. Start the MIDI bridge daemon (recommended so MIDI ports are held by a stable background process):
    * Windows: Run `fl-studio-mcp-daemon`
    * macOS: Run `.venv/bin/fl-studio-mcp-daemon`
-2. Configure Claude Desktop. Add this to your configuration file (Windows: `%APPDATA%\Claude\claude_desktop_config.json`, macOS: `~/Library/Application Support/Claude/claude_desktop_config.json`):
+2. Configure your client (e.g., Claude Desktop). Add this to your configuration file (Windows: `%APPDATA%\Claude\claude_desktop_config.json`, macOS: `~/Library/Application Support/Claude/claude_desktop_config.json`):
    ```json
    {
      "mcpServers": {
@@ -204,7 +205,7 @@ Verify the connection by asking your AI assistant to run `fl_ping`.
 |---|---|
 | loopMIDI ports not found / not detected | The two ports must be named **exactly** `FLStudioMCP RX` and `FLStudioMCP TX`. Recreate them in loopMIDI and re-run the installer. |
 | No `[FLStudioMCP] Ready` in FL's Script output | The controller isn't registered: set the `FLStudioMCP RX` input's **Controller type** to **FLStudioMCP** in MIDI Settings, confirm `device_FLStudioMCP.py` is in `Settings\Hardware\FLStudioMCP\`, then fully restart FL Studio. |
-| Claude can't reach FL / `fl_ping` fails | Make sure the daemon is running (`fl-studio-mcp-daemon`); check the transport matches (`FLSTUDIO_MCP_TRANSPORT=tcp` uses the daemon, unset uses direct MIDI); restart Claude Desktop after editing its config. |
+| The LLM assistant can't reach FL / `fl_ping` fails | Make sure the daemon is running (`fl-studio-mcp-daemon`); check the transport matches (`FLSTUDIO_MCP_TRANSPORT=tcp` uses the daemon, unset uses direct MIDI); restart your MCP client after editing its config. |
 | Note-writing does nothing | Run `MCP_Apply` once from the piano roll's scripting menu this session — it arms the note bridge. |
 | Audio tools error or are unavailable | Install the optional extras: `pip install -e ".[audio]"` (or `".[audio,audio-accurate]"`). |
 

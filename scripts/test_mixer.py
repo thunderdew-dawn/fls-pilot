@@ -12,9 +12,10 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from fl_studio_mcp import safety  # noqa: E402
-from fl_studio_mcp import protocol  # noqa: E402
-from fl_studio_mcp.tools import phase1  # noqa: E402
+from fl_studio_mcp import (
+    protocol,  # noqa: E402
+    safety,  # noqa: E402
+)
 
 _P = _F = 0
 
@@ -78,6 +79,7 @@ def main() -> int:
 
     # Setup connection mock injection
     from fl_studio_mcp import connection
+
     orig_get_bridge = connection.get_bridge
     connection.get_bridge = lambda: bridge
 
@@ -145,14 +147,18 @@ def main() -> int:
             },
         )
         check("safe_write set route returned ok", res_write_route["ok"] is True)
-        check("safe_write captured before route enabled is True", res_write_route["before"]["enabled"] is True)
+        check(
+            "safe_write captured before route enabled is True",
+            res_write_route["before"]["enabled"] is True,
+        )
 
         # Rollback route
         res_rollback_route = safety.rollback_last_change(bridge)
         check("rollback set route returned ok", res_rollback_route["ok"] is True)
         check(
             "rollback replayed CMD_MIXER_SET_ROUTE with pre-change enabled status True",
-            bridge.calls[-1] == (protocol.CMD_MIXER_SET_ROUTE, {"src": 5, "dst": 10, "enabled": True}),
+            bridge.calls[-1]
+            == (protocol.CMD_MIXER_SET_ROUTE, {"src": 5, "dst": 10, "enabled": True}),
         )
 
         # 5.5 Test safe_write with fl_mixer_set_stereo_separation
@@ -168,7 +174,10 @@ def main() -> int:
             },
         )
         check("safe_write set stereo separation returned ok", res_write_sep["ok"] is True)
-        check("safe_write captured before stereo_sep is 0.0", res_write_sep["before"]["stereo_sep"] == 0.0)
+        check(
+            "safe_write captured before stereo_sep is 0.0",
+            res_write_sep["before"]["stereo_sep"] == 0.0,
+        )
 
         # Rollback stereo sep
         res_rollback_sep = safety.rollback_last_change(bridge)
@@ -180,6 +189,7 @@ def main() -> int:
 
         # 6. Test fl_mixer_get_levels sampling
         from fl_studio_mcp.music import levels
+
         res_levels = levels.measure_track_level(bridge, 5, samples=2, interval_ms=1)
         check("measure_track_level returned playing is True", res_levels["playing"] is True)
         check("measure_track_level returned avg_db", res_levels["avg_db"] == -6.02)

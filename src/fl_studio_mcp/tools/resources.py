@@ -1,4 +1,4 @@
-"""MCP resources -- read-only project context Claude can pull WITHOUT a tool call.
+"""MCP resources -- read-only project context the LLM assistant can pull WITHOUT a tool call.
 
 All reuse existing (budget-paginated) reads, so no new heavy controller loops.
 Kept COMPACT: summaries + counts, capped, with a note pointing to the detail

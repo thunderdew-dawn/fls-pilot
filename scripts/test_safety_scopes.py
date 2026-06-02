@@ -150,18 +150,17 @@ def main() -> int:
         build_restore=lambda b: {
             "command": protocol.CMD_SET_TIME_SIG,
             "params": {"numerator": b["numerator"], "denominator": b["denominator"]},
-        }
+        },
     )
     check("safe_write returns ok", res_set["ok"] is True)
     check("safe_write captured before state", res_set["before"]["numerator"] == 3)
-    
+
     # We rollback the change using safety layer
     rollback_res = safety.rollback_last_change(bridge)
     check("rollback last succeeds", rollback_res["ok"] is True)
     check(
         "rollback replayed CMD_SET_TIME_SIG",
-        bridge.calls[-1]
-        == (protocol.CMD_SET_TIME_SIG, {"numerator": 3, "denominator": 4}),
+        bridge.calls[-1] == (protocol.CMD_SET_TIME_SIG, {"numerator": 3, "denominator": 4}),
     )
 
     print(f"\n{_P} passed, {_F} failed")

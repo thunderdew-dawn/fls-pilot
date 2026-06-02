@@ -13,9 +13,10 @@ from pathlib import Path
 # Add src/ to path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from fl_studio_mcp import safety  # noqa: E402
-from fl_studio_mcp import protocol  # noqa: E402
-from fl_studio_mcp.tools import phase3  # noqa: E402
+from fl_studio_mcp import (
+    protocol,  # noqa: E402
+    safety,  # noqa: E402
+)
 
 _P = _F = 0
 
@@ -65,6 +66,7 @@ def main() -> int:
 
     # Inject connection mock
     from fl_studio_mcp import connection
+
     orig_get_bridge = connection.get_bridge
     connection.get_bridge = lambda: bridge
 
@@ -107,7 +109,10 @@ def main() -> int:
             },
         )
         check("safe_write pattern_select returned ok", res_write_pat_sel["ok"] is True)
-        check("safe_write captured previous pattern selection", res_write_pat_sel["before"]["selected"] == 1)
+        check(
+            "safe_write captured previous pattern selection",
+            res_write_pat_sel["before"]["selected"] == 1,
+        )
 
         # Rollback selection
         res_rollback_pat_sel = safety.rollback_last_change(bridge)
@@ -130,7 +135,10 @@ def main() -> int:
             },
         )
         check("safe_write pattern_rename returned ok", res_write_pat_rename["ok"] is True)
-        check("safe_write captured pre-change pattern name", res_write_pat_rename["before"]["name"] == "Kick Pattern")
+        check(
+            "safe_write captured pre-change pattern name",
+            res_write_pat_rename["before"]["name"] == "Kick Pattern",
+        )
 
         # Rollback rename
         res_rollback_pat_rename = safety.rollback_last_change(bridge)
@@ -177,7 +185,10 @@ def main() -> int:
             },
         )
         check("safe_write set_color returned ok", res_write_color["ok"] is True)
-        check("safe_write captured pre-change color int", res_write_color["before"]["color"]["int"] == 65280)
+        check(
+            "safe_write captured pre-change color int",
+            res_write_color["before"]["color"]["int"] == 65280,
+        )
 
         # Rollback color
         res_rollback_color = safety.rollback_last_change(bridge)

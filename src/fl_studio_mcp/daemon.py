@@ -2,9 +2,9 @@
 
 Why this exists
 ---------------
-The MCP server is launched by the MCP *client* (Claude Desktop, Claude Code,
+The MCP server is launched by the MCP *client* (Cursor, Claude Desktop,
 Cursor, ...). Some clients -- notably the Microsoft Store / MSIX build of
-Claude Desktop -- launch their child MCP-server process in an environment
+stdio clients -- launch their child MCP-server process in an environment
 where the Windows MIDI subsystem does not deliver input data: the loopMIDI
 ports still enumerate and open without error, but no MIDI ever arrives. A
 process started normally (a terminal, a login-startup task) has full MIDI

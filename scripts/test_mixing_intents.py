@@ -3,7 +3,7 @@
 
 Unit tests are pure (no FL). The intent tests build the real FastMCP server
 and call the registered tools (fl_apply_eq_intent, fl_plugin_get_params,
-fl_rollback_last_change) in-process -- the same path Claude Desktop uses.
+fl_rollback_last_change) in-process -- the same path an MCP client uses.
 
     set FLSTUDIO_MCP_TRANSPORT=tcp
     python scripts/test_mixing_intents.py

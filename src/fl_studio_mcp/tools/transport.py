@@ -264,7 +264,9 @@ def register(mcp: FastMCP) -> None:
         },
     )
     def fl_set_time_signature(
-        numerator: Annotated[int, Field(ge=1, le=64, description="Time signature numerator (beats per bar).")],
+        numerator: Annotated[
+            int, Field(ge=1, le=64, description="Time signature numerator (beats per bar).")
+        ],
         denominator: Annotated[
             int,
             Field(description="Time signature denominator. Only 4 and 8 have safe readback."),
@@ -291,7 +293,6 @@ def register(mcp: FastMCP) -> None:
                 "params": {"numerator": b["numerator"], "denominator": b["denominator"]},
             },
         )
-
 
 
 def _safe_call(command: str, params: dict | None = None):

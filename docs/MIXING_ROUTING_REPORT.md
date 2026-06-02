@@ -147,4 +147,4 @@ No delete operations are implemented.
 ## 8. Open housekeeping
 - The old heavy `_h_detect_cleanup` is now **dead code** in the controller
   (replaced by server-side judgement); remove on the next controller change.
-- New write tools require a **Claude Desktop restart** to register live.
+- New write tools require an **MCP client restart** to register live.

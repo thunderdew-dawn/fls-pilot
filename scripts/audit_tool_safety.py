@@ -319,7 +319,11 @@ def audit_file(path: Path) -> list[ToolAudit]:
         safety_class = annotations.get("safetyClass")
         expected_safety = _expected_safety_class(status)
         if safety_class:
-            evidence = f"{evidence}; safetyClass={safety_class!r}" if evidence else f"safetyClass={safety_class!r}"
+            evidence = (
+                f"{evidence}; safetyClass={safety_class!r}"
+                if evidence
+                else f"safetyClass={safety_class!r}"
+            )
         if safety_class and safety_class != expected_safety:
             evidence = f"{evidence}; safetyClass expected {expected_safety!r}"
         if "Safety:" in doc:
@@ -418,8 +422,7 @@ def main() -> int:
         missing = [
             a
             for a in audits
-            if not a.has_safety_doc
-            or a.safety_class_annotation != _expected_safety_class(a.status)
+            if not a.has_safety_doc or a.safety_class_annotation != _expected_safety_class(a.status)
         ]
         if missing:
             return 1

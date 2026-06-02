@@ -35,7 +35,7 @@ def main() -> int:
     check("Parse Bb3 -> 46", scales.parse_root_note("Bb3") == 46)
     check("Parse integer 72 -> 72", scales.parse_root_note(72) == 72)
     check("Parse string integer '72' -> 72", scales.parse_root_note("72") == 72)
-    
+
     # Boundary / error checks
     try:
         scales.parse_root_note("xyz")
@@ -49,12 +49,12 @@ def main() -> int:
     except ValueError:
         check("Parse out of range MIDI note throws ValueError", True)
 
-
     print("\nTesting midi_to_note_name...")
     check("MIDI 60 -> C5", scales.midi_to_note_name(60) == "C5")
     check("MIDI 58 -> A#4", scales.midi_to_note_name(58) == "A#4")
-    check("MIDI 46 -> A#3", scales.midi_to_note_name(46) == "A#3")  # Bb3 is A#3 in standard sharps spelling
-
+    check(
+        "MIDI 46 -> A#3", scales.midi_to_note_name(46) == "A#3"
+    )  # Bb3 is A#3 in standard sharps spelling
 
     print("\nTesting get_scale_notes...")
     # Western Major (intervals [0, 2, 4, 5, 7, 9, 11])
@@ -62,7 +62,10 @@ def main() -> int:
     check("Major scale key resolved", res_major["key"] == "major")
     check("Major scale C5 notes count", len(res_major["notes_asc"]) == 7)
     check("Major scale C5 pitches", res_major["notes_asc"] == [60, 62, 64, 65, 67, 69, 71])
-    check("Major scale C5 note names", res_major["names_asc"] == ["C5", "D5", "E5", "F5", "G5", "A5", "B5"])
+    check(
+        "Major scale C5 note names",
+        res_major["names_asc"] == ["C5", "D5", "E5", "F5", "G5", "A5", "B5"],
+    )
 
     # Raga Mohanam (intervals [0, 2, 4, 7, 9])
     res_mohanam = scales.get_scale_notes("mohanam", "G4")
@@ -75,17 +78,22 @@ def main() -> int:
     check("Abheri scale resolved", res_abheri["key"] == "abheri")
     check("Abheri C5 ascending count (pentatonic)", len(res_abheri["notes_asc"]) == 5)
     check("Abheri C5 descending count (heptatonic)", len(res_abheri["notes_desc"]) == 7)
-    check("Abheri C5 descending notes are reversed", res_abheri["notes_desc"] == [70, 69, 67, 65, 63, 62, 60])
-
+    check(
+        "Abheri C5 descending notes are reversed",
+        res_abheri["notes_desc"] == [70, 69, 67, 65, 63, 62, 60],
+    )
 
     print("\nTesting registered compose tools...")
+
     class MockMCP:
         def __init__(self):
             self.tools = {}
+
         def tool(self, annotations=None):
             def decorator(func):
                 self.tools[func.__name__] = func
                 return func
+
             return decorator
 
     mcp = MockMCP()
@@ -103,7 +111,9 @@ def main() -> int:
     # Test fl_scale_get
     get_res = fl_scale_get("dorian", "D5")
     check("fl_scale_get returned ok", get_res.get("ok") is True)
-    check("Dorian D5 pitches correct", get_res.get("notes_asc") == [62, 64, 65, 67, 69, 71, 72]) # D5=62
+    check(
+        "Dorian D5 pitches correct", get_res.get("notes_asc") == [62, 64, 65, 67, 69, 71, 72]
+    )  # D5=62
 
     # Test fl_scale_get error path
     get_err = fl_scale_get("nonexistent_scale", "C5")

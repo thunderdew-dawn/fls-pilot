@@ -143,7 +143,9 @@ def main() -> int:
     safety.set_dry_run(False)
 
     # ---- mixer reserved tracks --------------------------------------------
-    mixer_tracks = fetch_all_pages(bridge, protocol.CMD_MIXER_LIST_TRACKS, "tracks").get("tracks", [])
+    mixer_tracks = fetch_all_pages(bridge, protocol.CMD_MIXER_LIST_TRACKS, "tracks").get(
+        "tracks", []
+    )
     max_track = max([int(t.get("i", 0)) for t in mixer_tracks] + [0])
     missing = [t for t in _MIXER_RESERVED if t > max_track]
     if missing:
@@ -155,7 +157,9 @@ def main() -> int:
         mixer_writes.append(_w_mixer_set_name(track, name))
         mixer_writes.append(_w_mixer_set_color(track, rgb))
 
-    res = safety.safe_write_group(bridge, tool="fixture_mixer", scope="fixture:mixer", writes=mixer_writes)
+    res = safety.safe_write_group(
+        bridge, tool="fixture_mixer", scope="fixture:mixer", writes=mixer_writes
+    )
     if not res.get("ok"):
         print(f"[FAIL] mixer fixture write failed: {res}")
         return 1

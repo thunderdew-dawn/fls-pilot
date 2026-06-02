@@ -152,7 +152,9 @@ def _select_track_with_rollback(bridge, track: int) -> bool:
     return selected
 
 
-def _probe_slot_mix_one(bridge, track: int, slot: int, name: str, *, select_first: bool) -> ProbeResult:
+def _probe_slot_mix_one(
+    bridge, track: int, slot: int, name: str, *, select_first: bool
+) -> ProbeResult:
     label = f"mixer.setPluginMixLevel track={track} slot={slot} {name!r}"
     if select_first and not _select_track_with_rollback(bridge, track):
         return _report("INCONCLUSIVE", label, "could not select target track before write")
@@ -209,10 +211,14 @@ def _probe_slot_mix(bridge) -> ProbeResult:
         time.sleep(0.05)
         selected_results.append(_probe_slot_mix_one(bridge, track, slot, name, select_first=True))
         if direct_results[-1].status == "PASS" or selected_results[-1].status == "PASS":
-            return _report("PASS", "mixer.setPluginMixLevel", f"verified on track={track} slot={slot}")
+            return _report(
+                "PASS", "mixer.setPluginMixLevel", f"verified on track={track} slot={slot}"
+            )
     if any(row.status == "FAIL" for row in direct_results + selected_results):
         return _report("FAIL", "mixer.setPluginMixLevel", "restore failed in one variant")
-    return _report("INCONCLUSIVE", "mixer.setPluginMixLevel", "documented API present but no variant stuck")
+    return _report(
+        "INCONCLUSIVE", "mixer.setPluginMixLevel", "documented API present but no variant stuck"
+    )
 
 
 def _probe_native_eq(bridge) -> ProbeResult:
@@ -256,13 +262,14 @@ def _probe_native_eq(bridge) -> ProbeResult:
             (b for b in restored.get("bands", []) if int(b.get("band", -1)) == 1),
             None,
         )
-        restored_ok = restored_band and abs(float(restored_band.get("gain", before_gain)) - before_gain) <= 0.02
+        restored_ok = (
+            restored_band
+            and abs(float(restored_band.get("gain", before_gain)) - before_gain) <= 0.02
+        )
         if ok and rolled_back and restored_ok:
             return _report("PASS", "mixer native EQ", f"verified gain write on track={track}")
         if rolled_back and restored_ok:
-            inconclusive.append(
-                f"track={track} wanted={wanted:.3f} got={after_gain:.3f}; restored"
-            )
+            inconclusive.append(f"track={track} wanted={wanted:.3f} got={after_gain:.3f}; restored")
             continue
         return _report("FAIL", "mixer native EQ", f"track={track}: restore mismatch")
     if inconclusive:
@@ -281,18 +288,24 @@ def main() -> int:
     results = [
         _require_api(pattern_names, "patterns", ("getPatternLength", "setPatternLength")),
         _require_api(mixer_names, "mixer", ("getPluginMixLevel", "setPluginMixLevel")),
-        _require_api(mixer_names, "mixer", ("getEqGain", "setEqGain", "getEqFrequency", "setEqFrequency")),
+        _require_api(
+            mixer_names, "mixer", ("getEqGain", "setEqGain", "getEqFrequency", "setEqFrequency")
+        ),
     ]
     if "setEqBandwidth" in mixer_names or "getEqBandwidth" in mixer_names:
         results.append(_require_api(mixer_names, "mixer", ("getEqBandwidth", "setEqBandwidth")))
     else:
-        results.append(_report("SKIP", "mixer EQ bandwidth API", "bandwidth API absent on this build"))
+        results.append(
+            _report("SKIP", "mixer EQ bandwidth API", "bandwidth API absent on this build")
+        )
 
-    results.extend([
-        _probe_pattern_length(bridge),
-        _probe_slot_mix(bridge),
-        _probe_native_eq(bridge),
-    ])
+    results.extend(
+        [
+            _probe_pattern_length(bridge),
+            _probe_slot_mix(bridge),
+            _probe_native_eq(bridge),
+        ]
+    )
 
     bad = [row for row in results if row.status == "FAIL"]
     inconclusive = [row for row in results if row.status == "INCONCLUSIVE"]

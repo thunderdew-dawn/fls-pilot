@@ -1,8 +1,8 @@
 """Preset suggester -- read preset NAMES from disk (FL Presets + Serum) and
 suggest matches by name. Read-only.
 
-FL can't LOAD a preset via the API, so this is SUGGESTION-ONLY: Claude reads the
-names + tells the user which to load; after the user loads it, Claude can tweak
+FL can't LOAD a preset via the API, so this is SUGGESTION-ONLY: the LLM assistant reads the
+names + tells the user which to load; after the user loads it, the LLM assistant can tweak
 its params via the existing plugin tools (fl_plugin_set_param / fl_apply_*_intent).
 """
 
@@ -43,7 +43,7 @@ def register(mcp: FastMCP) -> None:
         filter -> a SUMMARY (which plugins have presets + counts). With
         plugin_filter -> that plugin's full preset list. Read-only. FL can't LOAD
         presets via the API -- this is for suggestions (you load the named preset,
-        then Claude can tweak it).
+        then the LLM assistant can tweak it).
 
         Safety: Read-Only.
         """

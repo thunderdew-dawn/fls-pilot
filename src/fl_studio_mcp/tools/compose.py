@@ -1,6 +1,6 @@
-"""Raga / scale composer -- write Claude-generated notes via the note bridge.
+"""Raga / scale composer -- write LLM-generated notes via the note bridge.
 
-NO theory engine: CLAUDE knows the ragas (Hamsadhwani, Charukesi, Mohanam,
+NO theory engine: The LLM assistant knows the ragas (Hamsadhwani, Charukesi, Mohanam,
 Kalyani, ...) and supplies the notes; these tools just SELECT the target channel
 and WRITE the notes through the existing (hardened) piano-roll bridge. raga/root
 are echoed for labelling only.
@@ -86,7 +86,7 @@ def register(mcp: FastMCP) -> None:
         ] = "replace",
     ) -> dict:
         """Write a MELODY (single-line, sequential notes) into the selected channel
-        via the piano-roll bridge. YOU (Claude) generate the swaras for the named
+        via the piano-roll bridge. YOU (the LLM assistant) generate the swaras for the named
         raga/root -> MIDI notes (use the proper aarohana/avarohana; respect the
         raga's allowed swaras); this tool only selects the channel + writes. SHOW
         the user the notes/swaras BEFORE calling. Needs the Piano roll open +
@@ -147,16 +147,13 @@ def register(mcp: FastMCP) -> None:
         Safety: Read-Only.
         """
         from ..music.scales import SCALES_CATALOGUE
+
         families = {}
         for k, v in SCALES_CATALOGUE.items():
             fam = v["family"]
             if fam not in families:
                 families[fam] = []
-            families[fam].append({
-                "key": k,
-                "name": v["name"],
-                "mood": v["mood"]
-            })
+            families[fam].append({"key": k, "name": v["name"], "mood": v["mood"]})
         return {"ok": True, "families": families}
 
     @mcp.tool(annotations={"title": "Get details of a scale or raga", **_RO})
@@ -179,6 +176,7 @@ def register(mcp: FastMCP) -> None:
         Safety: Read-Only.
         """
         from ..music import scales
+
         try:
             res = scales.get_scale_notes(scale_name, root_note, octave_range)
             res["ok"] = True

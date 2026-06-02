@@ -25,7 +25,6 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 from fl_studio_mcp import protocol, safety  # noqa: E402
 from fl_studio_mcp.connection import FLCommandFailed, get_bridge  # noqa: E402
 
-
 EXPECTED_BUILD = "channels-v38"
 HIGH_PASS_TYPE = 3
 
@@ -85,7 +84,9 @@ def _run_variant(bridge, *, track: int, band: int, target_type: int, variant: Va
             scope=f"mixer_eq:{track}",
             command=protocol.CMD_MIXER_PROBE_EQ_TYPE,
             params={"track": track, "band": band, "value": variant.value, "flags": variant.flags},
-            build_restore=lambda _snap, bb=before_band, v=variant: _restore_params(track, band, bb, v),
+            build_restore=lambda _snap, bb=before_band, v=variant: _restore_params(
+                track, band, bb, v
+            ),
         )
     except FLCommandFailed as exc:
         print(f"[INCONCLUSIVE] {variant.label}: command failed: {exc}")

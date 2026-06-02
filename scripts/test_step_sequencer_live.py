@@ -18,9 +18,9 @@ os.environ.setdefault("FLSTUDIO_MCP_TRANSPORT", "tcp")
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
+from fl_studio_mcp import safety  # noqa: E402
 from fl_studio_mcp.connection import get_bridge  # noqa: E402
 from fl_studio_mcp.tools import channels  # noqa: E402
-from fl_studio_mcp import safety  # noqa: E402
 
 
 def main() -> int:
@@ -54,7 +54,9 @@ def main() -> int:
     init_pan = before["pan"][step]
     init_shift = before["shift"][step]
     init_rep = before["rep"][step]
-    print(f"Step {step}: grid={init_grid}, vel={init_vel}, pan={init_pan}, shift={init_shift}, repeat={init_rep}")
+    print(
+        f"Step {step}: grid={init_grid}, vel={init_vel}, pan={init_pan}, shift={init_shift}, repeat={init_rep}"
+    )
 
     print(f"\n--- Mutating step {step} on channel {channel} ---")
     # Toggle step state, change velocity to 0.9, panning to -0.5 (left), repeat to 2
@@ -62,7 +64,7 @@ def main() -> int:
     new_vel = 0.9
     new_pan = -0.5
     new_rep = 2
-    
+
     # We use safe_write to execute this write
     write_res = safety.safe_write(
         b,
@@ -92,8 +94,10 @@ def main() -> int:
     read_vel = after["vel"][step]
     read_pan = after["pan"][step]
     read_rep = after["rep"][step]
-    print(f"Readback step {step}: grid={read_grid}, vel={read_vel}, pan={read_pan}, repeat={read_rep}")
-    
+    print(
+        f"Readback step {step}: grid={read_grid}, vel={read_vel}, pan={read_pan}, repeat={read_rep}"
+    )
+
     # Verify write (focus on grid bit since step parameters are not fully writable via API)
     if read_grid == new_val:
         print("  => Verification: WRITE SUCCESSFUL (grid bit toggled)")

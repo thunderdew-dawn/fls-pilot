@@ -38,7 +38,7 @@ we can carry JSON-shaped commands and responses.
 ## Layers
 
 ```
-Claude / Cursor
+MCP Client (Claude / Cursor / ChatGPT)
     |  stdio
     v
 fl-studio-mcp (Python, our code)

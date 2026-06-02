@@ -79,7 +79,9 @@ def main() -> int:
         passed &= check("bridge reports alive", bridge.is_alive() is True)
         passed &= check("heartbeat age is recent", bridge.heartbeat_age() is not None)
         ping = bridge.call(protocol.CMD_PING)
-        passed &= check("ping protocol version", ping["protocol_version"] == protocol.PROTOCOL_VERSION)
+        passed &= check(
+            "ping protocol version", ping["protocol_version"] == protocol.PROTOCOL_VERSION
+        )
         tempo = bridge.call(protocol.CMD_GET_TEMPO)
         passed &= check("initial tempo", tempo["bpm"] == 120.0)
         changed = bridge.call(protocol.CMD_SET_TEMPO, {"bpm": 128.0})

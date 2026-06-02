@@ -334,7 +334,7 @@ class FLBridge:
 # TCP bridge -- talks to the standalone MIDI daemon instead of doing MIDI
 # itself. Used when FLSTUDIO_MCP_TRANSPORT=tcp so the MCP server works even
 # under MCP clients that launch their servers in a MIDI-restricted context
-# (e.g. the Microsoft Store / MSIX build of Claude Desktop). See daemon.py.
+# (e.g. sandboxed builds of MCP clients like Claude Desktop). See daemon.py.
 # ---------------------------------------------------------------------------
 
 DEFAULT_TCP_HOST = "127.0.0.1"

@@ -7,7 +7,7 @@ FL and fire Ctrl+Alt+Y "Run last script again" (pyscript_trigger). FL re-reads
 the file on that hotkey, so the fresh notes apply with no manual click.
 
 This runs in a process that can write files + send keystrokes (the daemon, or
-a normally-launched MCP server). Under the Store/MSIX Claude Desktop the MCP
+a normally-launched MCP server). Under the Store/MSIX MCP Client the MCP
 server can't, so it delegates here via the daemon's "apply_notes" op.
 
 One-time setup the user must do: run MCP_Apply once from the piano-roll

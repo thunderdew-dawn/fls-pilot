@@ -1,5 +1,5 @@
 """Build a type-1 multi-track .mid from an arrangement spec (uses mido, a CORE
-dependency -- no extra install). Bulk-arrangement path: Claude supplies the
+dependency -- no extra install). Bulk-arrangement path: the LLM assistant supplies the
 whole arrangement, this writes ONE Standard MIDI File the user imports into FL.
 
 Spec: tracks = [{"name", "channel"(0-15), "notes": [{"pitch", "start_bars",

@@ -698,7 +698,7 @@ and compatibility with the safety contract.
    - Prefer generated reviewable script payloads over broad opaque commands.
 
 Tracking the full scope — eight phases shipping the MCP server, the scale/mode
-composition tools, the SKILL.md, evals, and the Claude Code plugin marketplace
+composition tools, the SKILL.md, evals, and plugin marketplaces
 bundle.
 
 Each phase is shippable on its own. Each ends with `python scripts/test_bridge.py`
@@ -715,7 +715,7 @@ minimum tool surface.
 - [x] Transport tools: ping, tempo get/set, play, stop, toggle, record,
       play-state, song-position get/set. **10 tools total.**
 - [x] `scripts/test_bridge.py` standalone harness.
-- [x] Install script for Windows. (macOS / Linux: not shipped — contributions welcome.)
+- [x] Install scripts for Windows and macOS.
 
 ## Phase 1 — Channel rack (~12 tools)
 
@@ -800,7 +800,7 @@ plugins; we expose the raw FL view and let the LLM map names.
 
 Genre- and producer-agnostic composition in any scale or mode: Western modes,
 pentatonic, the Carnatic melakarta and janya ragas, Arabic maqam, and beyond.
-Claude supplies the correct notes/intervals for the requested scale and writes
+the LLM assistant supplies the correct notes/intervals for the requested scale and writes
 them through the note bridge. Indian ragas are one supported family among many,
 not the headline.
 
@@ -826,11 +826,8 @@ so it ships inside the wheel.
 - [x] `skills/flstudio-production/SKILL.md` orchestration layer with deep
       content in `references/`. Under 500 lines.
 - [x] `evals/evals.json` — 10 questions exercising the full tool surface.
-- [ ] `.claude-plugin/marketplace.json` so this can live in
-      `rosasynthesiz-skills` as an installable plugin.
-- [x] `AGENTS.md` describing the agentic workflow for future Claude sessions
+- [x] `AGENTS.md` describing the agentic workflow for future AI assistant sessions
       working on this codebase.
-- [ ] Demo video and screenshots in `docs/`.
 - [x] GitHub Actions for linting and the standalone bridge tests (mock FL).
 - [x] Pin a known-working FL Studio version range in README.
 

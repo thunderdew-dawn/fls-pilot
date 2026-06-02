@@ -25,7 +25,14 @@ class FakeBridge:
             "color": {"int": 255, "hex": "#0000FF", "r": 0, "g": 0, "b": 255},
             "length": 16,
         }
-        self.slot = {"track": 5, "slot": 2, "valid": True, "name": "Fruity EQ 2", "mix": 0.65, "enabled": True}
+        self.slot = {
+            "track": 5,
+            "slot": 2,
+            "valid": True,
+            "name": "Fruity EQ 2",
+            "mix": 0.65,
+            "enabled": True,
+        }
         self.track_slots = {"track": 5, "enabled": True}
         self.eq = {
             "track": 5,
@@ -48,7 +55,11 @@ class FakeBridge:
             return dict(self.pattern)
         if command == protocol.CMD_PATTERN_SET_LENGTH:
             self.pattern["length"] = float(params["beats"])
-            return {"index": self.pattern["index"], "beats": self.pattern["length"], "steps": int(self.pattern["length"] * 4)}
+            return {
+                "index": self.pattern["index"],
+                "beats": self.pattern["length"],
+                "steps": int(self.pattern["length"] * 4),
+            }
         if command == protocol.CMD_MIXER_GET_SLOT:
             return dict(self.slot)
         if command == protocol.CMD_MIXER_SET_SLOT_MIX:

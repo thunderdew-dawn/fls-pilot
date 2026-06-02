@@ -17,11 +17,11 @@ MCP client → (stdio) → MCP server → ┬─ direct: in-process FLBridge ─
 
 - **Why two transports.** The MCP server can run MIDI in-process (`FLBridge`,
   default `FLSTUDIO_MCP_TRANSPORT=direct`). But the **Microsoft Store / MSIX
-  build of Claude Desktop launches its child MCP-server process in a context
+  build of the MCP client launches its child MCP-server process in a context
   where the Windows MIDI subsystem delivers no input data** — the loopMIDI
   ports enumerate and open without error, but zero MIDI arrives. Proven by
   A/B: a normally-launched Python process receives every heartbeat; the
-  Claude-Desktop-spawned one (same code, same session, same port, both
+  Client-spawned one (same code, same session, same port, both
   non-AppContainer) receives nothing.
 - **Fix = `TCPBridge` + a daemon.** With `FLSTUDIO_MCP_TRANSPORT=tcp`, the MCP
   server does **no MIDI** — it talks to a standalone **`fl-studio-mcp-daemon`**

@@ -78,10 +78,10 @@ Next steps:
   4. View > Script output should show '[FLStudioMCP] Ready. ...'.
   5. Run: python3 scripts/test_bridge.py
 
-To use with Claude Desktop (stdio):
+To use with Claude Desktop, Cursor, or other stdio clients:
   1. Start the daemon (holds the MIDI ports):
      $REPO_ROOT/.venv/bin/fl-studio-mcp-daemon
-  2. Add this to your Claude Desktop config (~/Library/Application Support/Claude/claude_desktop_config.json):
+  2. Add this to your client's config (e.g. for Claude Desktop: ~/Library/Application Support/Claude/claude_desktop_config.json):
   {
     "mcpServers": {
       "fl-studio": {
@@ -108,5 +108,5 @@ IMPORTANT (macOS Accessibility):
   the script in FL Studio, you must grant Accessibility permissions to the application
   running the MCP server.
   Go to System Settings > Privacy & Security > Accessibility and ensure your terminal
-  (e.g., Terminal, iTerm, Warp) or the Claude/ChatGPT Desktop app is checked/enabled.
+  (e.g., Terminal, iTerm, Warp) or your MCP Client app (Claude/ChatGPT/Cursor) is checked/enabled.
 EOF

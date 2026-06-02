@@ -6,7 +6,7 @@ Sources (read-only directory listings; never file contents):
   * Serum:       <Documents>/Xfer/Serum 2 Presets/**/*.serumpreset
 
 FL still can't LOAD a preset via the API -- this is suggestion-only (the user
-loads the named preset; then Claude tweaks params via the existing plugin tools).
+loads the named preset; then the LLM assistant tweaks params via the existing plugin tools).
 """
 
 from __future__ import annotations
@@ -19,7 +19,7 @@ _ENV_FL = "FLSTUDIO_MCP_PRESETS"
 _ENV_SERUM = "FLSTUDIO_MCP_SERUM_PRESETS"
 
 # Small synonym map so a description like "vintage bass" matches Serum-style
-# short names ("BA ...", "Analog ..."). Rough -- Claude refines the final pick.
+# short names ("BA ...", "Analog ..."). Rough -- the LLM assistant refines the final pick.
 _SYN = {
     "bass": ("bass", "ba ", "808", "sub"),
     "lead": ("lead", "ld ", "ld_"),

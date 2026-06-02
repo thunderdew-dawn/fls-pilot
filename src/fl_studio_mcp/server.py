@@ -32,8 +32,8 @@ from .tools import chains as chains_tools
 from .tools import channels as channel_tools
 from .tools import color as color_tools
 from .tools import compose as compose_tools
-from .tools import export as export_tools
 from .tools import effects as effects_tools
+from .tools import export as export_tools
 from .tools import mix_doctor as mix_doctor_tools
 from .tools import mixing as mixing_tools
 from .tools import phase1 as phase1_tools
@@ -100,7 +100,7 @@ def build_server() -> FastMCP:
     arrange_tools.register(mcp)  # Arrangement Slice 1: pattern create/clone + markers
     resource_defs.register(mcp)  # MCP resources: fl://status, fl://project, ...
     audio_tools.register(mcp)  # Integration 2/3: audio analysis (tempo/key)
-    compose_tools.register(mcp)  # Raga/scale composer: write Claude notes via the bridge
+    compose_tools.register(mcp)  # Raga/scale composer: write LLM notes via the bridge
     chains_tools.register(mcp)  # Genre chain setup: map recipes to existing plugins
     export_tools.register(mcp)  # MIDI export: arrangement spec -> type-1 .mid on disk
     presets_tools.register(mcp)  # Preset suggester: read preset names from disk
@@ -146,7 +146,7 @@ def main() -> None:
     )
     server = build_server()
 
-    # Transport selection: stdio (default, Claude/Cursor) or sse (ChatGPT).
+    # Transport selection: stdio (default, Cursor/Claude) or sse (ChatGPT).
     # --sse flag or FLSTUDIO_MCP_SERVER_TRANSPORT=sse switches to SSE/HTTP.
     transport = os.environ.get("FLSTUDIO_MCP_SERVER_TRANSPORT", "stdio").lower()
     if "--sse" in sys.argv:
@@ -167,7 +167,7 @@ def main() -> None:
         )
         server.run(transport="sse", host=sse_host, port=sse_port)
     else:
-        server.run()  # stdio transport (Claude Desktop, Cursor, Claude Code)
+        server.run()  # stdio transport (Cursor, Claude Desktop, etc)
 
 
 if __name__ == "__main__":

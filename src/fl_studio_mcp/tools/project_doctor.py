@@ -41,12 +41,18 @@ def register(mcp: FastMCP) -> None:
         """
         bridge = get_bridge()
         project = bridge.call(protocol.CMD_GET_PROJECT_STATE)
-        channels = fetch_all_pages(bridge, protocol.CMD_CHANNEL_LIST, "channels").get("channels", [])
-        patterns = fetch_all_pages(bridge, protocol.CMD_PATTERN_LIST, "patterns").get("patterns", [])
+        channels = fetch_all_pages(bridge, protocol.CMD_CHANNEL_LIST, "channels").get(
+            "channels", []
+        )
+        patterns = fetch_all_pages(bridge, protocol.CMD_PATTERN_LIST, "patterns").get(
+            "patterns", []
+        )
         playlist_tracks = fetch_all_pages(bridge, protocol.CMD_PLAYLIST_LIST_TRACKS, "tracks").get(
             "tracks", []
         )
-        mixer_tracks = fetch_all_pages(bridge, protocol.CMD_MIXER_LIST_TRACKS, "tracks").get("tracks", [])
+        mixer_tracks = fetch_all_pages(bridge, protocol.CMD_MIXER_LIST_TRACKS, "tracks").get(
+            "tracks", []
+        )
 
         unassigned_channels = []
         for row in channels:
@@ -154,11 +160,15 @@ def register(mcp: FastMCP) -> None:
         report = fl_project_health_report()
         findings = list(report.get("findings", []))
         details = report.get("details", {})
-        channels = fetch_all_pages(get_bridge(), protocol.CMD_CHANNEL_LIST, "channels").get("channels", [])
-        patterns = fetch_all_pages(get_bridge(), protocol.CMD_PATTERN_LIST, "patterns").get("patterns", [])
-        playlist_tracks = fetch_all_pages(get_bridge(), protocol.CMD_PLAYLIST_LIST_TRACKS, "tracks").get(
-            "tracks", []
+        channels = fetch_all_pages(get_bridge(), protocol.CMD_CHANNEL_LIST, "channels").get(
+            "channels", []
         )
+        patterns = fetch_all_pages(get_bridge(), protocol.CMD_PATTERN_LIST, "patterns").get(
+            "patterns", []
+        )
+        playlist_tracks = fetch_all_pages(
+            get_bridge(), protocol.CMD_PLAYLIST_LIST_TRACKS, "tracks"
+        ).get("tracks", [])
 
         actions = []
         action_id = 1

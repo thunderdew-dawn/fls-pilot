@@ -1,7 +1,7 @@
 # Contributing to flstudio-mcp
 
 Thanks for your interest in improving flstudio-mcp. This project is a Model
-Context Protocol server that lets Claude drive FL Studio 2025 — mixer, plugins,
+Context Protocol server that lets an AI assistant drive FL Studio 2025 — mixer, plugins,
 piano roll, routing, and project — through calibrated, safety-checked tools.
 Contributions of all kinds are welcome: bug reports, fixes, new tools, docs,
 and platform support.
@@ -10,6 +10,10 @@ This repository is the maintained `thunderdew-dawn/flstudio-mcp` fork of
 `rosasynthesiz/flstudio-mcp`. The package and command names remain stable for
 compatibility, but contributions should follow this fork's rollback-first
 safety layer, API-evidence discipline, and roadmap in `ROADMAP.md`.
+
+## Code of Conduct
+
+By participating in this project, you agree to abide by our [Code of Conduct](CODE_OF_CONDUCT.md). Please read it to understand the expectations for behavior in our community.
 
 ## Ways to contribute
 
@@ -35,13 +39,13 @@ You'll need the same environment as a user, plus an editable install:
 - Windows 10/11 or macOS 12+, FL Studio 2025+, Python 3.12
 - loopMIDI on Windows or the IAC Driver on macOS, with two ports named exactly
   FLStudioMCP RX and FLStudioMCP TX
-- Claude Desktop (or any MCP client) for end-to-end testing
+- An MCP client (like Claude Desktop or Cursor) for end-to-end testing
 
 Install steps: clone the repo, cd into it, run `scripts\install_windows.bat` or
 `./scripts/install_macos.sh`, then `pip install -e ".[audio]"` if you'll touch
 the audio analysis code. Wire the MIDI ports in FL (Options > MIDI Settings),
 confirm `[FLStudioMCP] Ready` in FL's Script output, start the bridge with
-`fl-studio-mcp-daemon`, then verify the link by asking Claude to call `fl_ping`.
+`fl-studio-mcp-daemon`, then verify the link by asking your AI assistant to call `fl_ping`.
 
 ## Project layout
 
@@ -72,7 +76,7 @@ Every tool that modifies the project must route through the snapshot → write �
 A good report includes:
 
 - FL Studio edition and build (e.g. Producer Edition v25.2.5 [build 5319])
-- What you asked Claude to do, and what happened vs. what you expected
+- What you asked the AI assistant to do, and what happened vs. what you expected
 - Relevant FL Script output and server/daemon logs
 - Whether fl_ping succeeds
 

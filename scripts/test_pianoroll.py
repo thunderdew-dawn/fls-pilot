@@ -121,7 +121,6 @@ def main() -> int:
     except ValueError:
         check("XYZ throws ValueError (invalid name)", True)
 
-
     # 2. Test Pyscript Generation Rendering
     print("\nTesting Pyscript Generation Rendering...")
 
@@ -148,17 +147,18 @@ def main() -> int:
         marker_clear_path.endswith("MCP_Apply.pyscript"),
     )
 
-
     # 3. Test Core Rollback / safe_piano_roll_write
     print("\nTesting Core Rollback & Undo generation...")
 
     class MockMCP:
         def __init__(self):
             self.tools = {}
+
         def tool(self, annotations=None):
             def decorator(func):
                 self.tools[func.__name__] = func
                 return func
+
             return decorator
 
     mcp = MockMCP()
@@ -175,6 +175,7 @@ def main() -> int:
 
     bridge = FakeBridge()
     from fl_studio_mcp import connection
+
     orig_get_bridge = connection.get_bridge
     connection.get_bridge = lambda: bridge
     pr_tools.get_bridge = lambda: bridge

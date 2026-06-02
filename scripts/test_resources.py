@@ -2,7 +2,7 @@
 """Test MCP resources: each returns valid data, fast, within size limits.
 
 Builds the real server and reads each fl:// resource in-process (same path
-Claude uses). Prints byte size per resource -- the big lists (mixer/channels)
+an MCP client uses). Prints byte size per resource -- the big lists (mixer/channels)
 must stay small.
 
     set FLSTUDIO_MCP_TRANSPORT=tcp

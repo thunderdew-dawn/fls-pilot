@@ -1,6 +1,6 @@
 """Export an arrangement to a Standard MIDI File on disk.
 
-Claude builds the full multi-section / multi-instrument arrangement; this writes
+The LLM assistant builds the full multi-section / multi-instrument arrangement; this writes
 ONE type-1 .mid the user imports into FL -- bypassing the note-bridge's
 one-pattern + MCP_Apply-arm limits for big arrangements. Does NOT touch FL.
 """
@@ -55,7 +55,7 @@ def register(mcp: FastMCP) -> None:
             int, Field(ge=1, le=16, description="Time-signature numerator (4 = 4/4).")
         ] = 4,
     ) -> dict:
-        """Write a type-1 multi-track .mid from an arrangement spec. YOU (Claude)
+        """Write a type-1 multi-track .mid from an arrangement spec. YOU (the LLM assistant)
         generate the whole arrangement -- multiple named tracks, each with notes
         {pitch, start_bars, length_bars, velocity} across all sections -- and this
         writes ONE .mid. Bypasses the note-bridge's one-pattern + MCP_Apply limits.

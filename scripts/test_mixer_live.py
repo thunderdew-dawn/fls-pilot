@@ -18,8 +18,9 @@ os.environ.setdefault("FLSTUDIO_MCP_TRANSPORT", "tcp")
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from fl_studio_mcp.connection import get_bridge  # noqa: E402
 from fl_studio_mcp import safety  # noqa: E402
+from fl_studio_mcp.connection import get_bridge  # noqa: E402
+
 
 def main() -> int:
     b = get_bridge()
@@ -47,7 +48,9 @@ def main() -> int:
     track_details = b.call("mixer_get_track", {"index": 5})
     print("Track 5 details:", track_details)
     if "dock_side" in track_details and "stereo_sep" in track_details:
-        print(f"  => Verification: SUCCESS (dock_side={track_details['dock_side']}, stereo_sep={track_details['stereo_sep']})")
+        print(
+            f"  => Verification: SUCCESS (dock_side={track_details['dock_side']}, stereo_sep={track_details['stereo_sep']})"
+        )
     else:
         print("  => Verification: FAILED (no dock_side or stereo_sep)")
         return 1
@@ -60,7 +63,7 @@ def main() -> int:
 
     target_track = 6 if init_track != 6 else 5
     print(f"Selecting track {target_track}...")
-    
+
     write_res = safety.safe_write(
         b,
         tool="mixer_select_track",
@@ -109,7 +112,7 @@ def main() -> int:
 
     new_routing = not init_enabled
     print(f"Setting routing from 5 to 10 to {new_routing}...")
-    
+
     write_route_res = safety.safe_write(
         b,
         tool="mixer_set_route",
@@ -205,7 +208,9 @@ def main() -> int:
         if sep_stuck:
             print("  => Verification: STEREO SEPARATION ROLLBACK SUCCESSFUL")
         else:
-            print("  => Verification: STEREO SEPARATION unchanged (consistent with API-limited write)")
+            print(
+                "  => Verification: STEREO SEPARATION unchanged (consistent with API-limited write)"
+            )
     else:
         print("  => Verification: STEREO SEPARATION ROLLBACK FAILED")
         return 1
@@ -214,13 +219,15 @@ def main() -> int:
     print("\n--- Testing peak levels measurement ---")
     peaks = b.call("mixer_get_peaks", {"track": 0})
     print("Master peaks raw:", peaks)
-    
+
     from fl_studio_mcp.music import levels
+
     res_levels = levels.measure_track_level(b, 0, samples=5, interval_ms=50)
     print("Master measured level info:", res_levels)
 
     print("\nALL LIVE MIXER CHECKS PASSED")
     return 0
+
 
 if __name__ == "__main__":
     sys.exit(main())
