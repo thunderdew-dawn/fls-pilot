@@ -96,7 +96,6 @@ For every new FL-mutating tool, add or update:
   completed, re-scoped, verified, blocked, or reprioritized.
 - Record live FL verification checkpoints with date, FL build, controller build
   marker, tested path, and rollback result.
-- Psytrance-specific features are out of scope until explicitly reintroduced.
 
 ## Commit Discipline
 

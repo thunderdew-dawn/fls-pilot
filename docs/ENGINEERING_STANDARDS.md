@@ -24,7 +24,6 @@ production suite is expanded.
 - Commit messages must be in English.
 - Code comments must be in English.
 - Docstrings and user-facing repository documentation must be in English.
-- Chat with the current user may be in German unless the user asks otherwise.
 - Comments should be sparse and useful. Avoid comments that restate obvious
   code.
 
@@ -133,10 +132,6 @@ Current priority order:
    - Project Doctor / Health Report.
    - Export readiness report.
 4. Creative intelligence and experimental infrastructure.
-
-The sister project `geezoria/FLStudioMCP` is a feature-discovery source, not a
-surface to copy wholesale. Extract product capabilities and adapt them to this
-project's rollback-first architecture. Do not import a broad 160+ tool surface.
 
 ## Commit And PR Discipline
 
