@@ -484,7 +484,7 @@ def _mixer_track_dict(i):
         "color": _color_out(_safe_track_color(i)),
         "dock_side": dock,
         "stereo_sep": sep,
-        **_vol_out(mixer.getTrackVolume(i)),
+        **_mixer_vol_out(i, mixer.getTrackVolume(i)),
     }
 
 
@@ -496,7 +496,7 @@ def _mixer_list_entry(i):
         "pan": round(mixer.getTrackPan(i), 4),
         "mute": bool(mixer.isTrackMuted(i)),
         "solo": bool(mixer.isTrackSolo(i)),
-        **_vol_out(mixer.getTrackVolume(i)),
+        **_mixer_vol_out(i, mixer.getTrackVolume(i)),
     }
     if cut:
         e["trunc"] = True
@@ -591,21 +591,137 @@ def _h_channel_get(params):
 # Volume: FL normalized 0.8 == unity (0 dB), NOT 1.0. Convert with that anchor
 # and ALWAYS read back the value FL actually accepted (FL clamps).
 
-_UNITY = 0.8
+# Mixer-specific fader calibration data (empirically swept)
+MIXER_CALIBRATION = [
+    (0.0000, float('-inf')),
+    (0.0100, -50.3347),
+    (0.0200, -44.1829),
+    (0.0300, -40.5293),
+    (0.0400, -37.8981),
+    (0.0500, -35.8268),
+    (0.0600, -34.1094),
+    (0.0700, -32.6361),
+    (0.0800, -31.3412),
+    (0.0900, -30.1825),
+    (0.1000, -29.1310),
+    (0.1100, -28.1661),
+    (0.1200, -27.2727),
+    (0.1300, -26.4392),
+    (0.1400, -25.6566),
+    (0.1500, -24.9177),
+    (0.1600, -24.2169),
+    (0.1700, -23.5495),
+    (0.1800, -22.9115),
+    (0.1900, -22.2998),
+    (0.2000, -21.7114),
+    (0.2100, -21.1442),
+    (0.2200, -20.5961),
+    (0.2300, -20.0653),
+    (0.2400, -19.5503),
+    (0.2500, -19.0498),
+    (0.2600, -18.5625),
+    (0.2700, -18.0875),
+    (0.2800, -17.6237),
+    (0.2900, -17.1704),
+    (0.3000, -16.7269),
+    (0.3100, -16.2923),
+    (0.3200, -15.8662),
+    (0.3300, -15.4479),
+    (0.3400, -15.0370),
+    (0.3500, -14.6330),
+    (0.3600, -14.2355),
+    (0.3700, -13.8441),
+    (0.3800, -13.4584),
+    (0.3900, -13.0781),
+    (0.4000, -12.7029),
+    (0.4100, -12.3325),
+    (0.4200, -11.9667),
+    (0.4300, -11.6052),
+    (0.4400, -11.2479),
+    (0.4500, -10.8944),
+    (0.4600, -10.5446),
+    (0.4700, -10.1983),
+    (0.4800, -9.8554),
+    (0.4900, -9.5156),
+    (0.5000, -9.1789),
+    (0.5100, -8.8451),
+    (0.5200, -8.5140),
+    (0.5300, -8.1856),
+    (0.5400, -7.8597),
+    (0.5500, -7.5361),
+    (0.5600, -7.2149),
+    (0.5700, -6.8959),
+    (0.5800, -6.5790),
+    (0.5900, -6.2642),
+    (0.6000, -5.9512),
+    (0.6100, -5.6401),
+    (0.6200, -5.3308),
+    (0.6300, -5.0232),
+    (0.6400, -4.7172),
+    (0.6500, -4.4129),
+    (0.6600, -4.1100),
+    (0.6700, -3.8086),
+    (0.6800, -3.5085),
+    (0.6900, -3.2099),
+    (0.7000, -2.9125),
+    (0.7100, -2.6163),
+    (0.7200, -2.3214),
+    (0.7300, -2.0276),
+    (0.7400, -1.7349),
+    (0.7500, -1.4433),
+    (0.7600, -1.1527),
+    (0.7700, -0.8632),
+    (0.7800, -0.5745),
+    (0.7900, -0.2868),
+    (0.8000, 0.0000),
+    (0.8100, 0.2860),
+    (0.8200, 0.5711),
+    (0.8300, 0.8554),
+    (0.8400, 1.1390),
+    (0.8500, 1.4218),
+    (0.8600, 1.7039),
+    (0.8700, 1.9853),
+    (0.8800, 2.2660),
+    (0.8900, 2.5461),
+    (0.9000, 2.8256),
+    (0.9100, 3.1044),
+    (0.9200, 3.3827),
+    (0.9300, 3.6604),
+    (0.9400, 3.9376),
+    (0.9500, 4.2142),
+    (0.9600, 4.4903),
+    (0.9700, 4.7659),
+    (0.9800, 5.0411),
+    (0.9900, 5.3158),
+    (1.0000, 5.5900),
+]
 
 
-def _db_to_norm(db):
-    return max(0.0, min(1.0, _UNITY * (10.0 ** (db / 20.0))))
+def _mixer_db_to_norm(db):
+    if db <= -50.3347:
+        if db <= -100.0:
+            return 0.0
+        y0, x0 = -60.0, 0.0
+        y1, x1 = -50.3347, 0.01
+        if db <= y0:
+            return 0.0
+        return x0 + (db - y0) * (x1 - x0) / (y1 - y0)
+    if db >= 5.5900:
+        return 1.0
+    for i in range(1, len(MIXER_CALIBRATION) - 1):
+        x0, y0 = MIXER_CALIBRATION[i]
+        x1, y1 = MIXER_CALIBRATION[i+1]
+        if y0 <= db <= y1:
+            return x0 + (db - y0) * (x1 - x0) / (y1 - y0)
+    return 1.0
 
 
-def _norm_to_db(norm):
-    return -120.0 if norm <= 0.0 else 20.0 * math.log10(norm / _UNITY)
-
-
-def _vol_out(norm):
-    # Unified volume representation used by EVERY volume-bearing response
-    # (reads + writes, mixer + channel): normalized 0..1 and dB (0.8 = unity).
-    return {"vol_norm": round(norm, 4), "vol_db": round(_norm_to_db(norm), 2)}
+def _mixer_vol_out(i, norm):
+    try:
+        db = mixer.getTrackVolume(i, 1)
+    except Exception:
+        db = _norm_to_db(norm)
+    return {"vol_norm": round(norm, 4), "vol_db": round(db, 2)}
 
 
 def _resolve_vol(p):
@@ -619,9 +735,11 @@ def _clamp_pan(v):
 
 def _h_mixer_set_volume(p):
     t = int(p["track"])
-    mixer.setTrackVolume(t, _resolve_vol(p))
+    val = float(p["value"])
+    norm_val = _mixer_db_to_norm(val) if p.get("unit") == "db" else max(0.0, min(1.0, val))
+    mixer.setTrackVolume(t, norm_val)
     out = {"track": t}
-    out.update(_vol_out(mixer.getTrackVolume(t)))
+    out.update(_mixer_vol_out(t, mixer.getTrackVolume(t)))
     return out
 
 
@@ -1095,6 +1213,21 @@ def _h_api_probe(p):
             return {"ok": True, "undid": True}
         except Exception as e:
             return {"ok": False, "error": f"undoUp: {e}"}
+    if op == "volume_sweep":
+        track = int(p.get("track", 1))
+        start = int(p.get("start", 0))
+        count = int(p.get("count", 25))
+        orig_vol = mixer.getTrackVolume(track, 0)
+        sweep_results = []
+        for i in range(start, start + count):
+            if i > 100:
+                break
+            val = i / 100.0
+            mixer.setTrackVolume(track, val)
+            db_val = mixer.getTrackVolume(track, 1)
+            sweep_results.append((round(val, 4), round(db_val, 4)))
+        mixer.setTrackVolume(track, orig_vol)
+        return {"sweep": sweep_results}
     return {"error": f"unknown op: {op}"}
 
 
