@@ -591,6 +591,23 @@ def _h_channel_get(params):
 # Volume: FL normalized 0.8 == unity (0 dB), NOT 1.0. Convert with that anchor
 # and ALWAYS read back the value FL actually accepted (FL clamps).
 
+_UNITY = 0.8
+
+
+def _db_to_norm(db):
+    return max(0.0, min(1.0, _UNITY * (10.0 ** (db / 20.0))))
+
+
+def _norm_to_db(norm):
+    return -120.0 if norm <= 0.0 else 20.0 * math.log10(norm / _UNITY)
+
+
+def _vol_out(norm):
+    # Unified volume representation used by EVERY volume-bearing response
+    # (reads + writes, mixer + channel): normalized 0..1 and dB (0.8 = unity).
+    return {"vol_norm": round(norm, 4), "vol_db": round(_norm_to_db(norm), 2)}
+
+
 # Mixer-specific fader calibration data (empirically swept)
 MIXER_CALIBRATION = [
     (0.0000, float('-inf')),
@@ -1077,6 +1094,17 @@ def _h_mixer_get_peaks(p):
         except Exception:
             out[key] = None
     return out
+
+
+def _h_mixer_get_all_peaks(p):
+    """Batch read all peaks for tracks 0-125."""
+    peaks = []
+    for t in range(126):
+        try:
+            peaks.append(round(float(mixer.getTrackPeaks(t, 2)), 6))
+        except Exception:
+            peaks.append(0.0)
+    return {"peaks": peaks}
 
 
 def _h_mixer_selected(params):
@@ -1843,6 +1871,105 @@ def _h_mixer_probe_eq_type(p):
     return out
 
 
+def _h_mixer_format_event_value(p):
+    """Format an integer REC event value into its UI string (e.g. dB or Hz)."""
+    event_id = int(p["event_id"])
+    value = int(p["value"])
+    try:
+        s = mixer.getEventIDValueString(event_id, value)
+        return {"string": s, "event_id": event_id, "value": value}
+    except Exception as e:
+        return {"error": str(e)}
+
+
+def _h_mixer_probe_eq_gain(p):
+    """Probe: write EQ gain via processRECEvent (REC_Mixer_EQ_Gain).
+
+    Params: track, band (0-2), value (0.0-1.0 normalised), flags (optional).
+    Returns the EQ readback + probe metadata so the caller can compare.
+    This is the processRECEvent alternative to mixer.setEqGain.
+    """
+    track = int(p["track"])
+    band = int(p["band"])
+    if band < 0 or band > 2:
+        raise _ClientError("band out of range (0-2)")
+    gain_base = getattr(midi, "REC_Mixer_EQ_Gain", None)
+    if gain_base is None:
+        raise _ClientError("REC_Mixer_EQ_Gain constant unavailable in this FL build")
+    plugin_id = mixer.getTrackPluginId(track, 0)
+    event_id = gain_base + band + plugin_id
+    # Convert 0.0-1.0 normalised to the integer range FL expects for REC events
+    value_norm = float(p.get("value", 0.5))
+    # FL REC events use 0-65536 range for normalised parameters
+    value_int = int(round(value_norm * 65536))
+    flags = _eq_probe_flags(p.get("flags", "control"))
+    general.processRECEvent(event_id, value_int, flags)
+    out = _h_mixer_get_eq({"track": track})
+    out["probe"] = {
+        "method": "processRECEvent",
+        "event_id": event_id,
+        "value_norm": value_norm,
+        "value_int": value_int,
+        "flags": flags,
+        "flags_mode": p.get("flags", "control"),
+        "gain_base": gain_base,
+        "plugin_id": plugin_id,
+    }
+    return out
+
+
+def _h_mixer_probe_eq_freq(p):
+    """Probe: write EQ frequency via processRECEvent (REC_Mixer_EQ_Freq)."""
+    track = int(p["track"])
+    band = int(p["band"])
+    if band < 0 or band > 2:
+        raise _ClientError("band out of range (0-2)")
+    freq_base = getattr(midi, "REC_Mixer_EQ_Freq", None)
+    if freq_base is None:
+        raise _ClientError("REC_Mixer_EQ_Freq constant unavailable in this FL build")
+    plugin_id = mixer.getTrackPluginId(track, 0)
+    event_id = freq_base + band + plugin_id
+    value_norm = float(p.get("value", 0.5))
+    value_int = int(round(value_norm * 65536))
+    flags = _eq_probe_flags(p.get("flags", "control"))
+    general.processRECEvent(event_id, value_int, flags)
+    out = _h_mixer_get_eq({"track": track})
+    out["probe"] = {
+        "method": "processRECEvent",
+        "event_id": event_id,
+        "value_norm": value_norm,
+        "value_int": value_int,
+        "flags": flags,
+    }
+    return out
+
+
+def _h_mixer_probe_eq_q(p):
+    """Probe: write EQ Q/bandwidth via processRECEvent (REC_Mixer_EQ_Q)."""
+    track = int(p["track"])
+    band = int(p["band"])
+    if band < 0 or band > 2:
+        raise _ClientError("band out of range (0-2)")
+    q_base = getattr(midi, "REC_Mixer_EQ_Q", None)
+    if q_base is None:
+        raise _ClientError("REC_Mixer_EQ_Q constant unavailable in this FL build")
+    plugin_id = mixer.getTrackPluginId(track, 0)
+    event_id = q_base + band + plugin_id
+    value_norm = float(p.get("value", 0.5))
+    value_int = int(round(value_norm * 65536))
+    flags = _eq_probe_flags(p.get("flags", "control"))
+    general.processRECEvent(event_id, value_int, flags)
+    out = _h_mixer_get_eq({"track": track})
+    out["probe"] = {
+        "method": "processRECEvent",
+        "event_id": event_id,
+        "value_norm": value_norm,
+        "value_int": value_int,
+        "flags": flags,
+    }
+    return out
+
+
 def _h_get_time_sig(p):
     try:
         ppb = general.getRecPPB()
@@ -2014,6 +2141,7 @@ _HANDLERS = {
     "channel_routing_summary": _h_channel_routing_summary,
     "mixer_set_route": _h_mixer_set_route,
     "mixer_get_peaks": _h_mixer_get_peaks,
+    "mixer_get_all_peaks": _h_mixer_get_all_peaks,
     "mixer_set_color": _h_mixer_set_color,
     "mixer_get_color": _h_mixer_get_color,
     "channel_set_color": _h_channel_set_color,
@@ -2052,6 +2180,10 @@ _HANDLERS = {
     "mixer_get_eq": _h_mixer_get_eq,
     "mixer_set_eq": _h_mixer_set_eq,
     "mixer_probe_eq_type": _h_mixer_probe_eq_type,
+    "mixer_probe_eq_gain": _h_mixer_probe_eq_gain,
+    "mixer_probe_eq_freq": _h_mixer_probe_eq_freq,
+    "mixer_probe_eq_q": _h_mixer_probe_eq_q,
+    "mixer_format_event_value": _h_mixer_format_event_value,
     "get_time_sig": _h_get_time_sig,
     "set_time_sig": _h_set_time_sig,
     "channel_set_steps": _h_channel_set_steps,

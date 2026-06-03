@@ -72,7 +72,7 @@ def _rollback_and_check(bridge, label: str) -> bool:
 def _find_effect_target(tools: dict) -> tuple[int, int] | None:
     # Prefer a real occupied slot on commonly-used fixture tracks first,
     # then scan a wider range.
-    scan = list(dict.fromkeys([49, 50] + list(range(1, 61))))
+    scan = list(dict.fromkeys([1, 29, 32, 42, 56, 57] + list(range(1, 61))))
     for track in scan:
         try:
             slots = tools["fl_effect_list_slots"](track).get("slots", [])
