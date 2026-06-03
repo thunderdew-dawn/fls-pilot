@@ -765,6 +765,24 @@ def _h_mixer_set_pan(p):
     mixer.setTrackPan(t, _clamp_pan(p["value"]))
     return {"track": t, "pan": round(mixer.getTrackPan(t), 4)}
 
+def _h_mixer_set_stereo_sep(p):
+    t = int(p["track"])
+    val = max(-1.0, min(1.0, float(p["value"])))
+    if hasattr(mixer, "setTrackStereoSep"):
+        mixer.setTrackStereoSep(t, val)
+    
+    current = 0.0
+    if hasattr(mixer, "getTrackStereoSep"):
+        current = round(mixer.getTrackStereoSep(t), 4)
+    return {"track": t, "stereo_sep": current}
+
+def _h_mixer_get_stereo_sep(p):
+    t = int(p["track"])
+    current = 0.0
+    if hasattr(mixer, "getTrackStereoSep"):
+        current = round(mixer.getTrackStereoSep(t), 4)
+    return {"track": t, "stereo_sep": current}
+
 
 def _h_mixer_set_mute(p):
     # FL coalesces multiple mute ops per script-tick and the explicit-value
@@ -939,17 +957,17 @@ def _h_plugin_get_params(p):
         cur = i
         i += 1
         scanned += 1
-        if nm:  # skip empty-name slots (unused VST)
-            out.append(
-                {
-                    "i": cur,
-                    "name": nm[:30],
-                    "v": round(plugins.getParamValue(cur, track, slot), 4),
-                    "s": (plugins.getParamValueString(cur, track, slot) or "")[:16],
-                }
-            )
-            if len(json.dumps(out, separators=(",", ":"))) > 480:
-                break
+        # Always include to see all indices
+        out.append(
+            {
+                "i": cur,
+                "name": nm[:30] if nm else "EMPTY",
+                "v": round(plugins.getParamValue(cur, track, slot), 4),
+                "s": (plugins.getParamValueString(cur, track, slot) or "")[:16],
+            }
+        )
+        if len(json.dumps(out, separators=(",", ":"))) > 480:
+            break
     return {
         "track": track,
         "slot": slot,
@@ -1115,13 +1133,6 @@ def _h_mixer_select_track(params):
     track = int(params["track"])
     mixer.setTrackNumber(track)
     return {"track": track}
-
-
-def _h_mixer_set_stereo_sep(p):
-    track = int(p["track"])
-    val = float(p["value"])
-    mixer.setTrackStereoSep(track, val)
-    return {"track": track, "stereo_sep": round(mixer.getTrackStereoSep(track), 4)}
 
 
 # -- Plugin preset navigate/read (op: info | next | prev) --------------------
@@ -2122,10 +2133,11 @@ _HANDLERS = {
     "channel_get": _h_channel_get,
     "mixer_set_volume": _h_mixer_set_volume,
     "mixer_set_pan": _h_mixer_set_pan,
+    "mixer_set_stereo_sep": _h_mixer_set_stereo_sep,
+    "mixer_get_stereo_sep": _h_mixer_get_stereo_sep,
     "mixer_set_mute": _h_mixer_set_mute,
     "mixer_set_solo": _h_mixer_set_solo,
     "mixer_set_name": _h_mixer_set_name,
-    "mixer_set_stereo_sep": _h_mixer_set_stereo_sep,
     "channel_set_volume": _h_channel_set_volume,
     "channel_set_pan": _h_channel_set_pan,
     "channel_set_mute": _h_channel_set_mute,
