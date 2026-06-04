@@ -336,3 +336,76 @@ def register(mcp: FastMCP) -> None:
             ]
         }
 
+    @mcp.tool(annotations={"title": "Start Guided Fix Mode", **_RO})
+    def fl_start_guided_fix_mode() -> dict:
+        """Start an LLM-orchestrated Guided Fix Mode session.
+        
+        This tool returns a stateless session blueprint. It analyzes the current project
+        using several diagnostic tools and returns the fix policy, prioritization strategy,
+        and user-facing prompt instructions. The LLM must then drive the conversation
+        using this blueprint.
+        
+        Safety: Read-Only (returns a policy and diagnostics, applies no fixes itself).
+        """
+        health = fl_project_health_dashboard()
+        readiness = fl_preflight_project()
+        
+        return {
+            "workflow_type": "LLM_ORCHESTRATED_WIZARD",
+            "state_model": "STATELESS_MCP_AUTHORITATIVE",
+            "assistant_instructions": [
+                "1. You are now driving Guided Fix Mode. You must NOT present all issues at once.",
+                "2. Treat MCP readbacks, diagnostics, and the changelog as the authoritative state, NOT your conversation history.",
+                "3. Follow the prioritization strategy below. Pick the highest priority issue category.",
+                "4. Explain the evidence for that specific issue to the user.",
+                "5. Propose exactly ONE fix using an available write-safe tool (e.g. fl_create_bus_layout, fl_apply_naming_standard, fl_apply_audio_clip_safe_defaults).",
+                "6. Ask for the user's approval.",
+                "7. Apply the fix. Then immediately read back the affected state and show the before/after result.",
+                "8. Offer to rollback (via fl_rollback_last_change) or continue to the next issue.",
+                "9. If the user continues, re-check diagnostics (via fl_get_guided_fix_context) to find the next issue."
+            ],
+            "prioritization_strategy": [
+                "Priority 1: Export Blockers (Unrouted channels to Master, Clipping)",
+                "Priority 2: Audio Clip Safe Defaults (Loud clips, Stretch mode warnings)",
+                "Priority 3: Routing Organization (Bus layouts, grouping)",
+                "Priority 4: Project Cleanup (Naming, coloring)"
+            ],
+            "recommended_next_actions": [
+                "Read fl_get_guided_fix_context to get the detailed current state.",
+                "Present the highest priority finding to the user."
+            ],
+            "initial_diagnostics": {
+                "health_dashboard": health,
+                "preflight_project": readiness
+            }
+        }
+
+    @mcp.tool(annotations={"title": "Get Guided Fix Context", **_RO})
+    def fl_get_guided_fix_context() -> dict:
+        """Reconstruct the current Guided Fix context from fresh diagnostics.
+        
+        Use this tool during Guided Fix Mode to get the latest, authoritative project state
+        without relying on conversational history.
+        
+        Safety: Read-Only.
+        """
+        health = fl_project_health_dashboard()
+        readiness = fl_preflight_project()
+        
+        # We instruct the LLM to run the deeper analyzers for the active priority
+        return {
+            "context_type": "FRESH_DIAGNOSTICS",
+            "current_health_summary": health,
+            "current_preflight_status": readiness,
+            "instruction_to_llm": "Based on the summary above, determine the highest remaining priority. If you need deep details to propose a fix, run the corresponding analyzer:",
+            "analyzer_mapping": {
+                "Priority 1 (Routing Blockers)": "Run fl_analyze_routing",
+                "Priority 2 (Audio Clips)": "Run fl_inspect_audio_clips",
+                "Priority 3 (Bus Layouts)": "Run fl_analyze_routing",
+                "Priority 4 (Naming/Coloring)": "Run fl_analyze_project_organization",
+                "Priority 5 (Mix Headroom)": "Run fl_diagnose_mix"
+            },
+            "changelog_state_hint": "Run fl_get_change_log_summary to review recently applied fixes if needed."
+        }
+
+

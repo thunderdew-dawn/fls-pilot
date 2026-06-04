@@ -3,10 +3,7 @@
 This guide explains what flstudio-mcp is useful for, how a user talks to it
 through an AI assistant, and what every exposed MCP tool does.
 
-Most users should ask in plain language. The assistant chooses the right tools,
-reads the current FL Studio state, proposes a plan when needed, and applies
-approved changes through the rollback-first safety layer. Users can also name a
-specific `fl_*` tool directly when they want precise control.
+Most users should ask in plain language. The assistant leverages safety classes, explicit product boundaries, and the current 156-tool catalog. It proposes a plan when needed, and applies approved changes through the rollback-first safety layer. Users can also name a specific `fl_*` tool directly when they want precise control.
 
 ## Why This App Exists
 
@@ -229,7 +226,7 @@ tool call. They are intentionally capped so automatic context reads stay small.
 
 ## Full Tool Reference
 
-The current static safety audit reports 138 tools: 58 `read-only`, 69
+The current static safety audit reports 156 tools: 70 `read-only`, 75
 `write-safe`, 5 `transient`, 4 `server-state`, and 2 `external-write`.
 
 ### Arrangement Tools
@@ -453,6 +450,8 @@ The current static safety audit reports 138 tools: 58 `read-only`, 69
 | `fl_project_dry_run_fix_plan` | `read-only` | Produces a fix plan without changing FL Studio. |
 | `fl_project_health_dashboard` | `read-only` | A single pane of glass aggregating Mix Doctor, Routing Doctor, and Project Organizer insights. |
 | `fl_preflight_project` | `read-only` | Export readiness checks covering clipping, unrouted channels, and manual checklists. |
+| `fl_start_guided_fix_mode` | `read-only` | Starts an LLM-orchestrated Guided Fix Mode session by returning a stateless session blueprint. |
+| `fl_get_guided_fix_context` | `read-only` | Reconstructs the current Guided Fix context from fresh diagnostics without relying on conversational history. |
 
 ### Routing Tools
 

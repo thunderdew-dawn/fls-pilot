@@ -103,7 +103,7 @@ Full setup is below.
 - Tempo and key estimation from an audio file.
 - Melody-to-MIDI transcription (CREPE pitch tracking, with a lighter fallback).
 
-The server exposes 138 tools across the production, mixing, composition, safety,
+The server exposes a comprehensive suite of tools across the production, mixing, composition, safety,
 and project-organization surface, plus 6 live resources (project, mixer,
 transport, channels, patterns, status) that the LLM assistant can read directly.
 For a user-facing value overview, workflow examples, and the full tool catalog,
