@@ -1,0 +1,8 @@
+{
+  "_meta": {
+    "description": "Mapping from dB to normalized API values.",
+    "reference": "../fl_api/mixer_eq_calibration.json",
+    "confidence": "hypothesis"
+  },
+  "mappings": {}
+}

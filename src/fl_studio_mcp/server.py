@@ -36,8 +36,8 @@ from .tools import effects as effects_tools
 from .tools import export as export_tools
 from .tools import mix_doctor as mix_doctor_tools
 from .tools import mixing as mixing_tools
-from .tools import phase1 as phase1_tools
-from .tools import phase3 as phase3_tools
+from .tools import mixer_core as mixer_core_tools
+from .tools import patterns_playlist as patterns_playlist_tools
 from .tools import pianoroll as pianoroll_tools
 from .tools import plugin as plugin_tools
 from .tools import presets as presets_tools
@@ -45,6 +45,8 @@ from .tools import project_doctor as project_doctor_tools
 from .tools import resources as resource_defs
 from .tools import routing as routing_tools
 from .tools import transport as transport_tools
+from .tools import knowledgebase as knowledgebase_tools
+from .tools import internal_eq as internal_eq_tools
 
 logger = logging.getLogger("fl_studio_mcp")
 
@@ -88,7 +90,7 @@ def build_server() -> FastMCP:
         instructions=SERVER_INSTRUCTIONS,
     )
     transport_tools.register(mcp)
-    phase1_tools.register(mcp)  # project/mixer/channel read+write + safety
+    mixer_core_tools.register(mcp)  # project/mixer/channel read+write + safety
     channel_tools.register(mcp)  # Channel organizer: details, names, mixer assignment
     pianoroll_tools.register(mcp)  # Phase 2: write notes into the piano roll
     plugin_tools.register(mcp)  # Phase 1B: plugin param read/write (name or index)
@@ -106,7 +108,9 @@ def build_server() -> FastMCP:
     presets_tools.register(mcp)  # Preset suggester: read preset names from disk
     mix_doctor_tools.register(mcp)  # Mix Doctor: diagnose whole mix + gated apply-fixes
     project_doctor_tools.register(mcp)  # Project doctor + export readiness reports
-    phase3_tools.register(mcp)  # Phase 3: Patterns & Playlist pack
+    patterns_playlist_tools.register(mcp)  # Phase 3: Patterns & Playlist pack
+    knowledgebase_tools.register(mcp)  # KB Tools
+    internal_eq_tools.register(mcp)  # Safe Internal EQ Wrappers
     return mcp
 
 

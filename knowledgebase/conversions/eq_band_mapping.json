@@ -1,0 +1,11 @@
+{
+  "_meta": {
+    "description": "Mapping for EQ Bands",
+    "confidence": "docs_confirmed"
+  },
+  "bands": {
+    "0": "Low",
+    "1": "Mid",
+    "2": "High"
+  }
+}

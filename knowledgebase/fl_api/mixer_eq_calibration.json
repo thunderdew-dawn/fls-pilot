@@ -1,0 +1,123 @@
+[
+  {
+    "domain": "eq_gain",
+    "parameter": "mixer.setEqGain",
+    "api_setter": "mixer.setEqGain",
+    "api_getter": "mixer.getEqGain",
+    "value_type": "normalized_float",
+    "valid_range": [
+      0.0,
+      1.0
+    ],
+    "fl_studio_version": "unknown",
+    "api_version": "unknown",
+    "platform": "unknown",
+    "verified_at": null,
+    "mapping": [
+      {
+        "normalized": 0.0,
+        "db": -18.0,
+        "confidence": "implementation_verified",
+        "source": "scratch/test_eq_ch90_band0.py"
+      },
+      {
+        "normalized": 0.5,
+        "db": 0.0,
+        "confidence": "implementation_verified",
+        "source": "scratch/eq_diagnosis.json flat EQ default"
+      },
+      {
+        "normalized": 1.0,
+        "db": 18.0,
+        "confidence": "hypothesis",
+        "source": "extrapolated from max limit"
+      }
+    ],
+    "interpolation": "linear",
+    "requires_readback_verification": true,
+    "rules": [
+      "Never guess normalized values for unmapped dB levels.",
+      "Always use readback if interpolating."
+    ]
+  },
+  {
+    "domain": "eq_frequency",
+    "parameter": "mixer.setEqFrequency",
+    "api_setter": "mixer.setEqFrequency",
+    "api_getter": "mixer.getEqFrequency",
+    "value_type": "normalized_float",
+    "valid_range": [
+      0.0,
+      1.0
+    ],
+    "confidence": "measured_once",
+    "mapping": [
+      {
+        "normalized": 0.0,
+        "hz": 10.0,
+        "confidence": "measured_once",
+        "source": "scratch/find_eq_formula.py"
+      },
+      {
+        "normalized": 0.1,
+        "hz": 104.0,
+        "confidence": "measured_once",
+        "source": "scratch/find_eq_formula.py"
+      },
+      {
+        "normalized": 0.2,
+        "hz": 253.0,
+        "confidence": "measured_once",
+        "source": "scratch/find_eq_formula.py"
+      },
+      {
+        "normalized": 0.3,
+        "hz": 489.0,
+        "confidence": "measured_once",
+        "source": "scratch/find_eq_formula.py"
+      },
+      {
+        "normalized": 0.4,
+        "hz": 863.0,
+        "confidence": "measured_once",
+        "source": "scratch/find_eq_formula.py"
+      },
+      {
+        "normalized": 0.5,
+        "hz": 1457.0,
+        "confidence": "measured_once",
+        "source": "scratch/find_eq_formula.py"
+      },
+      {
+        "normalized": 0.6,
+        "hz": 2400.0,
+        "confidence": "measured_once",
+        "source": "scratch/find_eq_formula.py"
+      },
+      {
+        "normalized": 0.7,
+        "hz": 3895.0,
+        "confidence": "measured_once",
+        "source": "scratch/find_eq_formula.py"
+      },
+      {
+        "normalized": 0.8,
+        "hz": 6267.0,
+        "confidence": "measured_once",
+        "source": "scratch/find_eq_formula.py"
+      },
+      {
+        "normalized": 0.9,
+        "hz": 10030.0,
+        "confidence": "measured_once",
+        "source": "scratch/find_eq_formula.py"
+      },
+      {
+        "normalized": 1.0,
+        "hz": 16000.0,
+        "confidence": "measured_once",
+        "source": "scratch/find_eq_formula.py"
+      }
+    ]
+  }
+]

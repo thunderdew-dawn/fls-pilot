@@ -1,0 +1,622 @@
+[
+  {
+    "domain": "mixer_volume",
+    "parameter": "mixer.setTrackVolume",
+    "api_setter": "mixer.setTrackVolume",
+    "api_getter": "mixer.getTrackVolume",
+    "value_type": "normalized_float",
+    "valid_range": [
+      0.0,
+      1.0
+    ],
+    "confidence": "implementation_verified",
+    "mapping": [
+      {
+        "normalized": 0.0,
+        "db": -Infinity,
+        "confidence": "implementation_verified",
+        "source": "scratch/fader_calibration.json"
+      },
+      {
+        "normalized": 0.01,
+        "db": -50.3347,
+        "confidence": "implementation_verified",
+        "source": "scratch/fader_calibration.json"
+      },
+      {
+        "normalized": 0.02,
+        "db": -44.1829,
+        "confidence": "implementation_verified",
+        "source": "scratch/fader_calibration.json"
+      },
+      {
+        "normalized": 0.03,
+        "db": -40.5293,
+        "confidence": "implementation_verified",
+        "source": "scratch/fader_calibration.json"
+      },
+      {
+        "normalized": 0.04,
+        "db": -37.8981,
+        "confidence": "implementation_verified",
+        "source": "scratch/fader_calibration.json"
+      },
+      {
+        "normalized": 0.05,
+        "db": -35.8268,
+        "confidence": "implementation_verified",
+        "source": "scratch/fader_calibration.json"
+      },
+      {
+        "normalized": 0.06,
+        "db": -34.1094,
+        "confidence": "implementation_verified",
+        "source": "scratch/fader_calibration.json"
+      },
+      {
+        "normalized": 0.07,
+        "db": -32.6361,
+        "confidence": "implementation_verified",
+        "source": "scratch/fader_calibration.json"
+      },
+      {
+        "normalized": 0.08,
+        "db": -31.3412,
+        "confidence": "implementation_verified",
+        "source": "scratch/fader_calibration.json"
+      },
+      {
+        "normalized": 0.09,
+        "db": -30.1825,
+        "confidence": "implementation_verified",
+        "source": "scratch/fader_calibration.json"
+      },
+      {
+        "normalized": 0.1,
+        "db": -29.131,
+        "confidence": "implementation_verified",
+        "source": "scratch/fader_calibration.json"
+      },
+      {
+        "normalized": 0.11,
+        "db": -28.1661,
+        "confidence": "implementation_verified",
+        "source": "scratch/fader_calibration.json"
+      },
+      {
+        "normalized": 0.12,
+        "db": -27.2727,
+        "confidence": "implementation_verified",
+        "source": "scratch/fader_calibration.json"
+      },
+      {
+        "normalized": 0.13,
+        "db": -26.4392,
+        "confidence": "implementation_verified",
+        "source": "scratch/fader_calibration.json"
+      },
+      {
+        "normalized": 0.14,
+        "db": -25.6566,
+        "confidence": "implementation_verified",
+        "source": "scratch/fader_calibration.json"
+      },
+      {
+        "normalized": 0.15,
+        "db": -24.9177,
+        "confidence": "implementation_verified",
+        "source": "scratch/fader_calibration.json"
+      },
+      {
+        "normalized": 0.16,
+        "db": -24.2169,
+        "confidence": "implementation_verified",
+        "source": "scratch/fader_calibration.json"
+      },
+      {
+        "normalized": 0.17,
+        "db": -23.5495,
+        "confidence": "implementation_verified",
+        "source": "scratch/fader_calibration.json"
+      },
+      {
+        "normalized": 0.18,
+        "db": -22.9115,
+        "confidence": "implementation_verified",
+        "source": "scratch/fader_calibration.json"
+      },
+      {
+        "normalized": 0.19,
+        "db": -22.2998,
+        "confidence": "implementation_verified",
+        "source": "scratch/fader_calibration.json"
+      },
+      {
+        "normalized": 0.2,
+        "db": -21.7114,
+        "confidence": "implementation_verified",
+        "source": "scratch/fader_calibration.json"
+      },
+      {
+        "normalized": 0.21,
+        "db": -21.1442,
+        "confidence": "implementation_verified",
+        "source": "scratch/fader_calibration.json"
+      },
+      {
+        "normalized": 0.22,
+        "db": -20.5961,
+        "confidence": "implementation_verified",
+        "source": "scratch/fader_calibration.json"
+      },
+      {
+        "normalized": 0.23,
+        "db": -20.0653,
+        "confidence": "implementation_verified",
+        "source": "scratch/fader_calibration.json"
+      },
+      {
+        "normalized": 0.24,
+        "db": -19.5503,
+        "confidence": "implementation_verified",
+        "source": "scratch/fader_calibration.json"
+      },
+      {
+        "normalized": 0.25,
+        "db": -19.0498,
+        "confidence": "implementation_verified",
+        "source": "scratch/fader_calibration.json"
+      },
+      {
+        "normalized": 0.26,
+        "db": -18.5625,
+        "confidence": "implementation_verified",
+        "source": "scratch/fader_calibration.json"
+      },
+      {
+        "normalized": 0.27,
+        "db": -18.0875,
+        "confidence": "implementation_verified",
+        "source": "scratch/fader_calibration.json"
+      },
+      {
+        "normalized": 0.28,
+        "db": -17.6237,
+        "confidence": "implementation_verified",
+        "source": "scratch/fader_calibration.json"
+      },
+      {
+        "normalized": 0.29,
+        "db": -17.1704,
+        "confidence": "implementation_verified",
+        "source": "scratch/fader_calibration.json"
+      },
+      {
+        "normalized": 0.3,
+        "db": -16.7269,
+        "confidence": "implementation_verified",
+        "source": "scratch/fader_calibration.json"
+      },
+      {
+        "normalized": 0.31,
+        "db": -16.2923,
+        "confidence": "implementation_verified",
+        "source": "scratch/fader_calibration.json"
+      },
+      {
+        "normalized": 0.32,
+        "db": -15.8662,
+        "confidence": "implementation_verified",
+        "source": "scratch/fader_calibration.json"
+      },
+      {
+        "normalized": 0.33,
+        "db": -15.4479,
+        "confidence": "implementation_verified",
+        "source": "scratch/fader_calibration.json"
+      },
+      {
+        "normalized": 0.34,
+        "db": -15.037,
+        "confidence": "implementation_verified",
+        "source": "scratch/fader_calibration.json"
+      },
+      {
+        "normalized": 0.35,
+        "db": -14.633,
+        "confidence": "implementation_verified",
+        "source": "scratch/fader_calibration.json"
+      },
+      {
+        "normalized": 0.36,
+        "db": -14.2355,
+        "confidence": "implementation_verified",
+        "source": "scratch/fader_calibration.json"
+      },
+      {
+        "normalized": 0.37,
+        "db": -13.8441,
+        "confidence": "implementation_verified",
+        "source": "scratch/fader_calibration.json"
+      },
+      {
+        "normalized": 0.38,
+        "db": -13.4584,
+        "confidence": "implementation_verified",
+        "source": "scratch/fader_calibration.json"
+      },
+      {
+        "normalized": 0.39,
+        "db": -13.0781,
+        "confidence": "implementation_verified",
+        "source": "scratch/fader_calibration.json"
+      },
+      {
+        "normalized": 0.4,
+        "db": -12.7029,
+        "confidence": "implementation_verified",
+        "source": "scratch/fader_calibration.json"
+      },
+      {
+        "normalized": 0.41,
+        "db": -12.3325,
+        "confidence": "implementation_verified",
+        "source": "scratch/fader_calibration.json"
+      },
+      {
+        "normalized": 0.42,
+        "db": -11.9667,
+        "confidence": "implementation_verified",
+        "source": "scratch/fader_calibration.json"
+      },
+      {
+        "normalized": 0.43,
+        "db": -11.6052,
+        "confidence": "implementation_verified",
+        "source": "scratch/fader_calibration.json"
+      },
+      {
+        "normalized": 0.44,
+        "db": -11.2479,
+        "confidence": "implementation_verified",
+        "source": "scratch/fader_calibration.json"
+      },
+      {
+        "normalized": 0.45,
+        "db": -10.8944,
+        "confidence": "implementation_verified",
+        "source": "scratch/fader_calibration.json"
+      },
+      {
+        "normalized": 0.46,
+        "db": -10.5446,
+        "confidence": "implementation_verified",
+        "source": "scratch/fader_calibration.json"
+      },
+      {
+        "normalized": 0.47,
+        "db": -10.1983,
+        "confidence": "implementation_verified",
+        "source": "scratch/fader_calibration.json"
+      },
+      {
+        "normalized": 0.48,
+        "db": -9.8554,
+        "confidence": "implementation_verified",
+        "source": "scratch/fader_calibration.json"
+      },
+      {
+        "normalized": 0.49,
+        "db": -9.5156,
+        "confidence": "implementation_verified",
+        "source": "scratch/fader_calibration.json"
+      },
+      {
+        "normalized": 0.5,
+        "db": -9.1789,
+        "confidence": "implementation_verified",
+        "source": "scratch/fader_calibration.json"
+      },
+      {
+        "normalized": 0.51,
+        "db": -8.8451,
+        "confidence": "implementation_verified",
+        "source": "scratch/fader_calibration.json"
+      },
+      {
+        "normalized": 0.52,
+        "db": -8.514,
+        "confidence": "implementation_verified",
+        "source": "scratch/fader_calibration.json"
+      },
+      {
+        "normalized": 0.53,
+        "db": -8.1856,
+        "confidence": "implementation_verified",
+        "source": "scratch/fader_calibration.json"
+      },
+      {
+        "normalized": 0.54,
+        "db": -7.8597,
+        "confidence": "implementation_verified",
+        "source": "scratch/fader_calibration.json"
+      },
+      {
+        "normalized": 0.55,
+        "db": -7.5361,
+        "confidence": "implementation_verified",
+        "source": "scratch/fader_calibration.json"
+      },
+      {
+        "normalized": 0.56,
+        "db": -7.2149,
+        "confidence": "implementation_verified",
+        "source": "scratch/fader_calibration.json"
+      },
+      {
+        "normalized": 0.57,
+        "db": -6.8959,
+        "confidence": "implementation_verified",
+        "source": "scratch/fader_calibration.json"
+      },
+      {
+        "normalized": 0.58,
+        "db": -6.579,
+        "confidence": "implementation_verified",
+        "source": "scratch/fader_calibration.json"
+      },
+      {
+        "normalized": 0.59,
+        "db": -6.2642,
+        "confidence": "implementation_verified",
+        "source": "scratch/fader_calibration.json"
+      },
+      {
+        "normalized": 0.6,
+        "db": -5.9512,
+        "confidence": "implementation_verified",
+        "source": "scratch/fader_calibration.json"
+      },
+      {
+        "normalized": 0.61,
+        "db": -5.6401,
+        "confidence": "implementation_verified",
+        "source": "scratch/fader_calibration.json"
+      },
+      {
+        "normalized": 0.62,
+        "db": -5.3308,
+        "confidence": "implementation_verified",
+        "source": "scratch/fader_calibration.json"
+      },
+      {
+        "normalized": 0.63,
+        "db": -5.0232,
+        "confidence": "implementation_verified",
+        "source": "scratch/fader_calibration.json"
+      },
+      {
+        "normalized": 0.64,
+        "db": -4.7172,
+        "confidence": "implementation_verified",
+        "source": "scratch/fader_calibration.json"
+      },
+      {
+        "normalized": 0.65,
+        "db": -4.4129,
+        "confidence": "implementation_verified",
+        "source": "scratch/fader_calibration.json"
+      },
+      {
+        "normalized": 0.66,
+        "db": -4.11,
+        "confidence": "implementation_verified",
+        "source": "scratch/fader_calibration.json"
+      },
+      {
+        "normalized": 0.67,
+        "db": -3.8086,
+        "confidence": "implementation_verified",
+        "source": "scratch/fader_calibration.json"
+      },
+      {
+        "normalized": 0.68,
+        "db": -3.5085,
+        "confidence": "implementation_verified",
+        "source": "scratch/fader_calibration.json"
+      },
+      {
+        "normalized": 0.69,
+        "db": -3.2099,
+        "confidence": "implementation_verified",
+        "source": "scratch/fader_calibration.json"
+      },
+      {
+        "normalized": 0.7,
+        "db": -2.9125,
+        "confidence": "implementation_verified",
+        "source": "scratch/fader_calibration.json"
+      },
+      {
+        "normalized": 0.71,
+        "db": -2.6163,
+        "confidence": "implementation_verified",
+        "source": "scratch/fader_calibration.json"
+      },
+      {
+        "normalized": 0.72,
+        "db": -2.3214,
+        "confidence": "implementation_verified",
+        "source": "scratch/fader_calibration.json"
+      },
+      {
+        "normalized": 0.73,
+        "db": -2.0276,
+        "confidence": "implementation_verified",
+        "source": "scratch/fader_calibration.json"
+      },
+      {
+        "normalized": 0.74,
+        "db": -1.7349,
+        "confidence": "implementation_verified",
+        "source": "scratch/fader_calibration.json"
+      },
+      {
+        "normalized": 0.75,
+        "db": -1.4433,
+        "confidence": "implementation_verified",
+        "source": "scratch/fader_calibration.json"
+      },
+      {
+        "normalized": 0.76,
+        "db": -1.1527,
+        "confidence": "implementation_verified",
+        "source": "scratch/fader_calibration.json"
+      },
+      {
+        "normalized": 0.77,
+        "db": -0.8632,
+        "confidence": "implementation_verified",
+        "source": "scratch/fader_calibration.json"
+      },
+      {
+        "normalized": 0.78,
+        "db": -0.5745,
+        "confidence": "implementation_verified",
+        "source": "scratch/fader_calibration.json"
+      },
+      {
+        "normalized": 0.79,
+        "db": -0.2868,
+        "confidence": "implementation_verified",
+        "source": "scratch/fader_calibration.json"
+      },
+      {
+        "normalized": 0.8,
+        "db": 0.0,
+        "confidence": "implementation_verified",
+        "source": "scratch/fader_calibration.json"
+      },
+      {
+        "normalized": 0.81,
+        "db": 0.286,
+        "confidence": "implementation_verified",
+        "source": "scratch/fader_calibration.json"
+      },
+      {
+        "normalized": 0.82,
+        "db": 0.5711,
+        "confidence": "implementation_verified",
+        "source": "scratch/fader_calibration.json"
+      },
+      {
+        "normalized": 0.83,
+        "db": 0.8554,
+        "confidence": "implementation_verified",
+        "source": "scratch/fader_calibration.json"
+      },
+      {
+        "normalized": 0.84,
+        "db": 1.139,
+        "confidence": "implementation_verified",
+        "source": "scratch/fader_calibration.json"
+      },
+      {
+        "normalized": 0.85,
+        "db": 1.4218,
+        "confidence": "implementation_verified",
+        "source": "scratch/fader_calibration.json"
+      },
+      {
+        "normalized": 0.86,
+        "db": 1.7039,
+        "confidence": "implementation_verified",
+        "source": "scratch/fader_calibration.json"
+      },
+      {
+        "normalized": 0.87,
+        "db": 1.9853,
+        "confidence": "implementation_verified",
+        "source": "scratch/fader_calibration.json"
+      },
+      {
+        "normalized": 0.88,
+        "db": 2.266,
+        "confidence": "implementation_verified",
+        "source": "scratch/fader_calibration.json"
+      },
+      {
+        "normalized": 0.89,
+        "db": 2.5461,
+        "confidence": "implementation_verified",
+        "source": "scratch/fader_calibration.json"
+      },
+      {
+        "normalized": 0.9,
+        "db": 2.8256,
+        "confidence": "implementation_verified",
+        "source": "scratch/fader_calibration.json"
+      },
+      {
+        "normalized": 0.91,
+        "db": 3.1044,
+        "confidence": "implementation_verified",
+        "source": "scratch/fader_calibration.json"
+      },
+      {
+        "normalized": 0.92,
+        "db": 3.3827,
+        "confidence": "implementation_verified",
+        "source": "scratch/fader_calibration.json"
+      },
+      {
+        "normalized": 0.93,
+        "db": 3.6604,
+        "confidence": "implementation_verified",
+        "source": "scratch/fader_calibration.json"
+      },
+      {
+        "normalized": 0.94,
+        "db": 3.9376,
+        "confidence": "implementation_verified",
+        "source": "scratch/fader_calibration.json"
+      },
+      {
+        "normalized": 0.95,
+        "db": 4.2142,
+        "confidence": "implementation_verified",
+        "source": "scratch/fader_calibration.json"
+      },
+      {
+        "normalized": 0.96,
+        "db": 4.4903,
+        "confidence": "implementation_verified",
+        "source": "scratch/fader_calibration.json"
+      },
+      {
+        "normalized": 0.97,
+        "db": 4.7659,
+        "confidence": "implementation_verified",
+        "source": "scratch/fader_calibration.json"
+      },
+      {
+        "normalized": 0.98,
+        "db": 5.0411,
+        "confidence": "implementation_verified",
+        "source": "scratch/fader_calibration.json"
+      },
+      {
+        "normalized": 0.99,
+        "db": 5.3158,
+        "confidence": "implementation_verified",
+        "source": "scratch/fader_calibration.json"
+      },
+      {
+        "normalized": 1.0,
+        "db": 5.59,
+        "confidence": "implementation_verified",
+        "source": "scratch/fader_calibration.json"
+      }
+    ]
+  }
+]

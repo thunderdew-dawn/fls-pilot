@@ -1,0 +1,8 @@
+{
+  "_meta": {
+    "description": "Mapping from Hz to normalized API values.",
+    "confidence": "hypothesis",
+    "open_question": "Does setEqFrequency map linearly to Hz? Need measurement."
+  },
+  "mappings": {}
+}

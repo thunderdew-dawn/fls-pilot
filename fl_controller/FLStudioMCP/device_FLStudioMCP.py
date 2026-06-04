@@ -1792,20 +1792,32 @@ def _h_mixer_set_slot_enabled(p):
 
 def _h_mixer_get_eq(p):
     track = int(p["track"])
+    mode = int(p.get("mode", 0))
     bands = []
     for b in range(3):
+        try:
+            gain = round(mixer.getEqGain(track, b, mode), 4)
+        except TypeError:
+            # Fallback if FL Studio version does not support mode
+            gain = round(mixer.getEqGain(track, b), 4)
+            
+        try:
+            frequency = round(mixer.getEqFrequency(track, b, mode), 4)
+        except TypeError:
+            frequency = round(mixer.getEqFrequency(track, b), 4)
+            
         bands.append(
             {
                 "band": b,
-                "gain": round(mixer.getEqGain(track, b), 4),
-                "frequency": round(mixer.getEqFrequency(track, b), 4),
+                "gain": gain,
+                "frequency": frequency,
                 "bandwidth": round(mixer.getEqBandwidth(track, b), 4)
                 if hasattr(mixer, "getEqBandwidth")
                 else 1.0,
                 "type": _get_eq_type(track, b),
             }
         )
-    return {"track": track, "bands": bands}
+    return {"track": track, "mode": mode, "bands": bands}
 
 
 def _get_eq_type(track, band):

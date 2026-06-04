@@ -2,7 +2,7 @@
 
 **Control FL Studio with any MCP-compatible LLM: AI mixing, composition, and mix diagnosis through natural language.**
 
-![version](https://img.shields.io/badge/version-1.0.0-blue)
+![version](https://img.shields.io/badge/version-1.1.0-blue)
 ![status](https://img.shields.io/badge/status-stable-green)
 ![license](https://img.shields.io/badge/license-MIT-green)
 ![python](https://img.shields.io/badge/python-3.10+-blue)
@@ -56,6 +56,7 @@ Full setup is below.
 
 ### Mixing & diagnosis
 - **Mix Doctor** — scans the whole mix and reports concrete problems (clipping, low headroom, level imbalance, missing high-pass, ungrouped related tracks, overlapping EQ boosts), each with the exact evidence and a proposed fix. Fixes are applied one at a time, only on approval, through a snapshot → write → readback → rollback safety layer. Master clipping is resolved by trimming the contributing source tracks rather than pulling the master.
+- **Knowledgebase & Safe Wrappers** — machine-readable calibration logic prevents destructive API calls. Normalized values, DB/Hz limits, and specific EQ mappings are verified against a live-updated JSON knowledgebase, eliminating hallucinated parameter values from the LLM assistant.
 - **Full-song peak watch** — holds a running peak per track across playback, so level decisions are based on the loudest moment of the actual song, not a single instant.
 - **Calibrated processing intents** — musical EQ, compression, reverb, and delay moves mapped to real plugin parameters (native and third-party), each applied as one reversible change.
 - **Level-aware compression** — sets thresholds relative to a track's measured level during playback.
@@ -237,7 +238,7 @@ MIT — see [LICENSE](LICENSE).
 
 ## Status & contributing
 
-Beta — the public 1.0 release. Fully compatible with Windows and macOS.
+Beta — the public 1.1 release. Fully compatible with Windows and macOS.
 Issues and pull requests:
 [github.com/thunderdew-dawn/flstudio-mcp](https://github.com/thunderdew-dawn/flstudio-mcp).
 

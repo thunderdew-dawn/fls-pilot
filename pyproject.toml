@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "fl-studio-mcp"
-version = "1.0.0"
+version = "1.1.0"
 description = "AI-powered FL Studio control via MCP - mixing, composition, plugin control, and mix diagnosis through natural language"
 readme = "README.md"
 license = { text = "MIT" }
@@ -84,3 +84,4 @@ select = ["E", "F", "I", "B", "UP", "SIM"]
 
 [tool.ruff.lint.per-file-ignores]
 "scripts/**/*.py" = ["UP031"]
+"tests/**/*.py" = ["UP031"]

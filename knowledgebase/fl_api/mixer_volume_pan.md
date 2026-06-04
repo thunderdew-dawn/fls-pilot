@@ -1,0 +1,1 @@
+# Mixer Volume & Pan\n\nMixer volume has been fully calibrated. See `mixer_volume_calibration.json`.\n0.8 normalized = 0.0 dB.\n0.0 normalized = -Infinity dB.\n1.0 normalized = +5.6 dB.\n

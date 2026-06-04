@@ -52,6 +52,39 @@ before implementing. The safety contract and roadmap scope are not optional.
 - Keep Piano Roll transforms undo-backed and explicit about readback limits.
 - Normalize and Stretch Pro behavior remains probe-dependent; do not promise it.
 
+## FL Studio Knowledgebase Protocol
+
+- Agents MUST check the Knowledgebase (`knowledgebase/`) before making changes to FL Studio state, mixer parameters, plugin parameters, automation, REC events, or MIDI data.
+- Agents MUST NOT guess valid value ranges, normalized values, dB/Hz mappings, REC event IDs, track indexing, or plugin parameter indices.
+- Agents MUST prefer high-level MCP tools over raw FL API calls. Raw calls are only permitted if no safe wrapper exists.
+- When new verified knowledge is acquired, it MUST be documented in a Markdown file. If machine-relevant, it MUST additionally be documented in JSON/YAML.
+- Every Knowledgebase entry needs at least: Topic, Source/Verification Method, Date, Confidence Level, Affected API/Function/Tool, Valid Ranges, Example, and Known Pitfalls.
+- Hard Rule: Agents MUST NOT leave reusable findings only in chat, commit messages, or temporary scratch notes.
+
+## Knowledge Capture Protocol
+
+An Agent MUST update the Knowledgebase if any of the following occur:
+- An FL Studio API behavior is practically tested.
+- A parameter range is confirmed (via trial, readback, docs, or error messages).
+- A mapping between a UI value and an API value is discovered.
+- A recurring error or pitfall is detected.
+- A workaround is successfully applied.
+- An MCP wrapper is added, modified, or identified as necessary.
+- An assumption is proven wrong.
+- A tool call or server error shows that existing KB knowledge is missing or unclear.
+- A musical recipe rule is reusable.
+- A behavior depends on the FL Studio version, platform, plugin version, or API version.
+
+Every new entry MUST contain: Date, Agent/Author, Topic, Affected File/API, Context, Observation, Tested Values, Result, Confidence Level, Source/Method, Reproduction Steps (if relevant), Open Questions, and Next Recommended Action.
+
+Allowed Confidence Levels: `hypothesis`, `user_reported`, `docs_confirmed`, `measured_once`, `measured_repeated`, `implementation_verified`, `cross_platform_verified`, `deprecated_or_rejected`.
+
+Rules:
+- If a finding affects tool behavior, Markdown is not enough. JSON/YAML MUST be updated.
+- If uncertain, agents MUST NOT document false certainty. Use a low confidence level and add an open question.
+- Every new or modified MCP function must check for a KB entry. If none exists, create a brief entry.
+- Every resolved false assumption MUST also be documented in `knowledgebase/known_pitfalls/`.
+
 ## Do Not Ship As User-Facing Tools
 
 - Plugin loading or insertion.
