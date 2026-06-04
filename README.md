@@ -20,6 +20,29 @@ flstudio-mcp is a Model Context Protocol (MCP) server that lets any MCP client (
 
 It is genre- and producer-agnostic: nothing about it assumes a particular style of music.
 
+## New in v1.1.0
+
+### Knowledgebase & Safe Wrappers
+
+A new core safety layer has been introduced:
+- **Verified values:** API values are now validated against a live-updated JSON knowledgebase, eliminating hallucinated parameter values.
+- **Safe Wrappers:** High-level MCP tools use secure wrappers instead of raw FL Studio API calls, ensuring safe dB/Hz mappings and mandatory readbacks.
+- **Learning Log:** Agents document new API findings directly into the project's knowledgebase for persistent learning.
+
+### Project Organization & Routing Intelligence
+
+This release adds live-tested FL Studio project organization features:
+
+- Rename Step Sequencer channels via `channels.setChannelName`
+- Route channels to Mixer tracks via `channels.setTargetFxTrack`
+- Reliably distinguish Audio Clips, Samplers, and Generator Plugins via `channels.getChannelType`
+- Plan and apply safe project cleanup steps
+- Detect routing issues and propose bus layouts
+- Inspect Audio Clips and provide safe cleanup actions
+
+Known FL Studio API limitation:
+Deep Audio Clip parameters such as Stretch Mode, Normalize state, and some sample internals are not exposed by the FL Studio Python API. The assistant can organize and route Audio Clips, but it will not claim to set Stretch Pro or Normalize automatically.
+
 ## Maintained fork
 
 This repository is a materially extended fork of

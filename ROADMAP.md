@@ -1,865 +1,129 @@
-# Roadmap
-
-> **Transport note (v0.2):** the FL <-> server channel is MIDI SysEx, not a
-> file queue. See [`docs/architecture.md`](docs/architecture.md) and
-> [`docs/CHANGELOG.md`](docs/CHANGELOG.md). The tool surface is unchanged;
-> phase work continues on top of the new transport.
-
-## Non-negotiable safety contract
-
-This project follows the contribution rule strictly: **no tool may modify FL
-Studio state unless the change is reversible through the MCP safety layer**.
-Read-only actions are the only exception.
-
-## Roadmap maintenance rule
-
-`ROADMAP.md` is the active execution tracker for this branch. It must be kept
-up to date in the same PR or commit series whenever:
-
-1. A roadmap slice is completed or materially re-scoped.
-2. A live FL verification checkpoint passes or fails.
-3. Priority order changes due to API limits, safety constraints, or user
-   direction.
-
-If implementation and roadmap diverge, roadmap alignment is a blocking follow-up
-task.
-
-## Current verification checkpoints
-
-- 2026-06-03: Empirically calibrated mixer fader volume curve implemented.
-  - Verified path: Deployed updated `fl_controller/FLStudioMCP/device_FLStudioMCP.py` to FL Studio's Hardware settings folder; executed live fader sweep to capture 101-point calibration table (`scratch/fader_calibration.json`); verified target dB to normalized value linear interpolation via `scratch/verify_mixer_fader.py` and applied gain staging to 13 tracks via `scratch/apply_mix_gains.py`.
-  - Result: Mixer track volume reads now return the actual, true decibel levels directly from FL Studio (`mixer.getTrackVolume(t, 1)`), and volume writes convert requested dB levels to precise normalized fader values using linear interpolation on the empirical calibration table. All writable tracks in the user's project were set to their exact target dB levels. Identified 21 tracks locked by active automation clips in the project that ignore external writes.
-- 2026-06-02: Dynamic mixer-track guards and transient plugin-read retries
-  added.
-  - Verified path: `compileall` for connection, safety, target helpers, mixer,
-    channel, plugin, effect, and routing modules; focused offline tests
-    `scripts/test_dynamic_mixer_targets.py`, `scripts/test_channel_organizer.py`,
-    `scripts/test_plugin.py`, and `scripts/test_effects_pattern_extensions.py`.
-  - Result: mixer/plugin/effect/channel/routing tools now validate requested
-    mixer-track indices against the current dynamic `mixer_track_count` before
-    dispatching FL commands; missing tracks are reported as project/fixture
-    state rather than API failure. Plugin parameter reads retry transient
-    timeouts, and plugin parameter writes use idempotent value readback
-    verification. Creating new dynamic mixer tracks remains probe-gated until
-    a rollback-safe Image-Line API path is live-probed.
-- 2026-06-02: User-facing value, workflow, and tool-reference documentation
-  added.
-  - Verified path: `docs/USER_GUIDE.md` reviewed against
-    `scripts/audit_tool_safety.py --format json` output; README usage entry
-    linked to the guide; stale pattern-creation limit language corrected in
-    server instructions and this roadmap.
-  - Result: public docs now explain the app's production value, natural-language
-    assistant interaction model, module-level examples, MCP resources, safety
-    classes, explicit product boundaries, and the current 138-tool catalog.
-- 2026-06-02: Fork provenance and repository metadata aligned with the
-  maintained `thunderdew-dawn/flstudio-mcp` branch.
-  - Verified path: README, CONTRIBUTING, package metadata, MCP server metadata,
-    Glama metadata, LICENSE, and NOTICE reviewed for current maintainer,
-    upstream attribution, compatibility-preserving package names, and explicit
-    rollback-first fork direction.
-  - Result: public-facing source metadata now distinguishes this maintained
-    fork from upstream without breaking the existing `fl-studio-mcp` package or
-    command names.
-- 2026-06-02: `AGENTS.md` repository workflow guide updated and approved for
-  commit.
-  - Verified path: `AGENTS.md` reviewed for repo-safe relative paths and no
-    remaining local-only/no-commit instruction.
-  - Result: future AI-assisted sessions now have a committed workflow guide
-    covering first reads, rollback-first safety posture, documented-API
-    false-positive handling, roadmap discipline, verification expectations,
-    and live FL procedure.
-- 2026-06-02: README now pins the known-working FL Studio build range.
-  - Verified path: README requirements section reviewed with `rg` check for
-    `v25.2.5`, `build 5055`, and controller marker `channels-v38`.
-  - Result: requirements now state the observed known-working FL Studio
-    Producer Edition v25.2.5 build 5055/controller `channels-v38` baseline and
-    keep FL 20.7+ as MIDI-scripting foundation rather than a guarantee that all
-    build-specific write APIs behave identically.
-- 2026-06-02: GitHub Actions CI for hard lint, safety audits, and mock bridge
-  smoke test added.
-  - Verified path: local run of CI commands: `compileall src
-    scripts/test_bridge_mock.py scripts/audit_tool_safety.py`; `ruff check
-    --select E9,F src fl_controller/FLStudioMCP/device_FLStudioMCP.py
-    scripts/audit_tool_safety.py scripts/test_bridge_mock.py`;
-    `scripts/audit_tool_safety.py --fail-on-gaps`;
-    `scripts/audit_tool_safety.py --fail-on-missing-safety-docs --format json`;
-    `scripts/test_bridge_mock.py`.
-  - Result: `.github/workflows/ci.yml` now runs a no-FL mock TCP bridge smoke
-    plus hard Python-error linting and safety gates. Full `ruff check .` still
-    has pre-existing style failures in older controller/live-test scripts, so
-    CI intentionally scopes linting to hard `E9,F` errors for the core surface.
-- 2026-06-02: Prompt-level eval suite added for the FLStudioMCP production
-  tool surface.
-  - Verified path: `python3 -m json.tool evals/evals.json`; manual coverage
-    check confirms 10 scenarios spanning bridge/transport, project reports,
-    channel steps, mixer/routing/bulk/color, patterns/playlist/arrangement,
-    Piano Roll/scale composition, plugin/effect intents, Mix Doctor,
-    audio/preset/chain planning, and documented-API false-positive handling.
-  - Result: `evals/evals.json` now captures expected tool choices and safety
-    expectations for regression review.
-- 2026-06-02: FL Studio production skill orchestration layer updated.
-  - Verified path: `wc -l` confirms `skills/flstudio-production/SKILL.md` is
-    under 500 lines; frontmatter/reference existence check passed; all `fl_*`
-    tools named in `references/tool-map.md` resolve to registered tool
-    functions.
-  - Result: the skill now points to real one-level references for limits, tool
-    selection, workflows, and troubleshooting; stale non-existent preset/kuthu
-    tool names were removed; the skill documents rollback-first behavior and
-    documented-API false-positive probe discipline.
-- 2026-06-02: Compose and MIDI Export tools now have safety-class docstrings
-  and MCP annotations; the strict safety-doc audit passes for the full tool
-  surface.
-  - Verified path: `compileall` for `src/fl_studio_mcp/tools/compose.py` and
-    `src/fl_studio_mcp/tools/export.py`; targeted `audit_file` check for
-    Compose and MIDI Export tools' `safetyClass` and `Safety:` docstrings;
-    `scripts/test_compose.py`; `scripts/test_midi_export.py`;
-    `scripts/audit_tool_safety.py --fail-on-gaps`;
-    `scripts/audit_tool_safety.py --fail-on-missing-safety-docs --format json`.
-  - Result: undo-backed raga/scale Piano Roll writes, scale catalogue reads,
-    and the external MIDI-file export now report explicit safety classes.
-    Safety-class docstrings and MCP annotations are complete across the
-    audited tool surface.
-- 2026-06-02: Bulk mute/solo and Color tools now have safety-class docstrings
-  and MCP annotations.
-  - Verified path: `compileall` for `src/fl_studio_mcp/tools/bulk.py` and
-    `src/fl_studio_mcp/tools/color.py`; targeted `audit_file` check for every
-    Bulk and Color tool's `safetyClass` and `Safety:` docstring;
-    `scripts/test_bulk.py`; `scripts/test_color.py`;
-    `scripts/audit_tool_safety.py --fail-on-gaps`.
-  - Result: rollback-backed grouped mixer mute/solo reset, mixer-track color,
-    and channel-color tools now report explicit write-safe safety classes. The
-    manual `scripts/test_color_live.py` probe was not counted for this
-    metadata-only slice.
-- 2026-06-02: Read-only Audio Analysis, Chain Planning, Preset Suggestion, and
-  Project Doctor tools now have safety-class docstrings and MCP annotations.
-  - Verified path: `compileall` for `src/fl_studio_mcp/tools/audio.py`,
-    `src/fl_studio_mcp/tools/chains.py`,
-    `src/fl_studio_mcp/tools/presets.py`, and
-    `src/fl_studio_mcp/tools/project_doctor.py`; targeted `audit_file` check
-    for every touched tool's `safetyClass` and `Safety:` docstring;
-    `scripts/test_audio_analysis.py`; `scripts/test_chains.py`;
-    `scripts/test_preset_library.py`; `scripts/test_project_doctor.py`;
-    `scripts/audit_tool_safety.py --fail-on-gaps`.
-  - Result: offline audio/key analysis, monophonic melody extraction, genre
-    chain planning, installed-plugin/preset library reads, and project/export
-    readiness reports now report explicit read-only safety classes.
-- 2026-06-02: Arrangement tools now have safety-class docstrings and MCP
-  annotations.
-  - Verified path: `compileall` for `src/fl_studio_mcp/tools/arrange.py`;
-    targeted `audit_file` check for every Arrangement tool's `safetyClass`
-    and `Safety:` docstring; `scripts/audit_tool_safety.py --fail-on-gaps`.
-  - Result: rollback-backed pattern creation, pattern clone, channel selection,
-    and marker-add tools now report explicit safety classes. The existing
-    `scripts/test_arrange_mechanic.py` live script was not counted for this
-    slice because it directly creates patterns/markers and is explicitly not a
-    rollback-safe smoke test.
-- 2026-06-02: Mix Doctor and Mixing Intent tools now have safety-class
-  docstrings and MCP annotations.
-  - Verified path: `compileall` for
-    `src/fl_studio_mcp/tools/mix_doctor.py` and
-    `src/fl_studio_mcp/tools/mixing.py`; targeted `audit_file` check for
-    every Mix Doctor and Mixing Intent tool's `safetyClass` and `Safety:`
-    docstring; `scripts/test_mix_doctor.py`;
-    `scripts/audit_tool_safety.py --fail-on-gaps`; TCP live preflight with
-    `fl_ping` on FL Studio Producer Edition v25.2.5 (build 5055), controller
-    build marker `channels-v38`.
-  - Result: Mix Doctor read-only/gated-write tools and rollback-backed
-    grouped Mixing Intent writes now report explicit safety classes. Pure
-    curve/logic checks in `scripts/test_mixing_intents.py`,
-    `scripts/test_reverb_delay_intents.py`, and
-    `scripts/test_compression_intents.py` passed, but rollback-safe live plugin
-    writes were blocked by missing fixture plugins on the expected targets
-    (track 2 slot 0, no reverb/delay on track 2, and track 9 slot 4). No
-    plugin loading was attempted because loading plugins is prohibited.
-- 2026-06-02: Channel Organizer and Step Sequencer tools now have
-  safety-class docstrings and MCP annotations.
-  - Verified path: `compileall` for `src/fl_studio_mcp/tools/channels.py`;
-    targeted `audit_file` check for every channel tool's `safetyClass` and
-    `Safety:` docstring; `scripts/test_channel_organizer.py`;
-    `scripts/test_step_sequencer.py`;
-    `scripts/audit_tool_safety.py --fail-on-gaps`.
-  - Result: channel detail/assignment reads and rollback-backed channel
-    naming, mixer-target, and step-sequencer writes now report explicit safety
-    classes.
-- 2026-06-02: Piano Roll tools now have safety-class docstrings and MCP
-  annotations.
-  - Verified path: `compileall` for `src/fl_studio_mcp/tools/pianoroll.py`;
-    targeted `audit_file` check for every Piano Roll tool's `safetyClass` and
-    `Safety:` docstring; `scripts/test_pianoroll.py`;
-    `scripts/audit_tool_safety.py --fail-on-gaps`.
-  - Result: undo-backed Piano Roll note, marker, quantize, transpose,
-    duplicate, velocity-ramp, and API-limited readback tools now report explicit
-    safety classes and keep their readback limitations visible.
-- 2026-06-02: Phase 1 project/mixer/channel/safety tools now have
-  safety-class docstrings and MCP annotations.
-  - Verified path: `compileall` for `src/fl_studio_mcp/tools/phase1.py`;
-    targeted `audit_file` check for every Phase 1 tool's `safetyClass` and
-    `Safety:` docstring; `scripts/test_mixer.py`;
-    `scripts/audit_tool_safety.py --fail-on-gaps`.
-  - Result: project, mixer, channel, changelog, rollback, dry-run, and
-    external changelog-export tools now report explicit safety classes without
-    changing their rollback behavior.
-- 2026-06-01: Routing tool safety-class docstrings and MCP annotations added.
-  - Verified path: `compileall` for `src/fl_studio_mcp/tools/routing.py`;
-    targeted `audit_file` check for every routing tool's `safetyClass` and
-    `Safety:` docstring; `scripts/audit_tool_safety.py --fail-on-gaps`.
-  - Result: routing reads, cleanup candidate diagnosis, single route writes,
-    and grouped bus routing now report explicit safety classes. No live routing
-    write was run for this metadata-only slice.
-- 2026-06-01: Plugin parameter tool safety-class docstrings and MCP
-  annotations added.
-  - Verified path: `compileall` for `src/fl_studio_mcp/tools/plugin.py`;
-    targeted `audit_file` check for every plugin tool's `safetyClass` and
-    `Safety:` docstring; `scripts/test_plugin.py`;
-    `scripts/audit_tool_safety.py --fail-on-gaps`.
-  - Result: plugin listing, parameter reads, preset-name reads, manual preset
-    navigation plans, and rollback-backed already-loaded plugin parameter
-    writes now report explicit safety classes.
-- 2026-06-01: Pattern and Playlist tool safety-class docstrings and MCP
-  annotations added.
-  - Verified path: `compileall` for `src/fl_studio_mcp/tools/phase3.py`;
-    targeted `audit_file` check for every Pattern/Playlist tool's
-    `safetyClass` and `Safety:` docstring; `scripts/test_pattern_playlist.py`;
-    `scripts/audit_tool_safety.py --fail-on-gaps`.
-  - Result: Pattern and Playlist read/write tools now report explicit
-    read-only or write-safe safety classes while preserving rollback-backed
-    write behavior.
-- 2026-06-01: Transport tool safety-class docstrings and MCP annotations added.
-  - Verified path: `compileall` for `src/fl_studio_mcp/tools/transport.py`;
-    targeted `audit_file` check for every transport tool's `safetyClass` and
-    `Safety:` docstring; `scripts/audit_tool_safety.py --fail-on-gaps`;
-    `scripts/test_bridge.py` against FL Studio Producer Edition v25.2.5 (build
-    5055), controller build marker `channels-v38`.
-  - Result: read-only, transient runtime, and rollback-backed transport tools
-    now report explicit safety classes. The live bridge test restored tempo
-    from 147 BPM back to 142 BPM and ended with playback stopped and recording
-    disarmed.
-- 2026-06-01: Safety-class documentation audit support added offline, with
-  the Effect Slot and Native EQ tool module updated as the first annotated
-  module.
-  - Verified path: `compileall` for `scripts/audit_tool_safety.py` and
-    `src/fl_studio_mcp/tools/effects.py`;
-    `scripts/test_effects_pattern_extensions.py`;
-    `scripts/audit_tool_safety.py --fail-on-gaps`;
-    `scripts/audit_tool_safety.py --fail-on-missing-safety-docs --format json`.
-  - Result: the audit output now reports each tool's `safetyClass` annotation
-    and whether the function docstring contains a `Safety:` section. The new
-    strict doc gate intentionally remains non-standard for now because the
-    remaining modules still need migration; the existing write-gap gate stays
-    green.
-- 2026-06-01: Native EQ type mapping probe ran on FL Studio Producer Edition
-  v25.2.5 (build 5055), controller build marker `channels-v38`; no working
-  high-pass type mapping found.
-  - Verified path: installed updated controller script into
-    `~/Documents/Image-Line/FL Studio/Settings/Hardware/FLStudioMCP/`,
-    reloaded FL MIDI scripts, confirmed `fl_ping` build `channels-v38`, then
-    ran `scripts/probe_native_eq_type_live.py`.
-  - Result: raw integer, update-only, MIDI-scaled, and candidate type values
-    all read back as Native EQ `type=0` on mixer track 8 `Drums`, band 0.
-    Float variants were rejected by FL's `processRECEvent` binding because the
-    value must be an integer. Each attempted write used immediate rollback.
-  - Decision: do not expose Native EQ high-pass/type configuration as a
-    user-facing tool on this build. Keep Native EQ type writes
-    `documented-unconfirmed`/manual until a different FL build or API path
-    proves a visible, rollback-safe type mutation.
-- 2026-06-01: Named rollback-unit metadata added offline for write history.
-  - Verified path: `scripts/test_change_history.py`;
-    `scripts/test_step_sequencer.py`; `scripts/test_bulk.py`;
-    `scripts/audit_tool_safety.py --fail-on-gaps`.
-  - Result: `safe_write` and `safe_write_group` now persist a
-    `rollback_unit` name in changelog entries and recent summaries. Bulk
-    mute/solo/reset, routing group, and step sequencer batch writes now pass
-    explicit rollback-unit names so grouped/batch operations are easier to
-    audit before rollback.
-  - Note: `scripts/test_group_tracks.py` is live-only and was not counted in
-    the offline verification set.
-- 2026-06-01: Native EQ type mapping probe infrastructure added offline.
-  - Verified path: `compileall` for `src/fl_studio_mcp/protocol.py`,
-    `fl_controller/FLStudioMCP/device_FLStudioMCP.py`,
-    `scripts/probe_native_eq_type_live.py`, and
-    `scripts/run_live_capability_sweep.py`;
-    `scripts/test_effects_pattern_extensions.py`;
-    `scripts/audit_tool_safety.py --fail-on-gaps`.
-  - Result: controller build marker bumped to `channels-v38`; added the
-    constrained internal `mixer_probe_eq_type` command and
-    `scripts/probe_native_eq_type_live.py` to test Native EQ type REC event
-    value/flag variants with immediate rollback. This is probe-only and does
-    not expose a user-facing raw API surface.
-  - Next action: reload FL MIDI scripts, confirm `fl_ping` reports
-    `channels-v38`, then run `scripts/probe_native_eq_type_live.py`.
-  - Live preflight: attempted immediately after implementation; blocked as
-    expected because FL still reported controller build `channels-v37`.
-- 2026-06-01: Phase A API-backed snapshot scopes marked complete offline.
-  - Verified path: `scripts/test_safety_scopes.py`;
-    `scripts/audit_tool_safety.py --fail-on-gaps`.
-  - Result: snapshot coverage now includes channel state, channel steps,
-    pattern state/current selection, playlist tracks, effect slots, track slot
-    bypass state, project time signature, and native mixer EQ. Added focused
-    test assertions for the previously implicit channel and track-slot scopes.
-- 2026-06-01: Targeted Native EQ high-pass write on mixer track 8 `Drums`
-  did not pass; visual check confirmed no visible mixer EQ change, and rollback
-  restored the original EQ state.
-  - Verified path: daemon started locally via `.venv/bin/fl-studio-mcp-daemon`,
-    `fl_ping` on FL Studio Producer Edition v25.2.5 (build 5055), controller
-    build marker `channels-v37`; read mixer track 8; attempted
-    rollback-backed `mixer_set_eq` on band 0 with frequency normalized for 120
-    Hz and high-pass type value `3`.
-  - Result: frequency readback changed from `0.0882` to `0.2594`, but EQ type
-    stayed `0` instead of `3`, so the write was not a verified high-pass.
-    User visual inspection found no visible change on mixer track 8. Rollback
-    by change ID `chg_1780338910870602000_e18e5076` restored band 0 to
-    frequency `0.0882`, bandwidth `0.267`, gain `0.5`, type `0`.
-  - Next action: Native EQ type writes need a narrower REC event/value mapping
-    probe before user-facing high-pass configuration can be promised. Track 8
-    had no loaded plugin slots, so no already-loaded EQ2 fallback was available
-    without violating the no-plugin-loading rule.
-- 2026-06-01: Documented-API false-positive live probe ran on FL Studio
-  Producer Edition v25.2.5 (build 5055), controller build marker
-  `channels-v37`; did not fully pass, but produced narrower evidence.
-  - Verified path: daemon started locally via `.venv/bin/fl-studio-mcp-daemon`,
-    `fl_ping`, `scripts/probe_documented_api_live.py`, and
-    `scripts/test_effect_targets_live.py`.
-  - Result: `patterns.setPatternLength` is documented but not exposed by
-    `dir(patterns)` on this runtime, and the rollback-safe write command
-    returned API unavailable without mutating state. Keep it
-    `documented-unconfirmed` for this build rather than deleting support.
-  - Result: `mixer.setPluginMixLevel` is documented and works on at least one
-    occupied target (Master track 0, slot 8, `Fruity parametric EQ 2`) in both
-    direct and selected-track variants with rollback verified. It still did not
-    stick on track 49 slot 0 `Fruity Limiter` or track 50 slot 0 `Fruity
-    parametric EQ 2`; treat failures as target/plugin/state dependent, not
-    globally `api-limited`.
-  - Result: native mixer EQ setters are present, but gain writes did not stick
-    on tracks 0, 1, 49, or 50 while rollback/restore remained safe. Keep Native
-    EQ writes `documented-unconfirmed` until a narrower target/state probe
-    proves a working path.
-  - Result: Fruity Limiter generic parameter writes still did not stick across
-    exposed parameters; Fruity Parametric EQ 2 plugin parameter write/readback
-    still passed on Band 4 level.
-- 2026-06-01: Documented-API false-positive probe infrastructure added
-  offline.
-  - Verified path: `compileall` for `src/fl_studio_mcp`, controller script,
-    `scripts/probe_documented_api_live.py`, and
-    `scripts/run_live_capability_sweep.py`;
-    `scripts/test_effects_pattern_extensions.py`;
-    `scripts/test_safety_scopes.py`;
-    `scripts/audit_tool_safety.py --fail-on-gaps`.
-  - Result: broad live-sweep failures for officially documented APIs must now
-    stay `documented-unconfirmed` until `scripts/probe_documented_api_live.py`
-    checks API presence, target selection/focus, indexing, readback timing, and
-    rollback. The live capability sweep now includes this probe plus the
-    targeted effect-plugin probe before any documented API is demoted.
-- 2026-06-01: Piano Roll retargeting infrastructure slice passed offline.
-  - Verified path: `compileall` for `src/fl_studio_mcp`, controller script, and focused scripts; `scripts/test_pianoroll.py`; `scripts/test_compose.py`; `scripts/audit_tool_safety.py --fail-on-gaps`.
-  - Result: existing undo-backed Piano Roll write tools can optionally pass a channel/pattern target through the bridge to the controller, which uses `ui.openEventEditor` when available and falls back to `ui.showWindow`.
-  - Live verification passed on FL Studio Producer Edition v25.2.5 (build 5055), controller build marker `channels-v37`: targeted append write to channel 1 / pattern 4 returned `retargeted=True` via `ui.openEventEditor`, then `fl_rollback_last_change` restored through FL undo.
-- 2026-06-01: Live capability sweep rerun on FL Studio Producer Edition v25.2.5 (build 5055), controller build marker `channels-v37`, did not fully pass.
-  - Verified path: `scripts/run_live_capability_sweep.py` over TCP after FL MIDI script reload and ping confirmation.
-  - Result: patterns/playlist, mixer, step sequencer, Piano Roll duplicate, and Piano Roll velocity ramp paths passed with rollback checks; `pattern_set_length` skipped because this FL build does not expose a working length write API; plugin-parameter probe skipped because no plugin was loaded on the probe tracks.
-  - Live API limits observed: effect slot mix and native EQ band writes did not stick on the auto-selected mixer target (track 1, slot 0), so readback verification failed while rollback/restore checks remained safe. Because these APIs are officially documented, treat them as `documented-unconfirmed` until a narrower false-positive probe proves whether the issue is target selection, indexing, readback timing, stale state, or a real build limit.
-- 2026-06-01: Targeted effect-plugin live probe against track 49/50 did not fully pass.
-  - Verified path: `scripts/test_effect_targets_live.py` over TCP against track 49 slot 0 `Fruity Limiter` with route 1->49 active, and track 50 slot 0 `Fruity parametric EQ 2`.
-  - Result: Fruity Parametric EQ 2 plugin parameter write/readback/rollback passed on Band 4 level; Fruity Limiter generic plugin parameters did not stick across all 18 exposed parameters; per-slot mix did not stick for either plugin; per-slot enabled write is unavailable on this FL build. All attempted writes used immediate rollback/restore checks.
-  - Next action: treat effect slot mix and Fruity Limiter parameter writes as `documented-unconfirmed`/probe-gated for this build/state; prefer plugin-specific EQ2 parameter writes where readback is proven, and keep Limiter sidechain configuration manual until a stable parameter path is proven.
-- 2026-06-01: Priority 1/2 live smoke suite attempted, blocked by stale FL controller build.
-  - Verified path: daemon up, bridge ping ok (`build=channels-v35`), then
-    `scripts/test_priority12_live.py`.
-  - Result: blocked at command preflight (`Unknown command: pattern_find_empty`)
-    because FL still runs an older script build that does not include the new
-    controller handlers. Required next step: reload FL MIDI scripts and rerun
-    the live smoke suite.
-- 2026-06-01: Fixture hard-standardize + live capability sweep passed on FL Studio Producer Edition v25.2.5 (build 5055), controller build marker `channels-v36`.
-  - Verified path: `scripts/fixture_hard_standardize_live.py` (names/colors/markers) then `scripts/run_live_capability_sweep.py`.
-  - Result: core rollback-safe writes verified (patterns color, playlist track props, mixer routing/selection, effects slot mix + enabled, native EQ band edit, step sequencer grid bit, plugin param write) with immediate rollback confirmation.
-  - Known limits on this build: `pattern_set_length` is API-unavailable (skipped); `mixer_set_stereo_sep` call executes but does not stick (treated as API-limited in live sweep).
-- 2026-06-01: Priority 1 + Priority 2 implementation slice (offline) passed.
-  - Verified path: `compileall` for `src/` + controller script, safety audit
-    gate (`scripts/audit_tool_safety.py --fail-on-gaps`), focused offline tests:
-    `scripts/test_effects_pattern_extensions.py`,
-    `scripts/test_step_sequencer.py`, `scripts/test_pattern_playlist.py`,
-    `scripts/test_pianoroll.py`.
-  - Result: new rollback-safe Pattern Completion, Effect Slot + Native EQ
-    tools, Project Doctor/Export Readiness reports, and initial Piano Roll
-    comfort transforms (`duplicate`, `velocity_ramp`) are integrated and
-    passing offline checks.
-- 2026-05-31: Scale & Mode Composition Pack Phase 6 live smoke passed on FL Studio
-  Producer Edition v25.2.5 (build 5055), controller build marker
-  `channels-v35`.
-  - Verified path: heartbeat -> ping -> scale catalog read -> scale notes query -> melody creation -> channel focus -> note writing & hotkey triggering via piano-roll bridge.
-  - Result: all checks passed, scale listing and mapping works, notes correctly generated and written to FL Studio.
-- 2026-05-31: Plugin Params Pack Phase 5 live smoke passed on FL Studio
-  Producer Edition v25.2.5 (build 5055), controller build marker
-  `channels-v35`.
-  - Verified path: heartbeat -> ping -> plugin list -> param list & single param read -> preset name read -> rollback-safe plugin param edit write/readback/rollback.
-  - Result: parameter read/write rollback passed. Preset next/prev remains read-only/manual because FL exposes navigation but no verified MCP restore primitive.
-- 2026-05-31: Piano Roll Pack Phase 4 offline tests passed.
-  - Verified path: note name parsing -> chord interval generation -> Pyscript rendering -> rollback undo action generation.
-  - Result: 31 tests passed.
-- 2026-05-31: Patterns & Playlist Pack Phase 3 live smoke passed on FL Studio
-  Producer Edition v25.2.5 (build 5055), controller build marker
-  `channels-v34`.
-  - Verified path: heartbeat -> ping -> pattern list & length read -> playlist tracks read ->
-    rollback-safe pattern rename write/readback/rollback ->
-    rollback-safe playlist track mute/rename/color/selection write/readback/rollback.
-  - Result: all checks passed, rollback restoration confirmed for patterns and playlist tracks.
-- 2026-05-31: Mixer Pack Phase 2 live smoke passed on FL Studio
-  Producer Edition v25.2.5 (build 5055), controller build marker
-  `channels-v28`.
-  - Verified path: heartbeat -> ping -> mixer track details read (with `dock_side` and `stereo_sep`) ->
-    rollback-safe select track write/readback/rollback -> rollback-safe send route
-    write/readback/rollback -> rollback-safe stereo separation write/readback/rollback ->
-    peak level measurement verification.
-  - Result: all checks passed, rollback restoration confirmed for selection, routing, and stereo separation.
-- 2026-05-31: Step Sequencer Pack Phase 1 live smoke passed on FL Studio
-  Producer Edition v25.2.5 (build 5055), controller build marker
-  `channels-v26`.
-  - Verified path: heartbeat -> ping -> grid read -> write-safe step grid bit
-    write/readback/rollback -> rollback verification.
-  - Result: grid bit mutation and rollback restoration successfully verified.
-- 2026-05-31: Channel Organizer Pack v1 live smoke passed on FL Studio
-  Producer Edition v25.2.5 (build 5055), controller build marker
-  `channels-v16`.
-  - Verified path: heartbeat -> ping -> channel detail read (`type`, `pitch`) ->
-    rollback-safe rename write/readback/rollback -> rollback-safe mixer-target
-    write/readback/rollback.
-  - Result: all checks passed, rollback restoration confirmed for both write
-    operations.
-
-For every write-capable tool, the required shape is:
-
-1. Take a scoped snapshot before the write.
-2. Execute the smallest practical change.
-3. Read back the affected state.
-4. Persist a change-log entry with enough restore data to undo it.
-5. Return a human-readable before/after result.
-6. Support rollback through the MCP rollback path.
-
-This applies to mixer, channel, pattern, playlist, piano-roll, routing, plugin,
-effect-slot, project-tempo, time-signature, UI-assisted, and bulk operations.
-Multi-step tools must apply as one named rollback unit unless explicitly split
-into smaller user-approved changes.
-
-Tools that cannot provide rollback are limited to read-only diagnosis, dry-run
-planning, or clearly labelled manual instructions. They must not silently make
-irreversible changes in FL Studio.
-
-Transport-only runtime controls such as play, stop, and preview note triggering
-do not change the saved project structure, but any persisted project mutation
-such as tempo, pattern edits, channel routing, note writes, or mixer/plugin
-changes must follow this contract.
-
-## Contract-broken features
-
-The following capabilities are useful in FL Studio, but they violate this
-project's safety contract unless a future implementation proves scoped
-snapshot, write, readback, changelog, and rollback. They must not ship as
-user-facing write tools in their current form:
-
-- Plugin loading or plugin insertion. Keep the current model: suggest the
-  plugin, ask the user to load it manually, then configure already-loaded
-  plugin parameters through rollback-backed tools.
-- Playlist clip editing, placement, movement, or deletion. Playlist track
-  organization is in scope; clip-level mutation is not in scope until the API
-  exposes reliable enumeration, readback, and restore data.
-- Pattern or clip deletion. Destructive removal is not acceptable without a
-  complete restore story.
-- Project open, project new, project render, or similar file/workflow commands.
-  These are high-impact session operations and remain manual unless a robust
-  project backup and recovery design exists.
-- Raw UI automation or raw escape-hatch calls. They bypass reviewable safety
-  semantics and make commits impossible to audit.
-- Destructive Edison or Slicex live edits without an audio snapshot. Audio
-  editor scripts may be generated as manual/probe workflows, but direct sample
-  mutation needs full restore data before it can become a write tool.
-- Preset next/previous as a write action without rollback. FL Studio exposes
-  preset navigation in some places, but no reliable MCP restore primitive is
-  currently verified. These commands must stay read-only/manual guidance unless
-  preset state can be read back and restored.
-
-## Phase A — Safety baseline before expansion
-
-Before adding the API-backed production suite:
-
-- [x] Add the PR-facing capability/safety audit document and static tool audit
-      script: [`docs/API_CAPABILITY_AUDIT.md`](docs/API_CAPABILITY_AUDIT.md)
-      and `scripts/audit_tool_safety.py`.
-- [x] Inventory every MCP tool and mark it as read-only, transient runtime
-      control, write with rollback, or write gap. Current gate:
-      `scripts/audit_tool_safety.py --fail-on-gaps`.
-- [x] Move existing direct project writes behind `safety.safe_write` or
-      `safety.safe_write_group`. Initial gaps were tempo set, arrangement
-      pattern/marker writes, Piano Roll generated-script writes, and compose
-      tools that call the Piano Roll bridge. Piano Roll writes are rollbackable
-      through FL Studio's undo stack because the generated scripts use
-      `flp.score.undoSection()` when available.
-- [x] Expose the MCP changelog safely: recent history, JSON export, stable
-      change IDs, and LIFO-only rollback by change ID.
-- [x] Add snapshot scopes for new API-backed domains:
-      channel name, channel mixer target, step grid/step params, pattern
-      name/color/length/current selection, playlist track name/color/mute/solo,
-      effect slot mix/bypass, project time signature, and native mixer EQ.
-- [x] Add grouped/named rollback units for project organizer, routing doctor,
-      step-pattern writes, and bulk operations.
-- [x] Treat Piano Roll generated-script transforms as write tools: all exposed
-      transforms route through `safety.safe_piano_roll_write` and FL undo
-      rollback. Readback remains explicitly API-limited.
-- [x] Document each tool's safety class in its docstring and MCP annotations.
-      Audit support and the Effect Slot/Native EQ, Transport,
-      Pattern/Playlist, Plugin Parameter, Routing, Phase 1, Piano Roll, and
-      Channel/Step Sequencer, Mix Doctor, Mixing Intent, and Arrangement
-      modules are complete. Read-only Audio Analysis, Chain Planning, Preset
-      Suggestion, Project Doctor, Bulk, and Color modules are also complete;
-      Compose and MIDI Export are complete. The strict doc gate now passes:
-      `scripts/audit_tool_safety.py --fail-on-missing-safety-docs --format json`.
-- [x] Add tests for planned restore payloads where FL-live tests are not
-      practical.
-
-## Sister Project Consolidation — geezoria/FLStudioMCP
-
-Reference: <https://github.com/geezoria/FLStudioMCP>. The sister project is a
-useful feature-discovery source, but not a design to copy wholesale. It exposes
-a very broad 160+ tool surface, including TCP transport, step sequencer writes,
-playlist/arrangement tools, automation recording, piano-roll transforms,
-generators, voice-to-MIDI, and audio analysis. Our adoption rule is stricter:
-each persistent FL mutation must fit the snapshot -> write -> readback ->
-rollback contract, or it stays read-only/dry-run/manual.
-
-### Adopt as high-priority product capabilities
-
-These overlap strongly with real user workflows and are backed by FL scripting
-APIs we have already documented or probed.
-
-1. **Step Sequencer Pack**
-   - Add grid read/write, full step-pattern write, clear, shift, and velocity
-     humanization.
-   - Snapshot changed grid bits and step parameters as one rollback unit.
-   - This is the strongest missing composition workflow because it avoids the
-     Piano Roll bridge entirely.
-
-2. **Channel Organizer Pack**
-   - Add channel rename, channel type detail, pitch, target mixer assignment,
-     and "assign to free mixer track".
-   - Promote the user's audio-default request only where API-backed:
-     channel volume 50%, name/color/route are in scope; Normalize and Stretch
-     Pro stay probe-dependent.
-   - v1 shipped: details read, unassigned-channel detection, rename, explicit
-     mixer-target assignment, and assign-to-free-mixer-track. Pitch write and
-     Normalize/Stretch Pro remain out of scope.
-
-3. **Pattern Management Pack**
-   - Add first-class current/list/select/rename/color/length/clone/move/find
-     empty tools.
-   - Do not add delete/merge/split until there is a proven restore story.
-
-4. **Playlist Track Organizer**
-   - Add playlist track list/name/color/mute/solo/select.
-   - Add `fl://playlist` as a resource capped like existing mixer/channel
-     resources.
-   - Do not claim general clip enumeration, overlap detection, clip movement,
-     or clip deletion until a reliable API path exists.
-
-5. **Effect Slot and Native EQ Pack**
-   - Add effect slot read, slot mix, track-slot enable/bypass, and native mixer
-     EQ read/write.
-   - Support setting Low/High bands to Low Cut (High Pass) and High Cut (Low Pass)
-     modes via `general.processRECEvent` (using `mixer.REC_Mixer_EQ_Type`,
-     `_Freq`, and `_Q` event IDs) to allow plugin-free, CPU-friendly channel high-passing.
-   - Snapshot slot mix/enabled state and every changed EQ band parameter.
-   - Treat per-slot mute as live-test-required before user-facing exposure.
-
-6. **Safety / Change History Pack**
-   - Expose recent MCP changelog entries, export the changelog, and rollback by
-     recent index or change id.
-   - Add named grouped rollback units for organizer, routing doctor, and bulk
-     cleanup operations.
-   - Optionally anchor large grouped writes with `general.saveUndo` where FL
-     exposes it, without replacing MCP-level restore payloads.
-
-7. **Project Doctor**
-   - Build as orchestration over safe primitives, not as a second write layer.
-   - Combine Mix Doctor, Routing Doctor, organizer findings, plugin/effect-slot
-     state, muted/soloed tracks, duplicate names, too-hot levels, and export
-     readiness into one read-only report.
-   - Apply one approved fix at a time, each with its own rollback unit.
-
-### Adopt later, with architecture changes
-
-- **Piano Roll comfort transforms**: clear, transpose, duplicate, humanize,
-  velocity ramp, delete selected/region. These are real inside Piano Roll
-  scripts, but MCP readback remains the hard part. Keep them undo-backed and
-  explicit about limited readback unless a reliable return channel is added.
-- **High-level generators**: chord progressions, drum grooves, basslines,
-  arpeggios, melodies, and DnB grooves are valuable, but should compile to our
-  existing `fl_export_midi`, step sequencer, or safe Piano Roll writer instead
-  of becoming many thin write tools.
-- **Voice-to-MIDI**: useful, but should first ship as read-only transcription
-  to note JSON/MIDI. Writing into FL must route through the safe Piano Roll
-  writer and requires clear optional dependency handling.
-- **Audio melody-to-Piano-Roll and sample flip workflows**: keep analysis
-  read-only first; generated MIDI/notes are reviewable artifacts before any FL
-  write.
-- **Automation via REC events**: promising but risky. Build probes first for
-  tempo, channel volume/pan, mixer volume, and plugin params; only expose tools
-  where the created automation can be read back or safely undone.
-- **TCP bridge / push events**: attractive for throughput and event streaming,
-  but not a near-term replacement for the now-working MIDI SysEx bridge. Treat
-  it as an experimental transport branch after the product tool surface is
-  safer and better tested.
-
-### Do not copy into the roadmap as user-facing tools
-
-- Raw escape hatches such as `fl_call_raw`; they bypass reviewable safety.
-- Project open/new/render as automated tools; they are UI/file-workflow heavy
-  and high-risk without a stronger backup story.
-- Pattern delete, playlist clip delete/place, marker delete, full clip
-  enumeration, and arrangement switching unless probes prove current FL builds
-  expose them reliably.
-- Plugin loading/insertion; keep the current "suggest/load manually/configure
-  loaded plugin" model.
-- Broad UI window tools. Keep focus/window controls as infrastructure and
-  diagnostics, not core product surface.
-- Full FLP snapshot/restore claims. MCP snapshots restore the affected state,
-  not an entire project file.
-
-### Revised build order after consolidation
-
-1. **Safety primitives first**
-   - Snapshot scopes for channel name/type/pitch/target, step grid/params,
-     pattern name/color/length/current selection, playlist track state, effect
-     slots, native EQ, time signature, and undo metadata.
-   - Changelog browsing and rollback by id/index.
-
-2. **API-backed quick wins**
-   - Step Sequencer Pack.
-   - Channel Organizer Pack.
-   - Pattern Management Pack.
-   - Playlist Track Organizer.
-   - Effect Slot and Native EQ Pack.
-
-3. **Product-level workflows**
-   - Project Organizer MVP.
-   - Routing Doctor 2.0.
-   - Project Doctor / Health Report.
-   - Export readiness report.
-
-4. **Creative intelligence**
-   - Generator pack that emits reviewable notes/MIDI/step patterns.
-   - Voice/audio transcription as optional read-only analysis first.
-   - Safe write path only after generated material is inspectable and
-     rollback-backed.
-
-5. **Experimental infrastructure**
-   - Push events and optional TCP transport.
-   - Piano Roll readback/return-channel research.
-   - REC automation write/readback probes.
-
-## Official API Expansion Backlog
-
-These items come from the official MIDI Controller, Piano Roll, Edison/Audio
-Editor, and Slicex scripting surfaces. They are prioritized for product value
-and compatibility with the safety contract.
-
-### Priority 1 — rollback-backed production primitives
-
-1. **Effect Slot + Native EQ Pack**
-   - Add user-facing tools for mixer effect slot readback, slot mix, slot
-     enabled/bypass state where verified, and native mixer EQ band read/write.
-   - Snapshot every changed slot and EQ band parameter before writes.
-   - Read back slot/EQ state after every mutation and log a restore payload.
-   - Treat per-slot bypass/mute and EQ type changes as live-smoke-required
-     before exposing them broadly.
-
-2. **Step Parameter Pack**
-   - Extend the Step Sequencer Pack beyond grid bits to step velocity, pan,
-     pitch, release, and modulation parameters where the MIDI Controller API
-     exposes stable read/write calls.
-   - Snapshot the affected channel's step grid and changed step parameters as
-     one named rollback unit for full-pattern operations.
-   - Add read-only inspection first for any step parameter whose value range or
-     restore behavior differs across FL Studio versions.
-
-3. **Pattern Organizer Completion**
-   - Add rollback-backed tools for pattern color, pattern length, current
-     pattern selection snapshot/restore, find-empty-pattern, and clone/move if
-     readback proves stable.
-   - Keep pattern delete, merge, split, and destructive cleanup out of scope
-     until restore data is complete.
-   - Use one grouped rollback unit for multi-pattern organizer actions.
-
-4. **Project Doctor / Export Readiness Report**
-   - Build a read-only aggregate report over existing safe primitives:
-     routing, mixer peaks, plugin parameter visibility, muted/solo states,
-     duplicate or empty names, unassigned channels, suspicious pattern lengths,
-     and playlist organization.
-   - Produce fix plans as dry-run recommendations first.
-   - Apply fixes only one approved rollback-backed operation at a time.
-
-### Priority 2 — Piano Roll productivity after return-channel research
-
-1. **Piano Roll Return-Channel Probe**
-   - Research whether generated Piano Roll scripts can return structured note
-     data to the MCP server through a reliable file, clipboard, bridge, or
-     controller-mediated path.
-   - Keep `fl_piano_get_notes` explicitly API-limited until this probe is
-     proven and tested.
-   - Document failure modes and FL version assumptions before enabling any
-     readback-dependent tool.
-
-2. **Piano Roll Comfort Transforms**
-   - Add selected/all scope transforms for duplicate, humanize timing,
-     humanize velocity, velocity ramp, gate/length, legato, overlap trim,
-     strum, arpeggiate, mute/unmute, note color, slide, porta, and
-     snap-to-scale.
-   - Every transform must use the Piano Roll undo-backed safety path and return
-     an explicit readback limitation until the return-channel probe is solved.
-   - Avoid destructive delete-selected/delete-region tools unless the selected
-     note set can be captured and restored.
-
-3. **Piano Roll Marker Pack**
-   - Add scale, section, time-signature, and cue marker helpers where the Piano
-     Roll scripting API can write them predictably.
-   - Keep marker edits undo-backed and grouped with related note transforms
-     when they are part of one musical operation.
-   - Prefer generated reviewable script payloads over broad opaque commands.
-
-Tracking the full scope — eight phases shipping the MCP server, the scale/mode
-composition tools, the SKILL.md, evals, and plugin marketplaces
-bundle.
-
-Each phase is shippable on its own. Each ends with `python scripts/test_bridge.py`
-still passing.
-
-## Phase 0 — Foundation (shipping)
-
-Goal: prove the SysEx bridge works end-to-end and ship the absolute
-minimum tool surface.
-
-- [x] MIDI SysEx protocol (commands, responses, heartbeat) over two loopMIDI ports.
-- [x] FL controller script with `OnSysEx`/`OnMidiMsg` dispatch and an `OnIdle` heartbeat.
-- [x] FastMCP server skeleton with stdio transport.
-- [x] Transport tools: ping, tempo get/set, play, stop, toggle, record,
-      play-state, song-position get/set. **10 tools total.**
-- [x] `scripts/test_bridge.py` standalone harness.
-- [x] Install scripts for Windows and macOS.
-
-## Phase 1 — Channel rack (~12 tools)
-
-The channel rack is where most users place samples and instruments.
-
-- [x] `fl_channel_list` — Names, types, colors, current pattern.
-- [x] `fl_channel_get` — Volume, pan, mute, solo, target mixer track.
-- [x] `fl_channel_set_volume`, `_pan`, `_mute`, `_solo`.
-- [x] `fl_channel_select` — Make a channel active.
-- [x] `fl_channel_get_grid` — Read the step-sequencer grid for the current pattern.
-- [x] `fl_channel_set_grid_bit` — Write a single step. (This is how we draw drum
-  patterns without needing the Piano Roll pyscript.)
-- [x] `fl_channel_clear_grid` — Wipe steps for a channel in the current pattern.
-- [x] `fl_channel_get_color`, `_set_color` — Visual organization.
-
-Risk: FL's channel API uses `channels.channelNumber()` and `channels.selectedChannel()`
-for the active channel. Some functions need the explicit index; some use the
-selection. The script normalizes to explicit indices.
-
-## Phase 2 — Mixer (~10 tools)
-
-- [x] `fl_mixer_list_tracks` — Up to 125 tracks plus Master at index 0.
-- [x] `fl_mixer_get_track` — Name, volume, pan, mute, solo, dock side, color, stereo separation.
-- [x] `fl_mixer_set_volume`, `_set_pan`, `_set_mute`, `_set_solo`, `_set_stereo_separation`.
-- [x] `fl_mixer_select_track` — Drive UI focus.
-- [x] `fl_mixer_get_route` — Where this track's audio is sent.
-- [x] `fl_mixer_set_route` — Add/remove a route to another track.
-- [x] `fl_mixer_get_levels` — Peak meter sample (read via `OnUpdateMeters`).
-
-Risk: `setTrackVolume` takes a normalized float 0.0–1.0 where 0.8 is unity
-gain, not 1.0. The tools accept dB and convert.
-
-## Phase 3 — Patterns + playlist (~6 tools) [x] Completed
-
-- [x] `fl_pattern_list` — Names, lengths, colors.
-- [x] `fl_pattern_select`, `_rename`.
-- [x] `fl_pattern_get_length` (in steps and beats).
-- [x] `fl_playlist_list_tracks` — Playlist track list.
-- [x] `fl_playlist_get_track` — Playlist track details.
-- [x] `fl_playlist_set_mute`, `_set_solo`, `_set_name`, `_set_color`, `_select_track` — Playlist track mutations with rollback.
-- [x] `fl_arrange_add_marker` (previously implemented in arrangement slice) — Section markers.
-
-API limits worth surfacing in tool docs:
-- Playlist clip placement, movement, and deletion remain out of scope; create
-  or clone patterns, write notes into them, add markers, and place clips
-  manually in FL Studio.
-
-## Phase 4 — Piano Roll pyscript (~6 tools) [x] Completed
-
-This is the most invasive phase — adds the second script type.
-
-- [x] `fl_piano_write_notes` — Note batch into the active pattern's Piano Roll.
-- [x] `fl_piano_write_chord` — Helper that builds a chord by name (`Cmaj7`, `Bbm9`) and writes it.
-- [x] `fl_piano_clear` — Wipe the active pattern.
-- [x] `fl_piano_quantize` — Snap selected notes.
-- [x] `fl_piano_transpose` — Shift in semitones.
-- [x] `fl_piano_get_notes` — Declared as `api-limited` with clear error response.
-
-Mechanics:
-1. FL's pyscript sandbox can't receive data the server hands it, so the daemon
-   generates the `MCP_Apply` `.pyscript` with the notes baked in and writes it
-   into FL's Piano roll scripts folder.
-2. FL exposes no API to run a pyscript, so the note bridge is armed once per
-   session: run `MCP_Apply` from the Piano roll's Scripting menu.
-3. To apply a batch, the daemon force-focuses FL and re-triggers the armed
-   script (FL's "Run last script again"); FL re-reads the `.pyscript` and writes
-   the notes. No file queue, no JSON polling.
-
-The Piano roll must be FL's active panel for the re-trigger to land, so the
-bridge force-focuses FL first.
-
-## Phase 5 — Plugin params (~5 tools) [x] Completed
-
-- [x] `fl_plugin_list_params` — Parameter index, name, current value, value range.
-- [x] `fl_plugin_get_param`, `_set_param`.
-- [x] `fl_plugin_get_preset_name`.
-- [x] `fl_plugin_next_preset`, `fl_plugin_prev_preset` return read-only/manual guidance instead of mutating FL state, because preset navigation has no verified rollback primitive.
-
-This is intentionally scoped tight. Per-VST parameter naming is a mess across
-plugins; we expose the raw FL view and let the LLM map names.
-
-## Phase 6 — Scale & mode composition (~8 tools) [x] Completed
-
-Genre- and producer-agnostic composition in any scale or mode: Western modes,
-pentatonic, the Carnatic melakarta and janya ragas, Arabic maqam, and beyond.
-the LLM assistant supplies the correct notes/intervals for the requested scale and writes
-them through the note bridge. Indian ragas are one supported family among many,
-not the headline.
-
-- [x] Scale catalogue — scales and modes by family, each with its
-  ascending/descending intervals (e.g. the 72 melakarta ragas plus common
-  janyas — Bhairavi, Mohanam, Kalyani — alongside Western modes, pentatonic,
-  and maqam).
-- [x] Scale → note mapping at a chosen base note.
-- [x] Melody and chords in a chosen scale, shaped by a mood/character (e.g.
-  `devotional`, `cinematic`, `melancholic`, `energetic`), written via the note
-  bridge (`fl_write_raga_melody`, `fl_write_raga_chords`).
-- [x] Section markers for arrangement (`fl_arrange_add_marker`).
-
-Micro-tonal and gamaka-heavy traditions (e.g. Carnatic) get the *scale
-framework* — correct swaras/intervals — not gamaka or micro-tonal rendering;
-that's a 12-tone MIDI limit, not a tool limit.
-
-Scale/mode data lives in `src/fl_studio_mcp/presets/` as plain Python modules
-so it ships inside the wheel.
-
-## Phase 7 — Polish & ship
-
-- [x] `skills/flstudio-production/SKILL.md` orchestration layer with deep
-      content in `references/`. Under 500 lines.
-- [x] `evals/evals.json` — 10 questions exercising the full tool surface.
-- [x] `AGENTS.md` describing the agentic workflow for future AI assistant sessions
-      working on this codebase.
-- [x] GitHub Actions for linting and the standalone bridge tests (mock FL).
-- [x] Pin a known-working FL Studio version range in README.
-
-## Out of scope (intentionally)
-
-- Loading new VST instances — FL API does not allow this.
-- Creating new patterns ex nihilo — same limitation.
-- Audio recording control beyond the record-arm toggle.
-- Multiple FL Studio instances on one machine — not currently wired.
+# FL Studio AI Assistant Roadmap
+
+## Purpose
+This file is the active execution roadmap for the branch.
+
+## Current Implementation Scope
+1. Safety primitives and change history
+2. API-backed quick wins
+   - Step Sequencer Pack
+   - Channel Organizer Pack
+   - Pattern Management Pack
+   - Playlist Track Organizer
+   - Effect Slot and Native EQ Pack
+3. Product-level workflows
+   - Project Organizer MVP
+   - Routing Doctor 2.0
+   - Project Doctor / Health Report
+   - Export readiness report
+4. Creative intelligence and experimental infrastructure
+
+## Current Stable Capabilities
+- Mix Doctor
+- Knowledgebase & Safe Wrappers
+- Full-song peak watch
+- Plugin parameter control
+- Gain staging
+- Reference match
+- Bulk track control
+- Track/channel coloring
+- MIDI export
+- Audio analysis basics
+
+## Verified FL Studio API Capabilities
+- `channels.setChannelName` works
+- `channels.setTargetFxTrack` works
+- `channels.getChannelType` works and can distinguish `CT_AudioClip`, `CT_Sampler`, `CT_GenPlug`, etc.
+- Mixer fader dB read/write calibration exists via empirical calibration table
+- Controller/build-specific behavior must remain documented with build markers
+
+## Known FL Studio API Limitations
+- Stretch Mode cannot currently be read or set through the verified FL Python API path.
+- Normalize cannot currently be read or set through the verified FL Python API path.
+- Deep sample parameters are not exposed reliably.
+- AudioClip handling may rename, route, color, lower volume, and produce manual checklists, but must not claim automatic Stretch Pro or Normalize handling.
+- Native EQ type / high-pass configuration remains documented-unconfirmed unless a verified rollback-safe API path exists.
+- Plugin loading/insertion remains manual.
+- Playlist clip editing/deletion and destructive pattern/clip deletion remain out of scope.
+
+## Active Roadmap
+
+### P0 — Safety and Evidence
+- Safety primitives
+- Change history
+- Rollback by ID
+- Knowledgebase updates
+- API capability audit updates
+- Live verification checkpoint discipline
+
+### P1 — API-backed Core Workflows
+- Channel Type Classifier
+- Project Organizer MVP
+- Naming Standard Assistant
+- Color Standardizer
+- Routing Doctor 2.0
+- Bus Layout Planner
+- Audio Clip Inspector
+- Audio Clip Safe Defaults Assistant
+- Preflight Project MVP
+- Project Health Dashboard MVP
+- Guided Fix Mode
+
+### P2 — Product-level Workflows
+- Export & Delivery Assistant
+- Stem Export Manager
+- Session Setup Templates
+- Plugin Chain Assistant 2.0
+- Arrangement Coach
+- Energy Curve Analyzer
+- Transition Doctor
+- Low-End Safety Assistant
+- Sidechain Doctor
+- Creative Block Breaker
+- Explain My Mix
+- Reference Track Deconstruction
+- Handoff Report
+
+### P3 — Later / Experimental / API-dependent
+- Hook / Motif Coach
+- Automation Analyzer
+- Automation Pack Generator
+- A/B Variant Manager
+- Plugin Replacement Assistant
+- CPU / Performance Doctor
+- Compare Project Against Reference Structure
+- Deep Sample & Loop Intelligence
+- Optional TCP/push-event transport research
+- Piano Roll readback research
+- REC automation write/readback probes
+
+## Current Next Release Candidate
+
+### v1.1.0 — Project Organization & Routing Intelligence
+- Channel Type Classifier
+- Project Organizer MVP
+- Naming Standard Assistant
+- Color Standardizer
+- Routing Doctor 2.0
+- Audio Clip Inspector
+- Audio Clip Safe Defaults Assistant
+- Project Health Dashboard MVP
+- Preflight Project MVP
+- Change Log / Rollback UX improvements
+
+## Out of Scope For Current Push
+- Plugin loading or insertion
+- Playlist clip editing, placement, movement, or deletion
+- Pattern or clip deletion
+- Project open/new/save-as/render automation
+- Raw controller/API escape hatches
+- Broad UI automation tools
+- Full FLP snapshot or full-project restore claims
+- Unsafe automation recording tools
+- Automatic Stretch Pro / Normalize handling
+
+## Safety & Documentation Links
+- [Engineering Standards](docs/ENGINEERING_STANDARDS.md)
+- [API Capability Audit](docs/API_CAPABILITY_AUDIT.md)
+- [Verification History](docs/VERIFICATION_HISTORY.md)
+- [Backlog Research](docs/BACKLOG_RESEARCH.md)

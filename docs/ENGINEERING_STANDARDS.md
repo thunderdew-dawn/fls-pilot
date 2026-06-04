@@ -114,8 +114,6 @@ Do not promise them until a stable API path is proven.
 
 ## Roadmap Scope
 
-Psytrance-specific features are out of scope for the current implementation
-push. They can be revisited later as a specialized production pack.
 
 Current priority order:
 
