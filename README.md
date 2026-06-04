@@ -18,6 +18,13 @@
 
 flstudio-mcp is a Model Context Protocol (MCP) server that lets any MCP client (like Claude Desktop, ChatGPT, or Cursor) drive FL Studio 2025 directly — the mixer, plugins, piano roll, routing, and project — from plain-language requests. Ask for a mix diagnosis, a vocal chain, a chord progression in a particular scale, or a full arrangement, and the LLM assistant carries it out through FL's scripting API and a set of calibrated, safety-checked tools.
 
+**High-Level Tools & Use Cases (At a Glance):**
+1. **Mix Doctor:** Instantly scan your mix to diagnose clipping, masking, and imbalances, and apply one-click, reversible fixes.
+2. **Project Organizer & Routing Doctor:** Turn a messy, unrouted project into a neatly colored, grouped, and logically routed session.
+3. **Plugin & Preset Assistant:** Get tailored vocal chains and synth patches based directly on your *actual installed* plugins.
+4. **Composition & Scale Composer:** Generate chord progressions and melodies in any mode or scale directly into the piano roll.
+5. **Audio Analyzer:** Extract tempo, key, and convert audio melodies to MIDI effortlessly.
+
 It is genre- and producer-agnostic: nothing about it assumes a particular style of music.
 
 ## New in v1.1.0
