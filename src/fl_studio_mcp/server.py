@@ -42,6 +42,7 @@ from .tools import pianoroll as pianoroll_tools
 from .tools import plugin as plugin_tools
 from .tools import presets as presets_tools
 from .tools import project_doctor as project_doctor_tools
+from .tools import project_organizer as project_organizer_tools
 from .tools import resources as resource_defs
 from .tools import routing as routing_tools
 from .tools import transport as transport_tools
@@ -99,6 +100,8 @@ def build_server() -> FastMCP:
     routing_tools.register(mcp)  # Routing/cleanup Slice 1: read-only
     bulk_tools.register(mcp)  # Bulk mute/solo: server-side group orchestration
     color_tools.register(mcp)  # Track/channel coloring: name/hex -> FL RGB, one rollback unit
+    project_doctor_tools.register(mcp)  # Project Doctor + Export Preflight
+    project_organizer_tools.register(mcp)  # Phase 1: Project Organizer (naming, colors, structure)
     arrange_tools.register(mcp)  # Arrangement Slice 1: pattern create/clone + markers
     resource_defs.register(mcp)  # MCP resources: fl://status, fl://project, ...
     audio_tools.register(mcp)  # Integration 2/3: audio analysis (tempo/key)

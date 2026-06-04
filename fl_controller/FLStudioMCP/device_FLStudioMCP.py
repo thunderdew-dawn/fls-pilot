@@ -1074,6 +1074,8 @@ def _channel_route_entry(i):
         "name": cname,
         "target_mixer_track": tgt,
         "target_name": (mixer.getTrackName(tgt) if valid else None),
+        "type": _channel_type(i),
+        **_vol_out(channels.getChannelVolume(i)),
     }
     if cut:
         e["trunc"] = True

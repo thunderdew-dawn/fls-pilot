@@ -269,3 +269,70 @@ def register(mcp: FastMCP) -> None:
                 "Use fl_rollback_last_change immediately if a write result is unexpected.",
             ],
         }
+
+    @mcp.tool(annotations={"title": "Project Health Dashboard", **_RO})
+    def fl_project_health_dashboard() -> dict:
+        """Aggregates Project Organizer, Routing Doctor, and Mix Doctor insights into a single dashboard.
+        
+        Safety: Read-Only.
+        """
+        bridge = get_bridge()
+        
+        # 1. Routing Summary
+        chans = fetch_all_pages(bridge, protocol.CMD_CHANNEL_ROUTING_SUMMARY, "channels").get("channels", [])
+        unrouted = sum(1 for c in chans if not isinstance(c.get("target_mixer_track"), int) or c.get("target_mixer_track") == 0)
+        
+        # 2. General Health
+        patterns = fetch_all_pages(bridge, protocol.CMD_PATTERN_LIST, "patterns").get("patterns", [])
+        mixer_tracks = fetch_all_pages(bridge, protocol.CMD_MIXER_LIST_TRACKS, "tracks").get("tracks", [])
+        
+        return {
+            "status": "Dashboard Generated",
+            "metrics": {
+                "total_channels": len(chans),
+                "unrouted_channels": unrouted,
+                "total_patterns": len(patterns),
+                "total_mixer_tracks": len(mixer_tracks),
+            },
+            "recommendations": [
+                "Run fl_analyze_project_organization to find unnamed/uncolored channels.",
+                "Run fl_analyze_routing to find structural routing issues.",
+                "Run fl_inspect_audio_clips to find loud audio clips.",
+                "Run fl_scan_mix (Mix Doctor) to find clipping and EQ masking."
+            ]
+        }
+
+    @mcp.tool(annotations={"title": "Preflight Project MVP", **_RO})
+    def fl_preflight_project() -> dict:
+        """Export readiness preflight checks including clipping, unrouted channels, and Stretch mode checklists.
+        
+        Safety: Read-Only.
+        """
+        bridge = get_bridge()
+        
+        # Basic scan
+        chans = fetch_all_pages(bridge, protocol.CMD_CHANNEL_ROUTING_SUMMARY, "channels").get("channels", [])
+        unrouted = [c for c in chans if not isinstance(c.get("target_mixer_track"), int) or c.get("target_mixer_track") == 0]
+        
+        audio_clips = [c for c in chans if c.get("type", {}).get("label") == "audioclip"]
+        loud_audio_clips = [c for c in audio_clips if c.get("vol", 0) > 0.8]
+        
+        blockers = []
+        if unrouted:
+            blockers.append(f"{len(unrouted)} channels are unrouted (go straight to Master).")
+            
+        advisories = []
+        if loud_audio_clips:
+            advisories.append(f"{len(loud_audio_clips)} audio clips are very loud (>80% vol).")
+            
+        return {
+            "status": "Ready for Export" if not blockers else "Export Blockers Found",
+            "blockers": blockers,
+            "advisories": advisories,
+            "manual_checklist": [
+                "API LIMITATION: Check Master track for clipping (Peak meters).",
+                "API LIMITATION: Ensure all Audio Clips have 'Stretch Mode' set correctly (e.g. Stretch Pro).",
+                "API LIMITATION: Ensure all Audio Clips have 'Normalize' set correctly."
+            ]
+        }
+

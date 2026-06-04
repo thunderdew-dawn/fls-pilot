@@ -4,6 +4,10 @@ This file stores historical verification evidence, including dated live/offline 
 
 ## Current verification checkpoints
 
+- 2026-06-04: v1.1.0 Project Organization & Routing Intelligence.
+  - Verified path: Executed static safety audit (`scripts/audit_tool_safety.py --fail-on-missing-safety-docs`). Created and executed `scripts/probes/test_v1_1_0_tools.py` via Python, which deliberately mutated a channel via `safe_write`, triggered analyzers (`fl_analyze_project_organization`, `fl_inspect_audio_clips`, `fl_analyze_routing`, `fl_project_health_dashboard`, `fl_preflight_project`), then executed batch routing and naming fixes via `safe_write_group`, followed by sequential LIFO rollbacks to cleanly restore project state.
+  - Result: All batch write tools (`fl_create_bus_layout`, `fl_apply_naming_standard`) successfully created scoped snapshot arrays and reverted cleanly. Discovered and fixed missing `scope` kwargs in internal `safe_write_group` invocations. `CMD_CHANNEL_ROUTING_SUMMARY` extension successfully eliminated N+1 API read delays for channel types and volumes. All tools correctly registered and verified as `read-only` or `write-safe`.
+
 - 2026-06-03: Empirically calibrated mixer fader volume curve implemented.
   - Verified path: Deployed updated `fl_controller/FLStudioMCP/device_FLStudioMCP.py` to FL Studio's Hardware settings folder; executed live fader sweep to capture 101-point calibration table (`scratch/fader_calibration.json`); verified target dB to normalized value linear interpolation via `scratch/verify_mixer_fader.py` and applied gain staging to 13 tracks via `scratch/apply_mix_gains.py`.
   - Result: Mixer track volume reads now return the actual, true decibel levels directly from FL Studio (`mixer.getTrackVolume(t, 1)`), and volume writes convert requested dB levels to precise normalized fader values using linear interpolation on the empirical calibration table. All writable tracks in the user's project were set to their exact target dB levels. Identified 21 tracks locked by active automation clips in the project that ignore external writes.

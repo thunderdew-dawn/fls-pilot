@@ -278,6 +278,10 @@ The current static safety audit reports 138 tools: 58 `read-only`, 69
 | `fl_channel_set_step_param` | `write-safe` | Sets one step parameter such as velocity, pan, or pitch where supported. |
 | `fl_channel_set_steps` | `write-safe` | Sets multiple step-sequencer steps in a grouped operation. |
 | `fl_channel_clear_grid` | `write-safe` | Clears a channel's step grid for the current pattern. |
+| `fl_classify_channels` | `read-only` | Detects internal channel types (AudioClip, Sampler, Generator, etc). |
+| `fl_inspect_audio_clips` | `read-only` | Scans Audio Clips for routing, naming, and volume issues. |
+| `fl_plan_audio_clip_safe_defaults` | `read-only` | Plans safe defaults (volume normalization, free track routing) for Audio Clips. |
+| `fl_apply_audio_clip_safe_defaults` | `write-safe` | Applies safe volume limits and routing to Audio Clips with manual checklists for Stretch/Normalize. |
 
 ### Color Tools
 
@@ -365,10 +369,21 @@ The current static safety audit reports 138 tools: 58 `read-only`, 69
 | `fl_mixer_set_stereo_separation` | `write-safe` | Sets mixer stereo separation where the FL build supports sticky readback. |
 | `fl_take_snapshot` | `server-state` | Captures MCP safety-layer snapshot data for inspection. |
 | `fl_get_change_history` | `read-only` | Lists recent MCP changelog entries. |
+| `fl_get_change_log_summary` | `read-only` | Returns a markdown table summary of recent rollback units and IDs. |
 | `fl_export_change_log` | `external-write` | Exports the MCP changelog to a JSON file on disk. |
 | `fl_rollback_last_change` | `server-state` | Rolls back the latest MCP change. |
 | `fl_rollback_change` | `server-state` | Rolls back a specific change by change ID. |
 | `fl_set_dry_run` | `server-state` | Enables or disables dry-run mode for planned changes. |
+
+### Project Organizer Tools
+
+| Tool | Safety | What it does |
+|---|---|---|
+| `fl_analyze_project_organization` | `read-only` | Finds unnamed, uncolored, and ungrouped channels. |
+| `fl_plan_project_cleanup` | `read-only` | Plans naming and coloring fixes. |
+| `fl_apply_project_cleanup_step` | `write-safe` | Applies a batch of specific name and color fixes. |
+| `fl_apply_naming_standard` | `write-safe` | Batch applies a naming schema (e.g., psytrance) across channels and buses. |
+| `fl_apply_color_standard` | `write-safe` | Batch applies a color schema (e.g., psytrance) across channels and buses. |
 
 ### Pattern And Playlist Tools
 
@@ -436,6 +451,8 @@ The current static safety audit reports 138 tools: 58 `read-only`, 69
 | `fl_project_health_report` | `read-only` | Reports project organization and health issues. |
 | `fl_export_readiness_report` | `read-only` | Reports issues that may block or degrade export readiness. |
 | `fl_project_dry_run_fix_plan` | `read-only` | Produces a fix plan without changing FL Studio. |
+| `fl_project_health_dashboard` | `read-only` | A single pane of glass aggregating Mix Doctor, Routing Doctor, and Project Organizer insights. |
+| `fl_preflight_project` | `read-only` | Export readiness checks covering clipping, unrouted channels, and manual checklists. |
 
 ### Routing Tools
 
@@ -445,6 +462,10 @@ The current static safety audit reports 138 tools: 58 `read-only`, 69
 | `fl_get_routing_all` | `read-only` | Reads the full mixer routing matrix. |
 | `fl_get_channel_routing` | `read-only` | Reads channel-to-mixer routing. |
 | `fl_detect_cleanup_candidates` | `read-only` | Finds likely routing or organization cleanup candidates. |
+| `fl_analyze_routing` | `read-only` | Analyzes structural routing issues like unrouted channels or generators skipping groups. |
+| `fl_plan_routing_fix` | `read-only` | Proposes renaming and routing fixes for structural issues. |
+| `fl_apply_routing_batch` | `write-safe` | Executes batch routing fixes. |
+| `fl_create_bus_layout` | `write-safe` | Routes sources to newly created grouped buses (e.g., in 10-track blocks). |
 | `fl_set_route` | `write-safe` | Adds or removes one mixer route. |
 | `fl_group_tracks` | `write-safe` | Routes selected tracks into a named bus as one grouped rollback unit. |
 

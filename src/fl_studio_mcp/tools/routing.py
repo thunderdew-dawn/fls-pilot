@@ -263,3 +263,140 @@ def register(mcp: FastMCP) -> None:
             res.update({"sources": srcs, "bus": bus, "name": name})
             return res
         return {"ok": True, "sources": srcs, "bus": bus, "name": name, "applied": res.get("after")}
+
+    # --- Phase 1: Routing Doctor 2.0 ---
+
+    @mcp.tool(annotations={"title": "Analyze Routing (Routing Doctor)", **_RO})
+    def fl_analyze_routing() -> dict:
+        """Analyze project routing to find structural issues like generators routed to Master,
+        unrouted channels, or missing bus structures.
+        
+        Safety: Read-Only.
+        """
+        bridge = get_bridge()
+        chans = fetch_all_pages(bridge, protocol.CMD_CHANNEL_ROUTING_SUMMARY, "channels")
+        routing = fetch_all_pages(bridge, protocol.CMD_MIXER_GET_ROUTING_ALL, "routing")
+        tracks = routing.get("routing", [])
+        
+        unrouted = []
+        direct_to_master = []
+        
+        # Track routing map
+        track_to_master = {}
+        for t in tracks:
+            routes = t.get("routes_to", [])
+            track_to_master[t.get("i")] = any(r.get("dst") == 0 for r in routes)
+
+        for c in chans.get("channels", []):
+            tgt = c.get("target_mixer_track")
+            ctype = c.get("type", {}).get("label")
+            
+            if not isinstance(tgt, int) or tgt == 0:
+                if ctype != "unknown":
+                    unrouted.append({"channel": c.get("channel"), "name": c.get("name"), "type": ctype})
+            else:
+                if track_to_master.get(tgt) and ctype == "genplug":
+                    direct_to_master.append({
+                        "channel": c.get("channel"), 
+                        "name": c.get("name"), 
+                        "mixer_track": tgt,
+                        "mixer_name": mixer.getTrackName(tgt) if hasattr(mixer, "getTrackName") else f"Insert {tgt}"
+                    })
+
+        return {
+            "unrouted_channels": unrouted,
+            "generators_direct_to_master": direct_to_master,
+            "note": "Use this data to plan bus structures or correct routing."
+        }
+
+    @mcp.tool(annotations={"title": "Plan Routing Fix", **_RO})
+    def fl_plan_routing_fix(
+        issues: Annotated[list[str], Field(description="List of issues identified to fix")],
+        proposed_buses: Annotated[list[dict], Field(description="Buses to create (track, name, sources)")]
+    ) -> dict:
+        """Create a dry-run plan for routing fixes.
+        
+        Safety: Read-Only (Dry-run).
+        """
+        return {
+            "status": "Plan created. Please review and apply using fl_apply_routing_batch.",
+            "issues": issues,
+            "proposed_buses": proposed_buses,
+            "rules": [
+                "Keep buses right next to the groups they sum.",
+                "Place buses PREFERABLY BEFORE the group.",
+                "Organize large main groups in 10-track blocks.",
+                "Use tracks 100+ ONLY for utility, print, reference, or tech channels."
+            ]
+        }
+
+    @mcp.tool(annotations={"title": "Apply Routing Batch", **_WR})
+    def fl_apply_routing_batch(
+        routes: Annotated[list[dict], Field(description="List of route writes: {src, dst, enabled}")],
+        renames: Annotated[list[dict], Field(description="List of bus renames: {track, name}")] = None
+    ) -> dict:
+        """Apply multiple routing changes and track renames in one rollback unit.
+        
+        Safety: Write-Safe with Rollback.
+        """
+        bridge = get_bridge()
+        writes = []
+        
+        for r in routes:
+            writes.append(_route_write_entry(r["src"], r["dst"], r.get("enabled", True)))
+            
+        if renames:
+            for r in renames:
+                writes.append(_bus_rename_entry(r["track"], r["name"]))
+                
+        if not writes:
+            return {"status": "No writes specified."}
+            
+        return safety.safe_write_group(
+            bridge,
+            tool="apply_routing_batch",
+            scope="routing_doctor",
+            writes=writes,
+            rollback_unit="routing_doctor_batch"
+        )
+
+    @mcp.tool(annotations={"title": "Create Bus Layout", **_WR})
+    def fl_create_bus_layout(
+        buses: Annotated[list[dict], Field(description="List of bus configs: {bus_track: int, name: str, source_tracks: list[int]}")]
+    ) -> dict:
+        """Create multiple group buses at once. Ensures each source track sends exclusively to its assigned bus,
+        and the bus routes to the Master.
+        
+        Remember: 
+        - Keep buses next to groups, preferably BEFORE them.
+        - Organize in 10-track blocks.
+        - Tracks 100+ are for utility/reference only.
+        
+        Safety: Write-Safe with Rollback.
+        """
+        bridge = get_bridge()
+        writes = []
+        
+        for b in buses:
+            bus = b["bus_track"]
+            name = b.get("name")
+            srcs = [int(s) for s in b.get("source_tracks", []) if int(s) not in (bus, 0)]
+            
+            for s in srcs:
+                writes.append(_route_write_entry(s, bus, True))  # source -> bus ON
+                writes.append(_route_write_entry(s, 0, False))   # source -> Master OFF
+            writes.append(_route_write_entry(bus, 0, True))      # bus -> Master ON
+            
+            if name:
+                writes.append(_bus_rename_entry(bus, name))
+                
+        if not writes:
+            return {"status": "No bus writes specified."}
+            
+        return safety.safe_write_group(
+            bridge,
+            tool="create_bus_layout",
+            scope="bus_layout",
+            writes=writes,
+            rollback_unit="bus_layout_creation"
+        )

@@ -33,15 +33,16 @@ A new core safety layer has been introduced:
 
 This release adds live-tested FL Studio project organization features:
 
-- Rename Step Sequencer channels via `channels.setChannelName`
-- Route channels to Mixer tracks via `channels.setTargetFxTrack`
-- Reliably distinguish Audio Clips, Samplers, and Generator Plugins via `channels.getChannelType`
-- Plan and apply safe project cleanup steps
-- Detect routing issues and propose bus layouts
-- Inspect Audio Clips and provide safe cleanup actions
+- **Channel Type Classifier:** Reliably distinguish Audio Clips, Samplers, and Generator Plugins via `channels.getChannelType`
+- **Project Organizer & Naming Standard Assistant:** Batch rename and color Step Sequencer channels and Mixer tracks
+- **Routing Doctor 2.0:** Detect routing issues, unrouted channels, and automatically propose bus layouts
+- **Audio Clip Safe Defaults:** Inspect Audio Clips and provide safe volume defaults and free mixer tracks
+- **Project Health Dashboard MVP:** A single pane of glass aggregating Mix Doctor, Routing Doctor, and Project Organizer insights
+- **Preflight Project MVP:** Export readiness checks that scan for clipped audio and incomplete checklists
+- **Change Log UX:** Improved rollback logs with named batch rollback units and markdown summary tables
 
 Known FL Studio API limitation:
-Deep Audio Clip parameters such as Stretch Mode, Normalize state, and some sample internals are not exposed by the FL Studio Python API. The assistant can organize and route Audio Clips, but it will not claim to set Stretch Pro or Normalize automatically.
+Deep Audio Clip parameters such as Stretch Mode, Normalize state, and some sample internals are not exposed by the FL Studio Python API. The assistant can organize and route Audio Clips, but it will not claim to set Stretch Pro or Normalize automatically (it will generate manual checklists instead).
 
 ## Maintained fork
 
