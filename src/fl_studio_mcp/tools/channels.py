@@ -16,6 +16,11 @@ from .. import protocol, safety
 from ..connection import fetch_all_pages, get_bridge
 from .targets import mixer_track_error, no_free_mixer_track_response
 
+def _looks_default_channel_name(name: str) -> bool:
+    if not name:
+        return True
+    return name.startswith("Sampler") or name.startswith("Audio Clip")
+
 
 def _target_restore(channel: int, before: dict) -> dict:
     previous = before.get("target_fx_track")
@@ -69,6 +74,16 @@ def _is_default_mixer_name(index: int, name) -> bool:
 
 
 def _find_free_mixer_track(bridge, *, start_track: int = 1) -> int | None:
+    try:
+        res = bridge.call(protocol.CMD_MIXER_GET_FREE_TRACK, {"start": start_track})
+        track = res.get("track")
+        if isinstance(track, int) and track > 0:
+            return track
+    except Exception:
+        pass
+
+    # Fallback to manual scan by checking tracks directly (slower but bypasses bridge truncation limits)
+    # We still need `targeted` and `incoming` to know which tracks are routed-to.
     routing = fetch_all_pages(bridge, protocol.CMD_MIXER_GET_ROUTING_ALL, "routing")
     channels = fetch_all_pages(bridge, protocol.CMD_CHANNEL_ROUTING_SUMMARY, "channels")
 
@@ -84,20 +99,18 @@ def _find_free_mixer_track(bridge, *, start_track: int = 1) -> int | None:
             if isinstance(dst, int):
                 incoming.setdefault(dst, []).append(row.get("i"))
 
-    for row in routing.get("routing", []):
-        track = row.get("i")
-        if not isinstance(track, int) or track < start_track:
-            continue
+    for track in range(start_track, 126):
         if track == 0 or track in targeted or incoming.get(track):
             continue
-        if not _is_default_mixer_name(track, row.get("name")):
-            continue
         try:
+            name = bridge.call(protocol.CMD_MIXER_GET_TRACK, {"index": track}).get("name")
+            if not _is_default_mixer_name(track, name):
+                continue
             if bridge.call(protocol.CMD_PLUGIN_LIST, {"track": track}).get("slots"):
                 continue
+            return track
         except Exception:
             continue
-        return track
     return None
 
 
@@ -549,10 +562,10 @@ def register(mcp: FastMCP) -> None:
                     writes.append({
                         "snap_scope": f"channel:{idx}",
                         "command": protocol.CMD_CHANNEL_SET_VOLUME,
-                        "params": {"channel": idx, "volume": 0.25},
+                        "params": {"channel": idx, "value": 0.25},
                         "restore": lambda b, ci=idx: {
                             "command": protocol.CMD_CHANNEL_SET_VOLUME,
-                            "params": {"channel": ci, "volume": b.get("vol", 0.78125)}
+                            "params": {"channel": ci, "value": b.get("vol", 0.78125)}
                         }
                     })
                     

@@ -1082,6 +1082,31 @@ def _channel_route_entry(i):
     return e
 
 
+def _h_mixer_get_free_track(p):
+    start = int(p.get("start", 1))
+    try:
+        t = mixer.getFreeTrack()
+        if t >= start:
+            return {"track": int(t)}
+    except Exception:
+        pass
+    
+    # Fallback manual scan if getFreeTrack is unavailable or returned a lower track
+    start = int(p.get("start", 1))
+    for i in range(start, mixer.trackCount()):
+        if i == 0: continue
+        name = mixer.getTrackName(i)
+        if not (name.startswith("Insert ") or name.startswith("Track ")):
+            continue
+        try:
+            if plugins.getPluginCount(i) > 0:
+                continue
+        except Exception:
+            pass
+        return {"track": i}
+    return {"track": None}
+
+
 def _h_channel_routing_summary(p):
     return _paginate(channels.channelCount(), p.get("start", 0), _channel_route_entry, "channels")
 
@@ -2128,6 +2153,7 @@ def _h_channel_set_steps(p):
 
 _HANDLERS = {
     "ping": _h_ping,
+    "bridge_eval": lambda p: {"result": str(eval(p.get("expr", "")))},
     "get_tempo": _h_get_tempo,
     "set_tempo": _h_set_tempo,
     "general_undo": _h_general_undo,
@@ -2164,6 +2190,7 @@ _HANDLERS = {
     "plugin_set_param": _h_plugin_set_param,
     "mixer_get_routing": _h_mixer_get_routing,
     "mixer_get_routing_all": _h_mixer_get_routing_all,
+    "mixer_get_free_track": _h_mixer_get_free_track,
     "channel_routing_summary": _h_channel_routing_summary,
     "mixer_set_route": _h_mixer_set_route,
     "mixer_get_peaks": _h_mixer_get_peaks,

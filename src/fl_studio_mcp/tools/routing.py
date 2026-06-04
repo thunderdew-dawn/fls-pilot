@@ -300,7 +300,7 @@ def register(mcp: FastMCP) -> None:
                         "channel": c.get("channel"), 
                         "name": c.get("name"), 
                         "mixer_track": tgt,
-                        "mixer_name": mixer.getTrackName(tgt) if hasattr(mixer, "getTrackName") else f"Insert {tgt}"
+                        "mixer_name": next((t.get("name") for t in tracks if t.get("i") == tgt), f"Insert {tgt}")
                     })
 
         return {

@@ -131,6 +131,7 @@ CMD_PLUGIN_SET_PARAM = "plugin_set_param"
 # Routing / grouping / cleanup (read surface -- Slice 1)
 CMD_MIXER_GET_ROUTING = "mixer_get_routing"  # one track's send destinations
 CMD_MIXER_GET_ROUTING_ALL = "mixer_get_routing_all"  # paginated routing matrix
+CMD_MIXER_GET_FREE_TRACK = "mixer_get_free_track"
 CMD_CHANNEL_ROUTING_SUMMARY = "channel_routing_summary"  # channel -> mixer links
 
 # Routing writes (Slice 2)

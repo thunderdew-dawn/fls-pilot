@@ -136,6 +136,8 @@ before and after parameter values.
 Typical tools: `fl_plugin_list`, `fl_plugin_get_params`,
 `fl_apply_eq_intent`, `fl_plugin_get_param`.
 
+> **Note on UI Refresh:** When the assistant applies EQ or plugin changes via `fl_apply_eq_intent`, the parameters take effect immediately in the audio engine. However, if the plugin window is currently open in FL Studio, the GUI may not visually update until the user clicks on it or reopens the window.
+
 ### Mix Doctor
 
 Prompt:
