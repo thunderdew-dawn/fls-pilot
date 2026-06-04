@@ -75,6 +75,29 @@ Verified live against FL Studio via TCP bridge on macOS, including guided-fix wo
 - Keep live verification checkpoints documented
 - Preserve build-specific evidence with FL Studio build and controller marker
 
+### P0.5 — Architecture Foundation & Tool Efficiency
+- Regenerate the current tool inventory and lock the exact low-level
+  consolidation scope before implementation.
+- Consolidate redundant getter/setter tools into a compact low-level/domain
+  surface; the target is roughly 19 low-level/domain tools plus retained
+  product workflow tools.
+- Keep high-value workflow tools such as Mix Doctor, Project Doctor, Routing
+  Doctor, Project Organizer, audio analysis, MIDI export, resources, and
+  Knowledgebase tools unless a later roadmap item explicitly removes them.
+- Add an internal operation registry and validation layer before exposing new
+  consolidated write paths.
+- Strengthen grouped write safety before generic batching: pre-validate all
+  operations, snapshot all write scopes before mutation, verify readback where
+  supported, and handle partial failures with immediate rollback attempts.
+- Add domain tools additively, then remove legacy low-level aliases only after
+  parity tests, registration checks, documentation updates, and safety audit
+  pass.
+- Implement `fl_batch` with strict validation, a max 50 operation limit, one
+  named rollback unit for persistent writes, and no mixed
+  persistent/transient/external/Piano Roll batches without a separate safety
+  design.
+- Preserve the rollback contract; the safety audit must remain at 0 write gaps.
+
 ### P1 — Jam-to-Project / Structured Cleanup Workflows
 - Jam Session Analyzer
 - Jam Session Cleanup Plan Generator
@@ -116,12 +139,59 @@ Verified live against FL Studio via TCP bridge on macOS, including guided-fix wo
 - Piano Roll readback research
 - REC automation write/readback probes
 
-## Current Next Release Candidate
+## Current Next Release Candidates
 
-### v1.2.0 — Jam-to-Project Assistant
+### v1.2.0 — Architecture Foundation & Tool Efficiency
+
+Goal:
+Reduce LLM token consumption, tool-selection noise, and avoidable MCP
+round-trips by consolidating redundant low-level getter/setter tools into a
+compact domain-driven surface. The target is roughly 19 low-level/domain tools
+plus retained product workflow tools, not a total cap for the whole MCP server.
+
+Current baseline:
+- Latest static audit baseline observed 156 registered/static MCP tools.
+- Phase 0 must regenerate the inventory before implementation and classify each
+  current tool as keep, consolidate, remove, or blocked.
+- Product workflows remain in scope unless explicitly removed by a later
+  roadmap item.
+
+Proposed scope:
+- **Phase 0**: Inventory and scope lock, including registration/tool-count
+  checks and duplicate-registration cleanup if confirmed.
+- **Phase 1**: Operation registry and validation layer sourced from existing
+  safe primitives and Knowledgebase data where available.
+- **Phase 2**: Verified grouped write safety. `safe_write_group` is already used
+  by user-facing tools, but generic batch exposure requires stronger readback,
+  validation, and partial-failure rollback handling.
+- **Phase 3**: Add domain tools additively for parity testing
+  (`fl_transport`, `fl_mixer`, `fl_channel`, `fl_pattern`, `fl_playlist`,
+  `fl_effect`, `fl_plugin`, `fl_piano_roll`, and optional `fl_safety`).
+- **Phase 4**: Add `fl_batch` with strict whitelist validation and a hard max
+  50 operation limit.
+- **Phase 5**: Refactor product workflows internally only where the operation
+  registry reduces meaningful duplication without weakening safety.
+- **Phase 6**: Remove legacy low-level tools without deprecation wrappers after
+  parity tests, docs, Knowledgebase updates, registration checks, and safety
+  audit pass.
+
+Safety:
+- Consolidation and batching must not weaken the rollback contract.
+- Persistent write batches must pre-validate every operation before mutation,
+  snapshot all scopes before the first write, execute as one named rollback
+  unit, and reject unsafe mixes of persistent writes, transient controls,
+  external file writes, and Piano Roll undo-backed edits.
+- `continue_on_error` is acceptable only for read-only batches unless a future
+  safety design proves rollback-safe partial writes.
+- `scripts/audit_tool_safety.py --fail-on-gaps` must remain green with 0 write
+  gaps throughout the rollout.
+
+### v1.3.0 — Jam-to-Project Assistant
 
 Goal:
 Turn an unstructured jam session into a structured, production-ready FL Studio project.
+Reuse the v1.2 operation registry, domain tools, and batch infrastructure where
+they are available and rollback-safe.
 
 Proposed scope:
 - `fl_analyze_jam_session()`

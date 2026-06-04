@@ -196,3 +196,21 @@ export DYLD_LIBRARY_PATH="/usr/local/opt/expat/lib:${DYLD_LIBRARY_PATH:-}"
 - Bulk cleanup should be previewable and grouped into named rollback units.
 - User-facing results should be explicit about what changed, what was skipped,
   and what is limited by FL API support.
+
+### Tool Surface And MCP Efficiency
+
+Reducing LLM token cost, tool-selection noise, and avoidable MCP round trips is
+a product quality requirement. It is subordinate to safety: do not consolidate
+or batch behavior if rollback, readback, validation, or API evidence becomes
+weaker.
+
+- Prefer high-signal domain tools and workflow tools over many one-property
+  getter/setter tools.
+- Avoid new MCP round trips when a safe grouped read/write or server-side
+  orchestration can return the same user value.
+- For new MCP tools or expanded tool surfaces, include token/tool-surface impact
+  in the implementation plan, review summary, or roadmap update.
+- Add or update registration and tool-count checks when FastMCP registration
+  changes.
+- Keep product workflows when they reduce unsafe manual orchestration; reduce
+  redundant low-level wrappers first.
