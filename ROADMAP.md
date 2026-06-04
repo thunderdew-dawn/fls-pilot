@@ -57,17 +57,7 @@ This file is the active execution roadmap for the branch.
 - Live verification checkpoint discipline
 
 ### P1 — API-backed Core Workflows
-- Channel Type Classifier
-- Project Organizer MVP
-- Naming Standard Assistant
-- Color Standardizer
-- Routing Doctor 2.0
-- Bus Layout Planner
-- Audio Clip Inspector
-- Audio Clip Safe Defaults Assistant
-- Preflight Project MVP
-- Project Health Dashboard MVP
-- Guided Fix Mode
+*(All P1 items have been completed and moved to Completed Release Milestones v1.1.0)*
 
 ### P2 — Product-level Workflows
 - Export & Delivery Assistant
@@ -97,19 +87,21 @@ This file is the active execution roadmap for the branch.
 - Piano Roll readback research
 - REC automation write/readback probes
 
-## Current Next Release Candidate
+## Completed Release Milestones
 
-### v1.1.0 — Project Organization & Routing Intelligence (COMPLETED & VERIFIED)
+### v1.1.0 — Project Organization & Routing Intelligence
 - [x] Channel Type Classifier
 - [x] Project Organizer MVP
 - [x] Naming Standard Assistant
 - [x] Color Standardizer
 - [x] Routing Doctor 2.0
+- [x] Bus Layout Planner
 - [x] Audio Clip Inspector
 - [x] Audio Clip Safe Defaults Assistant
 - [x] Project Health Dashboard MVP
 - [x] Preflight Project MVP
 - [x] Change Log / Rollback UX improvements
+- [x] Guided Fix Mode
 
 *(All components verified live against FL Studio via TCP bridge on macOS, including Guided Fix mode and EQ parameter application).*
 
