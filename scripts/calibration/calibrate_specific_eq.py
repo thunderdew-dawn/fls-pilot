@@ -13,12 +13,12 @@ def format_event(bridge, event_id, norm_val):
     return r.get("string", "")
 
 def find_exact_norm(bridge, event_id, target_str, is_gain=False):
-    # Dichte Suche für exakte Strings.
-    # Da get_format_event etwas dauern kann, machen wir eine grobe bis feine Suche.
+    # Dense search for exact strings.
+    # Since get_format_event can take some time, we do a coarse-to-fine search.
     # Gain: 0.5 = 0.0dB. < 0.5 is negative dB.
     # Freq: 0.0 = 10Hz, 1.0 = 16000Hz.
     
-    print(f"Suche nach {target_str}...")
+    print(f"Searching for {target_str}...")
     best_match = None
     best_diff = 999999
     
@@ -37,13 +37,13 @@ def find_exact_norm(bridge, event_id, target_str, is_gain=False):
                 best_match = (norm, s, val)
                 
             if diff == 0:
-                print(f"EXAKTER TREFFER für {target_str}: Norm = {norm:.4f}")
+                print(f"EXACT MATCH for {target_str}: Norm = {norm:.4f}")
                 return norm, s, val
         except:
             pass
             
     if best_match:
-        print(f"Bester Treffer für {target_str}: Norm = {best_match[0]:.4f} -> {best_match[1]}")
+        print(f"Best match for {target_str}: Norm = {best_match[0]:.4f} -> {best_match[1]}")
         return best_match
     return None, None, None
 
@@ -52,10 +52,10 @@ def main():
     try:
         bridge.check_alive()
     except Exception:
-        print("ERROR: FL Studio Bridge nicht erreichbar. Läuft FL Studio?")
+        print("ERROR: FL Studio Bridge not reachable. Is FL Studio running?")
         return 1
         
-    print("Bridge verbunden! Hole Event-IDs für EQ...")
+    print("Bridge connected! Fetching Event IDs for EQ...")
     
     try:
         r = bridge.call("mixer_probe_eq_gain", {"track": 1, "band": 0, "value": 0.5, "flags": "control"})
@@ -64,7 +64,7 @@ def main():
         r2 = bridge.call("mixer_probe_eq_freq", {"track": 1, "band": 0, "value": 0.5, "flags": "control"})
         freq_event_id = r2["probe"]["event_id"]
     except Exception as e:
-        print(f"Fehler beim Holen der Event-IDs: {e}")
+        print(f"Error fetching Event IDs: {e}")
         return 1
 
     targets_gain = ["-3.0dB", "-6.0dB", "-12.0dB"]
@@ -86,7 +86,7 @@ def main():
     with open(out_file, "w") as f:
         json.dump(results, f, indent=2)
         
-    print(f"\\nErgebnisse in {out_file} gespeichert.")
+    print(f"\nResults saved to {out_file}.")
     return 0
 
 if __name__ == "__main__":

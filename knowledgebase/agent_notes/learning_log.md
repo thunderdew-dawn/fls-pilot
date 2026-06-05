@@ -1,8 +1,8 @@
 # Learning Log
 
-Chronologischer Eingangskorb für neue Erkenntnisse.
+Chronological inbox for new findings.
 
-## Format-Vorlage
+## Format Template
 ```md
 ## YYYY-MM-DD — Short Topic
 
