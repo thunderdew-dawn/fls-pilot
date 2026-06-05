@@ -20,7 +20,7 @@ By participating in this project, you agree to abide by our [Code of Conduct](CO
 - **Report a bug** — open an issue with steps to reproduce, your FL Studio build, and the relevant Script output / server log.
 - **Request or add a tool** — propose a new capability (a mixing intent, an analysis tool, etc.) in an issue first, so we can agree on the shape before you build it.
 - **Improve docs** — README, setup, troubleshooting, and the design notes in docs/ are all fair game.
-- **Port to macOS / Linux** — the server is cross-platform Python; the friction is the virtual MIDI ports and the controller-script paths. This is the most valuable open contribution. Open an issue before starting so we can coordinate.
+- **Port to Linux** — the server is cross-platform Python; the friction is the virtual MIDI ports and the controller-script paths. This is the most valuable open contribution. Open an issue before starting so we can coordinate.
 
 ## Before you start
 

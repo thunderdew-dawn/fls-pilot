@@ -123,16 +123,145 @@ Not currently supported:
   possible track, verify count/readback, restore/delete/undo immediately, and
   record the exact FL build and rollback result before promoting the capability.
 
-The current static baseline reports:
+The current baseline, regenerated on 2026-06-05, reports:
 
-- 57 `write-safe` tools.
+- 86 registered public FastMCP tools with 86 unique public names after v2.0
+  legacy low-level alias removal.
+- 165 statically audited tool definitions.
+- 33 registered `write-safe` tools.
 - 0 `write-gap` tools.
-- 49 `read-only` tools.
-- 5 `transient` runtime tools.
+- 40 registered `read-only` tools.
 - 4 `server-state` tools.
 - 2 `external-write` tools.
+- 7 registered tools are not covered by the static AST audit because they are
+  registered via direct `mcp.tool()(fn)` calls without safety annotations.
+- 86 statically audited legacy low-level tool definitions remain in source for
+  helper/test compatibility but are intentionally absent from public
+  registration.
 
 `--fail-on-gaps` is the current no-regression gate.
+`scripts/check_tool_registration_baseline.py` is the registration baseline
+check. The previous duplicate `project_doctor_tools.register(mcp)` call was
+removed as behavior-preserving registration cleanup.
+
+The v2.0 internal operation registry skeleton was added on 2026-06-04 without
+public MCP registration changes. It describes existing write-safe mixer,
+channel, and tempo primitives for later validation and batching work; it does
+not add new FL Studio API capability claims.
+
+The registry was expanded on 2026-06-04 for transport, mixer, and channel
+operations that already have shipped safe wrappers or read-only/transient
+protocol commands. It now records read-only specs, transient transport specs
+that are excluded from persistent write batching, and rollback-backed write
+specs for existing mixer/channel primitives. Step-sequencer write specs require
+an explicit pattern so the snapshot scope is known before mutation.
+
+The registry was expanded again on 2026-06-04 for existing pattern, playlist
+track, effect-slot, native mixer EQ, and plugin-parameter primitives without
+public MCP registration changes. The expansion mirrors shipped safe wrappers:
+pattern length remains documented-unconfirmed on affected FL builds, native EQ
+values remain normalized/readback-dependent, and plugin parameter writes require
+a concrete resolved integer parameter index before registry preparation. Plugin
+loading, preset navigation writes, playlist clip edits, and pattern deletion
+remain excluded.
+
+Grouped write safety was strengthened on 2026-06-04 without public MCP
+registration changes. `safe_write_group` now validates grouped write entries
+before mutation, snapshots all write scopes before the first write, builds all
+restore actions before mutation, performs per-write readback through supported
+snapshot scopes, enforces explicit `verify` readback pairs, and immediately
+attempts reverse rollback when a later write fails after earlier writes
+executed. Slice 12 review on 2026-06-05 tightened the rollback path so the
+current attempted write is included before its bridge call returns, covering FL
+commands that mutate before raising. Failed grouped writes still raise an
+exception for compatibility with existing callers, but the structured failure
+and rollback details are attached to `GroupWriteError.result`.
+
+The additive `fl_transport` domain tool was added on 2026-06-04 for v2.0
+domain-tool parity testing. It validates actions through the internal operation
+registry, dispatches read-only and transient transport actions directly through
+registry-built protocol payloads, and routes persistent transport writes through
+`safety.safe_write` with the same rollback/readback behavior as the legacy
+transport tools. Legacy transport tools were retained during the shadow phase;
+as of 2026-06-05, `fl_transport` also exposes `ping` and the legacy transport
+aliases are no longer registered.
+
+The additive `fl_mixer` and `fl_channel` domain tools were added on
+2026-06-04 for v2.0 domain-tool parity testing. They validate actions through
+the internal operation registry, paginate list reads where needed, and route
+persistent writes through `safety.safe_write` with the same rollback/readback
+behavior as the legacy mixer and channel tools. Legacy mixer/channel tools were
+retained during the shadow phase; as of 2026-06-05, domain-covered legacy
+mixer/channel aliases are no longer registered.
+
+The additive `fl_pattern` and `fl_playlist` domain tools were added on
+2026-06-04 for v2.0 domain-tool parity testing. They validate actions through
+the internal operation registry, paginate list reads where needed, and route
+persistent pattern and playlist-track writes through `safety.safe_write` with
+the same rollback/readback behavior as the legacy pattern/playlist tools.
+`fl_playlist` is limited to playlist track metadata/control; playlist clip
+placement, movement, deletion, and editing remain unsupported. Pattern deletion
+also remains unsupported. As of 2026-06-05, legacy pattern/playlist aliases
+are no longer registered.
+
+The additive `fl_effect` and `fl_plugin` domain tools were added on 2026-06-04
+for v2.0 domain-tool parity testing. They validate actions through the internal
+operation registry and route persistent effect-slot, native EQ, and
+already-loaded plugin-parameter writes through `safety.safe_write` with the
+same rollback/readback behavior as the legacy wrappers. `fl_plugin` resolves
+string parameter names to concrete integer parameter indices before registry
+dispatch. Plugin loading/insertion, plugin removal, preset navigation writes,
+and full effect-chain restore remain unsupported. As of 2026-06-05, legacy
+effect/EQ aliases and already-loaded plugin-parameter aliases are no longer
+registered; read-only plugin preset guidance remains registered.
+
+The additive `fl_piano_roll` domain tool was added on 2026-06-04 for v2.0
+domain-tool parity testing. It consolidates existing Piano Roll note writes,
+chord writes, clear, quantize, transpose, duplicate, velocity ramp, marker
+helpers, and explicit readback-limit reports. Generated-script writes continue
+to route through `safety.safe_piano_roll_write`, which records FL Studio undo as
+the rollback primitive. Note and marker readback remain API-limited, so Piano
+Roll write actions are not eligible for generic persistent `fl_batch` writes.
+As of 2026-06-05, legacy Piano Roll one-off aliases are no longer registered.
+
+The initial `fl_batch` tool was added on 2026-06-04 for read-only operation
+batches only. It accepts registry operation IDs (`domain`, `action`, `params`)
+from a strict read-only whitelist, rejects raw protocol command fields and
+generated script/code text, enforces a hard 50-operation limit, and supports
+`continue_on_error` for runtime read failures. Persistent writes, transient
+runtime controls, external writes, and Piano Roll generated-script actions are
+rejected in this slice.
+
+Persistent `fl_batch` writes were added on 2026-06-05 through the verified
+grouped-write safety path. A batch must be homogeneous: either all read-only
+operations or all persistent-write operation-registry specs. Write batches
+reject `continue_on_error`, pre-validate all operation IDs and params before
+bridge access, reject raw protocol/script fields, and execute through
+`safety.safe_write_group` as one named rollback unit. Mixed read/write,
+transient, external-write, excluded, or Piano Roll generated-script batches are
+rejected before mutation. Live FL Studio smoke tests were not run for this
+slice; focused tests use a fake bridge plus the real grouped-write helper.
+Slice 12 review added regression coverage for a persistent batch write that
+mutates and then raises; the immediate group rollback restores both the failed
+attempt and earlier writes.
+
+The Phase 5 product workflow internal refactor was completed on 2026-06-05
+without public tool registration changes. Routing Doctor route writes and
+mixer bus renames now prepare their `safe_write_group` entries through the
+operation registry, which adds the registry's existing validation and explicit
+route readback verification while preserving the grouped rollback path. Mix
+Doctor `trim_volume` now prepares its mixer volume write through the registry
+before calling `safety.safe_write`. Project Organizer channel renames and hex
+color write helpers were intentionally left on their existing local builders
+because their public input compatibility does not exactly match the current
+registry specs.
+
+Phase 6 legacy low-level removal was completed on 2026-06-05. The public
+FastMCP surface now keeps consolidated domain tools plus product workflows,
+safety/history tools, resources, Knowledgebase tools, plugin preset guidance,
+and specialized workflows. Redundant legacy aliases were removed without
+deprecation wrappers, and the unsafe direct Internal EQ wrapper registration was
+removed in favor of `fl_effect`'s rollback-backed native EQ path.
 
 ## API-Backed Feature Packs
 
@@ -429,6 +558,9 @@ Current shipped slice:
 - `duplicate` and `velocity_ramp` transforms are shipped as undo-backed writes.
 - Initial marker helpers are shipped as generated-script writes:
   add marker, add time-signature marker, clear markers.
+- `fl_piano_roll(action, params)` is shipped as the consolidated domain tool
+  for existing undo-backed writes and readback-limit reports. Legacy Piano Roll
+  one-off aliases are no longer registered.
 - Piano Roll writes can optionally retarget a channel/pattern through the
   controller before the generated script is triggered. The controller uses
   `ui.openEventEditor` with `channels.getRecEventId(...)` when available and
@@ -503,7 +635,7 @@ Safety requirement:
 | Audio clip Normalize | Manual documents the UI setting; no direct MIDI scripting setter confirmed. | Probe REC/event paths only. |
 | Stretch Pro mode | Sampler UI documents mode; MIDI scripting exposes stretch time, not clearly the mode. | Research/probe, not MVP. |
 | Source sample path | No direct channel file-path getter confirmed. | User-supplied paths or later probe. |
-| Piano Roll note readback to MCP | Piano Roll scripts can read notes locally, but the bridge has no return channel. | Generated transforms only; no `get_notes` tool yet. |
+| Piano Roll note readback to MCP | Piano Roll scripts can read notes locally, but the bridge has no return channel. Existing `get_notes`/domain readback actions report this API limit instead of returning notes. | Generated transforms only; keep readback as explicit API-limited reporting until a return channel is proven. |
 | Playlist clip overlap detection | No general clip enumeration API confirmed. | Keep track-level only. |
 | Plugin loading | API controls loaded plugins; loading instances remains unsupported. | Suggest/load-manually/configure-loaded model. |
 | Plugin preset next/previous | FL exposes preset navigation, but no verified MCP restore primitive. | Read-only/manual guidance only. |

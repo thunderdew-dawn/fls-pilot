@@ -2,9 +2,10 @@
 
 `flstudio-mcp` is a maintained fork of
 [`rosasynthesiz/flstudio-mcp`](https://github.com/rosasynthesiz/flstudio-mcp).
-The original project name, Python package name, and command names are retained
+The original project name and Python package name are retained
 for compatibility with existing MCP client configurations, installer scripts,
-and downstream references.
+and downstream references. (Command names were originally retained but have been
+consolidated and renamed as of v2.0.0).
 
 The current maintained repository is
 [`thunderdew-dawn/flstudio-mcp`](https://github.com/thunderdew-dawn/flstudio-mcp).

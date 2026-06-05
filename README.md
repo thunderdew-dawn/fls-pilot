@@ -2,7 +2,7 @@
 
 **Control FL Studio with any MCP-compatible LLM: AI mixing, composition, and mix diagnosis through natural language.**
 
-![version](https://img.shields.io/badge/version-1.1.0-blue)
+![version](https://img.shields.io/badge/version-2.0.0-blue)
 ![status](https://img.shields.io/badge/status-stable-green)
 ![license](https://img.shields.io/badge/license-MIT-green)
 ![python](https://img.shields.io/badge/python-3.10+-blue)
@@ -18,35 +18,25 @@
 
 flstudio-mcp is a Model Context Protocol (MCP) server that lets any MCP client (like Claude Desktop, ChatGPT, or Cursor) drive FL Studio 2025 directly — the mixer, plugins, piano roll, routing, and project — from plain-language requests. Ask for a mix diagnosis, a vocal chain, a chord progression in a particular scale, or a full arrangement, and the LLM assistant carries it out through FL's scripting API and a set of calibrated, safety-checked tools.
 
-**High-Level Tools & Use Cases (At a Glance):**
-1. **Mix Doctor:** Instantly scan your mix to diagnose clipping, masking, and imbalances, and apply one-click, reversible fixes.
-2. **Project Organizer & Routing Doctor:** Turn a messy, unrouted project into a neatly colored, grouped, and logically routed session.
-3. **Plugin & Preset Assistant:** Get tailored vocal chains and synth patches based directly on your *actual installed* plugins.
-4. **Composition & Scale Composer:** Generate chord progressions and melodies in any mode or scale directly into the piano roll.
-5. **Audio Analyzer:** Extract tempo, key, and convert audio melodies to MIDI effortlessly.
+**Massive Upgrades in v2.0.0:**
+- **Token Optimization & High-Level Tools:** We have drastically reduced boilerplate and token usage by consolidating dozens of single-purpose functions into unified, powerful endpoints (like `fl_transport` and `fl_mixer`). This saves massive amounts of context for the LLM, making requests faster and more reliable.
+- **Knowledgebase Integration:** The LLM no longer has to guess parameters or "reinvent the wheel". API values, dB/Hz mappings, and safe ranges are now verified against a live-updated JSON knowledgebase. Agents document new findings permanently, ensuring the system gets smarter over time.
+- **Safety & Rollback Improvements:** Every project-modifying tool now routes through a strict `snapshot → write → readback → rollback` registry. Changes are grouped into named batch rollback units, guaranteeing that your FL Studio project state is always protected and easily reversible.
 
-It is genre- and producer-agnostic: nothing about it assumes a particular style of music.
+## High-Level Tools (New in v2.0.0)
 
-## New in v1.1.0
+This release represents a massive evolution from the original fork, focusing on rollback-first FL Studio production tooling and a strict agent workflow. The tools below represent the most time-saving and powerful features available to you.
 
-### Knowledgebase & Safe Wrappers
+*(For detailed usage, examples, and the full tool catalog, refer to the [User Guide (docs/USER_GUIDE.md)](docs/USER_GUIDE.md)).*
 
-A new core safety layer has been introduced:
-- **Verified values:** API values are now validated against a live-updated JSON knowledgebase, eliminating hallucinated parameter values.
-- **Safe Wrappers:** High-level MCP tools use secure wrappers instead of raw FL Studio API calls, ensuring safe dB/Hz mappings and mandatory readbacks.
-- **Learning Log:** Agents document new API findings directly into the project's knowledgebase for persistent learning.
-
-### Project Organization & Routing Intelligence
-
-This release adds live-tested FL Studio project organization features:
-
-- **Channel Type Classifier:** Reliably distinguish Audio Clips, Samplers, and Generator Plugins via `channels.getChannelType`
-- **Project Organizer & Naming Standard Assistant:** Batch rename and color Step Sequencer channels and Mixer tracks
-- **Routing Doctor 2.0:** Detect routing issues, unrouted channels, and automatically propose bus layouts
-- **Audio Clip Safe Defaults:** Inspect Audio Clips and provide safe volume defaults and free mixer tracks
-- **Project Health Dashboard MVP:** A single pane of glass aggregating Mix Doctor, Routing Doctor, and Project Organizer insights
-- **Preflight Project MVP:** Export readiness checks that scan for clipped audio and incomplete checklists
-- **Change Log UX:** Improved rollback logs with named batch rollback units and markdown summary tables
+1. **Mix Doctor:** Instantly scan your mix to diagnose clipping, masking, and imbalances, and apply one-click, reversible fixes. Fixes are applied one at a time, only on approval.
+2. **Project Organizer & Naming Standard Assistant:** Turn a messy project into a neatly colored, grouped, and logically routed session. Batch rename and color Step Sequencer channels and Mixer tracks.
+3. **Routing Doctor 2.0:** Detect routing issues, unrouted channels, and automatically propose and apply optimal bus layouts.
+4. **Plugin & Preset Assistant:** Get tailored vocal chains and synth patches based directly on your *actual installed* plugins (read directly from FL's plugin database and preset folders on disk).
+5. **Composition & Scale Composer:** Generate chord progressions and melodies in any mode or scale directly into the piano roll, with grid quantization.
+6. **Audio Clip Safe Defaults:** Inspect Audio Clips to dynamically provide safe volume defaults and free mixer tracks.
+7. **Audio Analyzer:** Extract tempo, key, and convert audio melodies to MIDI effortlessly (via CREPE pitch tracking).
+8. **Preflight Project & Health Dashboard:** A single pane of glass aggregating Mix Doctor, Routing Doctor, and Project Organizer insights to ensure export readiness.
 
 Known FL Studio API limitation:
 Deep Audio Clip parameters such as Stretch Mode, Normalize state, and some sample internals are not exposed by the FL Studio Python API. The assistant can organize and route Audio Clips, but it will not claim to set Stretch Pro or Normalize automatically (it will generate manual checklists instead).
@@ -61,7 +51,8 @@ The project keeps the `fl-studio-mcp` package and command names for
 compatibility, while the fork's engineering direction is now explicit:
 rollback-first FL Studio production tooling, documented API-evidence handling,
 live-probe discipline for build-dependent behavior, macOS support, CI safety
-audits, prompt evals, and a committed agent workflow guide.
+audits, prompt evals, and a committed agent workflow guide. This represents a
+massive architectural leap over the original source.
 
 See [`NOTICE.md`](NOTICE.md) for provenance and attribution.
 
@@ -134,8 +125,8 @@ These are properties of FL Studio's scripting API, stated plainly:
 - **Known-working FL Studio build:** Producer Edition v25.2.5, build 5055,
   with controller build marker `channels-v38`.
   FL Studio 20.7+ has the required MIDI scripting foundation, but individual
-  API behavior can be build-dependent; use `fl_ping` and the live smoke/probe
-  scripts before relying on a new FL build for writes.
+  API behavior can be build-dependent; use `fl_transport(action="ping")` and
+  the live smoke/probe scripts before relying on a new FL build for writes.
 - **Claude Desktop** or **ChatGPT Desktop** (or any MCP client)
 - **Python 3.10+**
 - Virtual MIDI ports:
@@ -231,7 +222,8 @@ ChatGPT Desktop does not support local stdio subprocesses and requires a remote/
 
 Open the FL Studio Piano Roll, click the arrow menu (top-left), and run **MCP_Apply** once from the **File > Script** menu. This arms the note bridge for composition tools.
 
-Verify the connection by asking your AI assistant to run `fl_ping`.
+Verify the connection by asking your AI assistant to run
+`fl_transport(action="ping")`.
 
 ## Troubleshooting
 
@@ -239,7 +231,7 @@ Verify the connection by asking your AI assistant to run `fl_ping`.
 |---|---|
 | loopMIDI ports not found / not detected | The two ports must be named **exactly** `FLStudioMCP RX` and `FLStudioMCP TX`. Recreate them in loopMIDI and re-run the installer. |
 | No `[FLStudioMCP] Ready` in FL's Script output | The controller isn't registered: set the `FLStudioMCP RX` input's **Controller type** to **FLStudioMCP** in MIDI Settings, confirm `device_FLStudioMCP.py` is in `Settings\Hardware\FLStudioMCP\`, then fully restart FL Studio. |
-| The LLM assistant can't reach FL / `fl_ping` fails | Make sure the daemon is running (`fl-studio-mcp-daemon`); check the transport matches (`FLSTUDIO_MCP_TRANSPORT=tcp` uses the daemon, unset uses direct MIDI); restart your MCP client after editing its config. |
+| The LLM assistant can't reach FL / transport ping fails | Make sure the daemon is running (`fl-studio-mcp-daemon`); check the transport matches (`FLSTUDIO_MCP_TRANSPORT=tcp` uses the daemon, unset uses direct MIDI); restart your MCP client after editing its config. |
 | Note-writing does nothing | Run `MCP_Apply` once from the piano roll's scripting menu this session — it arms the note bridge. |
 | Audio tools error or are unavailable | Install the optional extras: `pip install -e ".[audio]"` (or `".[audio,audio-accurate]"`). |
 

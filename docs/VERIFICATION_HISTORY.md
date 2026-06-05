@@ -4,6 +4,10 @@ This file stores historical verification evidence, including dated live/offline 
 
 ## Current verification checkpoints
 
+- 2026-06-05: v2.0.0 Architecture Foundation & Tool Efficiency.
+  - Verified path: Executed static safety audit (`scripts/audit_tool_safety.py`). Consolidated dozens of single-purpose functions into unified `fl_transport`, `fl_mixer`, `fl_channel` endpoints. Replaced legacy single-tool registration with centralized operation registry. Validated `safe_write` and `safe_write_group` behavior under the new architecture. Updated package version and documentation.
+  - Result: Massive reduction in tool-selection noise and MCP token consumption. Backward-incompatible tool API overhaul correctly signaled via major version bump. Rollback layer integrity maintained.
+
 - 2026-06-04: v1.1.0 Project Organization & Routing Intelligence.
   - Verified path: Executed static safety audit (`scripts/audit_tool_safety.py --fail-on-missing-safety-docs`). Created and executed `scripts/probes/test_v1_1_0_tools.py` via Python, which deliberately mutated a channel via `safe_write`, triggered analyzers (`fl_analyze_project_organization`, `fl_inspect_audio_clips`, `fl_analyze_routing`, `fl_project_health_dashboard`, `fl_preflight_project`), then executed batch routing and naming fixes via `safe_write_group`, followed by sequential LIFO rollbacks to cleanly restore project state.
   - Result: All batch write tools (`fl_create_bus_layout`, `fl_apply_naming_standard`) successfully created scoped snapshot arrays and reverted cleanly. Discovered and fixed missing `scope` kwargs in internal `safe_write_group` invocations. `CMD_CHANNEL_ROUTING_SUMMARY` extension successfully eliminated N+1 API read delays for channel types and volumes. All tools correctly registered and verified as `read-only` or `write-safe`.

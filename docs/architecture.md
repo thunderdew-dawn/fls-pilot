@@ -102,9 +102,9 @@ silently dropped.
 FL emits a `DIR_HEARTBEAT` SysEx every 500 ms from `OnIdle`. The server
 tracks `_last_heartbeat = time.monotonic()` whenever a heartbeat callback
 fires. `is_alive()` is true if `now - _last_heartbeat <= 3.0s`. This lets
-`fl_ping` distinguish four states:
+`fl_transport(action="ping")` distinguish four states:
 
-| State | What `fl_ping` returns |
+| State | What `fl_transport(action="ping")` returns |
 |-------|------------------------|
 | FL not running / wrong port config | `alive: false, reason: "No heartbeat received..."` |
 | FL crashed / froze after running once | `alive: false, reason: "Heartbeat is N.Ns old..."` |

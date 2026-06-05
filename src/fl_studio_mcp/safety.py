@@ -13,6 +13,7 @@ import threading
 import time
 import uuid
 from collections import deque
+from collections.abc import Mapping
 from pathlib import Path
 
 from .protocol import (
@@ -164,6 +165,14 @@ _log = ChangeLog()
 _dry_run = False
 
 
+class GroupWriteError(RuntimeError):
+    """Raised when a grouped write fails validation, snapshot, execution, or rollback."""
+
+    def __init__(self, result: dict) -> None:
+        self.result = result
+        super().__init__(result.get("error") or "group write failed")
+
+
 def set_dry_run(enabled) -> dict:
     global _dry_run
     _dry_run = bool(enabled)
@@ -286,6 +295,115 @@ def _read_scope_with_poll(bridge, scope, verify=None, attempts=5, delay=0.08):
     return result
 
 
+def _require_verified_readback(result: dict, verify, index: int) -> None:
+    if verify is None:
+        return
+    field, expected = verify
+    actual = result.get(field)
+    if actual != expected:
+        raise RuntimeError(
+            f"write #{index} readback {field!r}={actual!r} did not match expected {expected!r}"
+        )
+
+
+def _validate_group_write_entry(write, index: int) -> dict:
+    if not isinstance(write, Mapping):
+        raise ValueError(f"write #{index} must be a mapping")
+    snap_scope = write.get("snap_scope")
+    if not isinstance(snap_scope, str) or not snap_scope:
+        raise ValueError(f"write #{index} missing snap_scope")
+    command = write.get("command")
+    if not isinstance(command, str) or not command:
+        raise ValueError(f"write #{index} missing command")
+    params = write.get("params") or {}
+    if not isinstance(params, Mapping):
+        raise ValueError(f"write #{index} params must be a mapping")
+    restore = write.get("restore")
+    if not callable(restore):
+        raise ValueError(f"write #{index} missing restore callable")
+    read_scope = write.get("read_scope") or snap_scope
+    if not isinstance(read_scope, str) or not read_scope:
+        raise ValueError(f"write #{index} read_scope must be a string")
+    verify = write.get("verify")
+    if verify is not None:
+        if not isinstance(verify, tuple | list) or len(verify) != 2:
+            raise ValueError(f"write #{index} verify must be a (field, expected) pair")
+        verify = (verify[0], verify[1])
+        if not isinstance(verify[0], str) or not verify[0]:
+            raise ValueError(f"write #{index} verify field must be a string")
+    return {
+        "index": index,
+        "snap_scope": snap_scope,
+        "read_scope": read_scope,
+        "command": command,
+        "params": dict(params),
+        "restore": restore,
+        "verify": verify,
+    }
+
+
+def _validate_group_writes(writes) -> list[dict]:
+    if writes is None:
+        raise ValueError("writes must be a list")
+    return [_validate_group_write_entry(write, index) for index, write in enumerate(writes)]
+
+
+def _validate_restore_action(restore, index: int) -> dict:
+    if not isinstance(restore, Mapping):
+        raise ValueError(f"restore #{index} must be a mapping")
+    command = restore.get("command")
+    if not isinstance(command, str) or not command:
+        raise ValueError(f"restore #{index} missing command")
+    params = restore.get("params") or {}
+    if not isinstance(params, Mapping):
+        raise ValueError(f"restore #{index} params must be a mapping")
+    return {"command": command, "params": dict(params)}
+
+
+def _restore_verify_from_params(result: dict, params: Mapping):
+    if "state" in params:
+        field = "mute" if "mute" in result else ("solo" if "solo" in result else None)
+        if field is not None:
+            return (field, params["state"])
+    if "enabled" in params and "enabled" in result:
+        return ("enabled", params["enabled"])
+    return None
+
+
+def _call_restore(bridge, restore: Mapping) -> dict:
+    params = restore.get("params") or {}
+    restored = bridge.call(restore["command"], params)
+    verify = _restore_verify_from_params(restored, params)
+    if verify is not None:
+        restored = _verify_retry(bridge, restore["command"], params, restored, verify)
+    return restored
+
+
+def _rollback_executed_group_writes(bridge, executed: list[dict]) -> dict:
+    results = []
+    ok = True
+    for item in reversed(executed):
+        restore = item["restore"]
+        try:
+            restored = _call_restore(bridge, restore)
+            results.append({"index": item["index"], "ok": True, "restored": restored})
+        except Exception as exc:
+            ok = False
+            results.append(
+                {
+                    "index": item["index"],
+                    "ok": False,
+                    "error": f"{type(exc).__name__}: {exc}",
+                    "restore": restore,
+                }
+            )
+    return {"ok": ok, "results": results}
+
+
+def _raise_group_write_error(result: dict):
+    raise GroupWriteError(result)
+
+
 def safe_write(
     bridge,
     *,
@@ -377,13 +495,26 @@ def safe_write_group(bridge, *, tool, scope, writes, rollback_unit=None):
     ``writes`` is a list of dicts, each:
         {"snap_scope": "plugin_param:T:S:I",   # what to snapshot for restore
          "command": CMD, "params": {...},      # the write to execute
-         "restore": callable(before)->{"command","params"}}  # how to undo it
+         "restore": callable(before)->{"command","params"},  # how to undo it
+         "read_scope": "optional override",     # defaults to snap_scope
+         "verify": ("field", expected)}         # optional post-write polling
 
-    Snapshots ALL writes first (so we capture originals before any change),
-    then executes them, and logs ONE changelog entry whose ``restores`` is a
-    LIST -- so :func:`rollback_last_change` reverts the whole group atomically.
-    Honors dry-run. Returns {"ok", "before":[...], "after":[...]}.
+    Validates all write entries, snapshots all scopes, and builds every restore
+    before the first mutation. Writes then execute sequentially with fresh
+    readback per write. If a later write fails after earlier writes executed,
+    this immediately attempts reverse rollback of the executed writes.
     """
+    try:
+        checked = _validate_group_writes(writes)
+    except Exception as exc:
+        _raise_group_write_error(
+            {
+                "ok": False,
+                "error": f"{type(exc).__name__}: {exc}",
+                "phase": "validation",
+                "mutation_started": False,
+            }
+        )
     if _dry_run:
         return {
             "ok": True,
@@ -392,15 +523,79 @@ def safe_write_group(bridge, *, tool, scope, writes, rollback_unit=None):
                 "tool": tool,
                 "rollback_unit": rollback_unit or tool,
                 "scope": scope,
-                "writes": [{"command": w["command"], "params": w["params"]} for w in writes],
+                "writes": [{"command": w["command"], "params": w["params"]} for w in checked],
             },
         }
+
     befores, restores = [], []
-    for w in writes:  # snapshot all first
-        before = take_snapshot(bridge, w["snap_scope"])
+    for w in checked:
+        try:
+            before = take_snapshot(bridge, w["snap_scope"])
+        except Exception as exc:
+            _raise_group_write_error(
+                {
+                    "ok": False,
+                    "error": f"{type(exc).__name__}: {exc}",
+                    "phase": "snapshot",
+                    "failed_index": w["index"],
+                    "mutation_started": False,
+                }
+            )
+        try:
+            restore = _validate_restore_action(w["restore"](before), w["index"])
+        except Exception as exc:
+            _raise_group_write_error(
+                {
+                    "ok": False,
+                    "error": f"{type(exc).__name__}: {exc}",
+                    "phase": "restore",
+                    "failed_index": w["index"],
+                    "mutation_started": False,
+                }
+            )
         befores.append(before)
-        restores.append(w["restore"](before))
-    afters = [bridge.call(w["command"], w["params"]) for w in writes]
+        restores.append(restore)
+
+    afters, echoes, executed = [], [], []
+    for w, before, restore in zip(checked, befores, restores, strict=True):
+        try:
+            executed.append({"index": w["index"], "before": before, "restore": restore})
+            echo = bridge.call(w["command"], w["params"])
+            echo = _verify_retry(bridge, w["command"], w["params"], echo, w["verify"])
+            after = _read_scope_with_poll(bridge, w["read_scope"], verify=w["verify"])
+            _require_verified_readback(after, w["verify"], w["index"])
+        except Exception as exc:
+            rollback = _rollback_executed_group_writes(bridge, executed)
+            result = {
+                "ok": False,
+                "error": f"{type(exc).__name__}: {exc}",
+                "phase": "execute",
+                "failed_index": w["index"],
+                "mutation_started": bool(executed),
+                "rollback_attempted": True,
+                "partial_rollback": rollback,
+            }
+            if not rollback["ok"]:
+                entry = _log.append(
+                    {
+                        "tool": tool,
+                        "rollback_unit": rollback_unit or tool,
+                        "scope": scope,
+                        "group": True,
+                        "partial_failure": True,
+                        "failed_index": w["index"],
+                        "error": result["error"],
+                        "befores": [item["before"] for item in executed],
+                        "restores": [item["restore"] for item in executed],
+                        "rollback_attempt": rollback,
+                        "ts": time.time(),
+                    }
+                )
+                result["change_id"] = entry["change_id"]
+            _raise_group_write_error(result)
+        echoes.append(echo)
+        afters.append(after)
+
     entry = _log.append(
         {
             "tool": tool,
@@ -409,6 +604,7 @@ def safe_write_group(bridge, *, tool, scope, writes, rollback_unit=None):
             "group": True,
             "befores": befores,
             "afters": afters,
+            "echoes": echoes,
             "restores": restores,
             "ts": time.time(),
         }
@@ -450,10 +646,7 @@ def export_change_log(output_path: str | None = None, *, include_payload: bool =
 def _rollback_entry(bridge, entry: dict):
     change_id = entry.get("change_id")
     if entry.get("group"):  # grouped write -> replay every restore
-        restored = [
-            bridge.call(r["command"], r.get("params") or {})
-            for r in reversed(entry.get("restores") or [])
-        ]
+        restored = [_call_restore(bridge, r) for r in reversed(entry.get("restores") or [])]
         return {
             "ok": True,
             "rolled_back": entry.get("tool"),
@@ -469,15 +662,7 @@ def _rollback_entry(bridge, entry: dict):
             "tool": entry.get("tool"),
             "change_id": change_id,
         }
-    rparams = restore.get("params") or {}
-    restored = bridge.call(restore["command"], rparams)
-    # mute/solo restores are toggles -> verify+retry like safe_write
-    if "state" in rparams:
-        field = "mute" if "mute" in restored else ("solo" if "solo" in restored else None)
-        if field is not None:
-            restored = _verify_retry(
-                bridge, restore["command"], rparams, restored, (field, rparams["state"])
-            )
+    restored = _call_restore(bridge, restore)
     return {
         "ok": True,
         "rolled_back": entry.get("tool"),

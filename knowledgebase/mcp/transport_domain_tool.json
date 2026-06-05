@@ -1,0 +1,55 @@
+{
+  "date": "2026-06-04",
+  "agent_author": "Codex",
+  "topic": "Consolidated fl_transport MCP wrapper",
+  "affected_file_api": [
+    "src/fl_studio_mcp/tools/transport.py",
+    "src/fl_studio_mcp/operations.py",
+    "transport protocol commands"
+  ],
+  "context": "v1.2 slice 05 added an additive domain tool beside legacy transport tools for parity testing and lower tool-selection overhead. Slice 14 retired the legacy transport aliases from public registration.",
+  "observation": "fl_transport(action, params) validates transport actions through the internal operation registry where applicable, dispatches read-only and transient commands directly to the bridge, dispatches persistent writes through safety.safe_write, and handles ping as the consolidated bridge-health action.",
+  "tested_values": [
+    {"action": "ping", "params": {}},
+    {"action": "get_tempo", "params": {}},
+    {"action": "set_tempo", "params": {"bpm": 128}},
+    {"action": "play", "params": {}},
+    {"action": "not_an_action", "params": {}},
+    {"action": "set_tempo", "params": {"bpm": 1000}}
+  ],
+  "result": "Read and transient actions use registry-built protocol payloads. Tempo writes use the rollback-backed safe-write path with tempo snapshot and readback. ping reports heartbeat/port/controller data through fl_transport after fl_ping was removed from public registration.",
+  "confidence_level": "implementation_verified",
+  "source_method": "Focused pytest coverage and static safety/registration audits in the local repo.",
+  "valid_ranges": {
+    "tempo_bpm": "10..999",
+    "time_signature_denominator": [4, 8],
+    "song_position": "exactly one non-negative value in beats, ms, or ticks"
+  },
+  "example": [
+    {
+      "tool": "fl_transport",
+      "arguments": {
+        "action": "ping",
+        "params": {}
+      }
+    },
+    {
+      "tool": "fl_transport",
+      "arguments": {
+        "action": "set_tempo",
+        "params": {"bpm": 128}
+      }
+    }
+  ],
+  "known_pitfalls": [
+    "The tool's annotation is write-safe because the same public function can perform persistent writes; read-only and transient action safety is action-specific in the implementation and docstring.",
+    "Live FL Studio smoke was not run in this slice."
+  ],
+  "reproduction_steps": [
+    ".venv/bin/python -m pytest tests/test_transport_domain.py"
+  ],
+  "open_questions": [
+    "Run a live FL Studio smoke test when the bridge and controller are available."
+  ],
+  "next_recommended_action": "Run slice 15 final release docs and audit."
+}

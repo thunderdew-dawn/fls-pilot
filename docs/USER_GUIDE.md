@@ -3,7 +3,7 @@
 This guide explains what flstudio-mcp is useful for, how a user talks to it
 through an AI assistant, and what every exposed MCP tool does.
 
-Most users should ask in plain language. The assistant leverages safety classes, explicit product boundaries, and the current 156-tool catalog. It proposes a plan when needed, and applies approved changes through the rollback-first safety layer. Users can also name a specific `fl_*` tool directly when they want precise control.
+Most users should ask in plain language. The assistant leverages safety classes, explicit product boundaries, and the current 94-tool public catalog. It proposes a plan when needed, and applies approved changes through the rollback-first safety layer. Users can also name a specific `fl_*` tool directly when they want precise control.
 
 ## Why This App Exists
 
@@ -30,7 +30,7 @@ The normal workflow is conversational:
 
 1. The user asks for an outcome, for example "scan my mix and fix the worst
    headroom issue".
-2. The assistant checks `fl_ping` and reads relevant resources such as
+2. The assistant checks `fl_transport(action="ping")` and reads relevant resources such as
    `fl://status`, `fl://mixer`, `fl://channels`, or specific tools.
 3. For risky or multi-step work, the assistant explains what it plans to do and
    which changes are reversible.
@@ -46,7 +46,7 @@ Please rename mixer track 8 to Drums and color it blue.
 ```
 
 ```text
-Use fl_mixer_set_name on track 8, then fl_set_track_color on track 8.
+Use fl_mixer with action set_name on track 8, then fl_set_track_color on track 8.
 ```
 
 ## Safety Classes
@@ -73,7 +73,9 @@ Prompt:
 Check that FL Studio is connected, tell me the tempo, then start playback.
 ```
 
-Typical tools: `fl_ping`, `fl_get_tempo`, `fl_play`, `fl_get_play_state`.
+Typical tools: `fl_transport(action="ping")`,
+`fl_transport(action="get_tempo")`, `fl_transport(action="play")`,
+`fl_transport(action="get_play_state")`.
 
 ### Project, Mixer, And Channel State
 
@@ -84,8 +86,8 @@ Show me a concise overview of the project, then list tracks that are muted or
 too hot.
 ```
 
-Typical tools: `fl_get_project_state`, `fl_get_mixer_state`,
-`fl_mixer_get_levels`, `fl_mixer_list_tracks`.
+Typical tools: `fl_get_project_state`, `fl_mixer`,
+`fl_mixer_get_levels`.
 
 ### Channel Organizer And Step Sequencer
 
@@ -97,8 +99,7 @@ track, and write a four-on-the-floor kick pattern.
 ```
 
 Typical tools: `fl_detect_unassigned_channels`,
-`fl_assign_channel_to_free_mixer_track`, `fl_channel_get_grid`,
-`fl_channel_set_steps`.
+`fl_assign_channel_to_free_mixer_track`, `fl_channel`.
 
 ### Patterns, Playlist, And Arrangement
 
@@ -110,7 +111,7 @@ pattern red, and add section markers at bars 1, 17, and 33.
 ```
 
 Typical tools: `fl_arrange_new_pattern`, `fl_arrange_clone_pattern`,
-`fl_pattern_set_color`, `fl_arrange_add_marker`.
+`fl_pattern`, `fl_arrange_add_marker`.
 
 ### Piano Roll And Scale Composition
 
@@ -121,8 +122,8 @@ Write an 8-bar melody in D Dorian to the selected channel, then quantize it to
 1/16 notes.
 ```
 
-Typical tools: `fl_scale_get`, `fl_piano_write_notes`,
-`fl_piano_quantize`, or the higher-level `fl_write_raga_melody`.
+Typical tools: `fl_scale_get`, `fl_piano_roll`, or the higher-level
+`fl_write_raga_melody`.
 
 ### Plugins, Effects, And Mixing Intents
 
@@ -133,8 +134,7 @@ Find the EQ on the lead vocal, reduce harshness around 3 kHz, then show the
 before and after parameter values.
 ```
 
-Typical tools: `fl_plugin_list`, `fl_plugin_get_params`,
-`fl_apply_eq_intent`, `fl_plugin_get_param`.
+Typical tools: `fl_plugin`, `fl_apply_eq_intent`.
 
 > **Note on UI Refresh:** When the assistant applies EQ or plugin changes via `fl_apply_eq_intent`, the parameters take effect immediately in the audio engine. However, if the plugin window is currently open in FL Studio, the GUI may not visually update until the user clicks on it or reopens the window.
 
@@ -228,8 +228,9 @@ tool call. They are intentionally capped so automatic context reads stay small.
 
 ## Full Tool Reference
 
-The current static safety audit reports 156 tools: 70 `read-only`, 75
-`write-safe`, 5 `transient`, 4 `server-state`, and 2 `external-write`.
+The current public MCP surface registers 86 tools: 40 `read-only`, 33
+`write-safe`, 4 `server-state`, 2 `external-write`, and 7 Knowledgebase tools
+registered outside the static annotation pattern.
 
 ### Arrangement Tools
 
@@ -267,17 +268,9 @@ The current static safety audit reports 156 tools: 70 `read-only`, 75
 
 | Tool | Safety | What it does |
 |---|---|---|
-| `fl_get_channel_details` | `read-only` | Reads detailed information for one Channel Rack channel. |
+| `fl_channel` | `write-safe` | Consolidated Channel Rack domain tool. Actions include list, get, get_selected, get_steps, classify, select, set_color, set_mute, set_mixer_target, set_name, set_pan, set_solo, set_steps, and set_volume. |
 | `fl_detect_unassigned_channels` | `read-only` | Finds channels that likely need mixer-track assignment. |
-| `fl_set_channel_name` | `write-safe` | Renames a Channel Rack channel. |
-| `fl_set_channel_mixer_track` | `write-safe` | Assigns a channel to a specific mixer track. |
 | `fl_assign_channel_to_free_mixer_track` | `write-safe` | Finds a free mixer track and assigns a channel to it. |
-| `fl_channel_get_grid` | `read-only` | Reads a channel's step-sequencer grid for the current pattern. |
-| `fl_channel_set_grid_bit` | `write-safe` | Sets or clears one step in the step sequencer. |
-| `fl_channel_set_step_param` | `write-safe` | Sets one step parameter such as velocity, pan, or pitch where supported. |
-| `fl_channel_set_steps` | `write-safe` | Sets multiple step-sequencer steps in a grouped operation. |
-| `fl_channel_clear_grid` | `write-safe` | Clears a channel's step grid for the current pattern. |
-| `fl_classify_channels` | `read-only` | Detects internal channel types (AudioClip, Sampler, Generator, etc). |
 | `fl_inspect_audio_clips` | `read-only` | Scans Audio Clips for routing, naming, and volume issues. |
 | `fl_plan_audio_clip_safe_defaults` | `read-only` | Plans safe defaults (volume normalization, free track routing) for Audio Clips. |
 | `fl_apply_audio_clip_safe_defaults` | `write-safe` | Applies safe volume limits and routing to Audio Clips with manual checklists for Stretch/Normalize. |
@@ -302,14 +295,7 @@ The current static safety audit reports 156 tools: 70 `read-only`, 75
 
 | Tool | Safety | What it does |
 |---|---|---|
-| `fl_effect_get_slot` | `read-only` | Reads details for one effect slot on a mixer track. |
-| `fl_effect_list_slots` | `read-only` | Lists effect slots on a mixer track. |
-| `fl_effect_set_slot_mix` | `write-safe` | Sets wet/dry mix for one effect slot where readback is verified. |
-| `fl_effect_get_track_slots_enabled` | `read-only` | Reads whether a track's effect slots are enabled. |
-| `fl_effect_set_track_slots_enabled` | `write-safe` | Enables or bypasses all effect slots on a track. |
-| `fl_effect_set_slot_enabled` | `write-safe` | Enables or bypasses one effect slot where supported. |
-| `fl_eq_get` | `read-only` | Reads FL Studio native mixer EQ bands. |
-| `fl_eq_set_band` | `write-safe` | Sets one native mixer EQ band parameter with rollback. |
+| `fl_effect` | `write-safe` | Consolidated effect-slot and native EQ domain tool. Actions include get_slot, list_slots, get_track_slots_enabled, set_slot_enabled, set_slot_mix, set_track_slots_enabled, get_eq, and set_eq_band. |
 
 ### Export Tools
 
@@ -339,33 +325,21 @@ The current static safety audit reports 156 tools: 70 `read-only`, 75
 | `fl_get_track_level` | `read-only` | Reads a mixer track's current level in dB. |
 | `fl_apply_compression_intent` | `write-safe` | Applies a calibrated compression intent, optionally level-aware. |
 
-### Project, Mixer, Channel, And Safety Tools
+### Domain, Batch, Project, And Safety Tools
 
 | Tool | Safety | What it does |
 |---|---|---|
+| `fl_transport` | `write-safe` | Consolidated transport domain tool. Actions include ping, get_tempo, set_tempo, get_play_state, play, stop, toggle_play, record, get_song_position, set_song_position, get_time_signature, and set_time_signature. Runtime controls are transient; tempo and time-signature writes use rollback. |
+| `fl_mixer` | `write-safe` | Consolidated mixer domain tool. Actions include list, get, get_selected, get_route, select, set_color, set_mute, set_name, set_pan, set_route, set_solo, set_stereo_separation, and set_volume. |
+| `fl_channel` | `write-safe` | Consolidated Channel Rack domain tool. Actions include list, get, get_selected, get_steps, classify, select, set_color, set_mute, set_mixer_target, set_name, set_pan, set_solo, set_steps, and set_volume. |
+| `fl_pattern` | `write-safe` | Consolidated pattern domain tool. Actions include list, get, get_length, get_selected, find_empty, select, rename, set_color, and set_length. |
+| `fl_playlist` | `write-safe` | Consolidated playlist-track domain tool. Actions include list, get, select, set_color, set_mute, set_name, and set_solo. Playlist clip editing is not supported. |
+| `fl_effect` | `write-safe` | Consolidated effect-slot and native EQ domain tool. |
+| `fl_plugin` | `write-safe` | Consolidated already-loaded plugin domain tool for list, list_params, get_param, and set_param. Plugin loading stays manual. |
+| `fl_piano_roll` | `write-safe` | Consolidated Piano Roll domain tool for undo-backed note writes, transforms, markers, and explicit readback-limit reports. |
+| `fl_batch` | `write-safe` | Runs strict-whitelisted registry read batches or homogeneous persistent-write batches through one named rollback unit. |
 | `fl_get_project_state` | `read-only` | Reads project-level state such as tempo, time signature, and counts. |
-| `fl_get_mixer_state` | `read-only` | Reads a paged mixer state summary. |
-| `fl_get_channel_state` | `read-only` | Reads a paged Channel Rack state summary. |
-| `fl_set_mixer_volume` | `write-safe` | Sets a mixer track volume. |
-| `fl_set_mixer_pan` | `write-safe` | Sets a mixer track pan value. |
-| `fl_set_mixer_mute` | `write-safe` | Sets a mixer track mute state. |
-| `fl_set_mixer_solo` | `write-safe` | Sets a mixer track solo state. |
-| `fl_set_mixer_name` | `write-safe` | Renames a mixer track. |
-| `fl_set_channel_volume` | `write-safe` | Sets a Channel Rack channel volume. |
-| `fl_set_channel_pan` | `write-safe` | Sets a Channel Rack channel pan value. |
-| `fl_set_channel_mute` | `write-safe` | Sets a Channel Rack channel mute state. |
-| `fl_set_channel_solo` | `write-safe` | Sets a Channel Rack channel solo state. |
-| `fl_mixer_list_tracks` | `read-only` | Lists mixer tracks. |
-| `fl_mixer_get_track` | `read-only` | Reads one mixer track's details. |
-| `fl_mixer_set_volume` | `write-safe` | Sets a mixer track volume; newer alias for the mixer-specific surface. |
-| `fl_mixer_set_pan` | `write-safe` | Sets a mixer track pan value; newer alias for the mixer-specific surface. |
-| `fl_mixer_set_mute` | `write-safe` | Sets a mixer track mute state; newer alias for the mixer-specific surface. |
-| `fl_mixer_set_solo` | `write-safe` | Sets a mixer track solo state; newer alias for the mixer-specific surface. |
-| `fl_mixer_select_track` | `write-safe` | Selects a mixer track with rollback of previous selection where supported. |
-| `fl_mixer_get_route` | `read-only` | Reads routing for one mixer track. |
-| `fl_mixer_set_route` | `write-safe` | Adds or removes a mixer route. |
 | `fl_mixer_get_levels` | `read-only` | Reads mixer peak levels. |
-| `fl_mixer_set_stereo_separation` | `write-safe` | Sets mixer stereo separation where the FL build supports sticky readback. |
 | `fl_take_snapshot` | `server-state` | Captures MCP safety-layer snapshot data for inspection. |
 | `fl_get_change_history` | `read-only` | Lists recent MCP changelog entries. |
 | `fl_get_change_log_summary` | `read-only` | Returns a markdown table summary of recent rollback units and IDs. |
@@ -388,50 +362,20 @@ The current static safety audit reports 156 tools: 70 `read-only`, 75
 
 | Tool | Safety | What it does |
 |---|---|---|
-| `fl_pattern_list` | `read-only` | Lists patterns. |
-| `fl_pattern_get` | `read-only` | Reads details for one pattern. |
-| `fl_pattern_get_length` | `read-only` | Reads pattern length. |
-| `fl_pattern_select` | `write-safe` | Selects the active pattern. |
-| `fl_pattern_rename` | `write-safe` | Renames a pattern. |
-| `fl_pattern_set_color` | `write-safe` | Sets pattern color. |
-| `fl_pattern_set_length` | `write-safe` | Sets pattern length where the current FL build exposes a working API. |
-| `fl_pattern_find_empty` | `read-only` | Finds the next empty pattern for planning. |
-| `fl_playlist_list_tracks` | `read-only` | Lists playlist tracks. |
-| `fl_playlist_get_track` | `read-only` | Reads one playlist track's details. |
-| `fl_playlist_set_mute` | `write-safe` | Sets playlist track mute state. |
-| `fl_playlist_set_solo` | `write-safe` | Sets playlist track solo state. |
-| `fl_playlist_set_name` | `write-safe` | Renames a playlist track. |
-| `fl_playlist_set_color` | `write-safe` | Sets playlist track color. |
-| `fl_playlist_select_track` | `write-safe` | Selects a playlist track. |
+| `fl_pattern` | `write-safe` | Consolidated pattern domain tool for reads and rollback-backed metadata/control writes. |
+| `fl_playlist` | `write-safe` | Consolidated playlist-track domain tool for track metadata/control only. Playlist clip editing is not supported. |
 
 ### Piano Roll Tools
 
 | Tool | Safety | What it does |
 |---|---|---|
-| `fl_write_piano_roll_notes` | `write-safe` | Legacy note writer for Piano Roll note batches. |
-| `fl_quantize_pattern` | `write-safe` | Legacy quantize helper for Piano Roll notes. |
-| `fl_piano_write_notes` | `write-safe` | Writes notes to the Piano Roll through the armed note bridge. |
-| `fl_piano_write_chord` | `write-safe` | Builds and writes a named chord to the Piano Roll. |
-| `fl_piano_clear` | `write-safe` | Clears all notes in the active Piano Roll target. |
-| `fl_piano_quantize` | `write-safe` | Quantizes Piano Roll notes. |
-| `fl_piano_transpose` | `write-safe` | Transposes Piano Roll notes by semitones. |
-| `fl_piano_duplicate` | `write-safe` | Duplicates Piano Roll notes forward. |
-| `fl_piano_velocity_ramp` | `write-safe` | Applies a velocity ramp to Piano Roll notes. |
-| `fl_piano_probe_return_channel` | `read-only` | Probes whether structured Piano Roll readback is available. |
-| `fl_piano_add_marker` | `write-safe` | Adds a Piano Roll marker. |
-| `fl_piano_add_time_signature_marker` | `write-safe` | Adds a Piano Roll time-signature marker. |
-| `fl_piano_clear_markers` | `write-safe` | Clears Piano Roll markers with undo-backed rollback. |
-| `fl_piano_get_notes` | `read-only` | Reports the current API limitation for reading active Piano Roll notes. |
+| `fl_piano_roll` | `write-safe` | Consolidated Piano Roll domain tool. Actions include write_notes, write_chord, clear, quantize, transpose, duplicate, velocity_ramp, add_marker, add_time_signature_marker, clear_markers, get_notes, and probe_return_channel. |
 
 ### Plugin Tools
 
 | Tool | Safety | What it does |
 |---|---|---|
-| `fl_plugin_list` | `read-only` | Lists already-loaded plugins on a mixer track. |
-| `fl_plugin_get_params` | `read-only` | Reads parameters for an already-loaded plugin. |
-| `fl_plugin_set_param` | `write-safe` | Sets one already-loaded plugin parameter by index or resolved name. |
-| `fl_plugin_list_params` | `read-only` | Alias-style parameter listing for plugin inspection. |
-| `fl_plugin_get_param` | `read-only` | Reads one plugin parameter value. |
+| `fl_plugin` | `write-safe` | Consolidated already-loaded plugin domain tool for plugin listing, parameter listing, parameter read, and rollback-backed parameter write. |
 | `fl_plugin_get_preset_name` | `read-only` | Reads the current plugin preset name where FL exposes it. |
 | `fl_plugin_next_preset` | `read-only` | Returns manual guidance for moving to the next preset; it does not mutate FL. |
 | `fl_plugin_prev_preset` | `read-only` | Returns manual guidance for moving to the previous preset; it does not mutate FL. |
@@ -459,7 +403,6 @@ The current static safety audit reports 156 tools: 70 `read-only`, 75
 
 | Tool | Safety | What it does |
 |---|---|---|
-| `fl_get_routing` | `read-only` | Reads routing for one mixer track. |
 | `fl_get_routing_all` | `read-only` | Reads the full mixer routing matrix. |
 | `fl_get_channel_routing` | `read-only` | Reads channel-to-mixer routing. |
 | `fl_detect_cleanup_candidates` | `read-only` | Finds likely routing or organization cleanup candidates. |
@@ -467,25 +410,13 @@ The current static safety audit reports 156 tools: 70 `read-only`, 75
 | `fl_plan_routing_fix` | `read-only` | Proposes renaming and routing fixes for structural issues. |
 | `fl_apply_routing_batch` | `write-safe` | Executes batch routing fixes. |
 | `fl_create_bus_layout` | `write-safe` | Routes sources to newly created grouped buses (e.g., in 10-track blocks). |
-| `fl_set_route` | `write-safe` | Adds or removes one mixer route. |
 | `fl_group_tracks` | `write-safe` | Routes selected tracks into a named bus as one grouped rollback unit. |
 
 ### Transport Tools
 
 | Tool | Safety | What it does |
 |---|---|---|
-| `fl_ping` | `read-only` | Confirms the FL Studio bridge and controller build are reachable. |
-| `fl_get_tempo` | `read-only` | Reads project tempo in BPM. |
-| `fl_set_tempo` | `write-safe` | Sets project tempo with rollback. |
-| `fl_play` | `transient` | Starts playback. |
-| `fl_stop` | `transient` | Stops playback. |
-| `fl_toggle_play` | `transient` | Toggles playback. |
-| `fl_record` | `transient` | Toggles recording state. |
-| `fl_get_play_state` | `read-only` | Reads playback and recording state. |
-| `fl_get_song_position` | `read-only` | Reads song position in beats. |
-| `fl_set_song_position` | `transient` | Moves the transport song position. |
-| `fl_get_time_signature` | `read-only` | Reads the current time signature. |
-| `fl_set_time_signature` | `write-safe` | Sets the project time signature with rollback. |
+| `fl_transport` | `write-safe` | Consolidated transport domain tool for ping, reads, rollback-backed tempo/time-signature writes, and transient playback controls. |
 
 ## Boundaries To State Clearly To Users
 

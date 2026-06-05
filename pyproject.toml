@@ -4,8 +4,8 @@ build-backend = "hatchling.build"
 
 [project]
 name = "fl-studio-mcp"
-version = "1.1.0"
-description = "AI-powered FL Studio control via MCP - mixing, composition, plugin control, and mix diagnosis through natural language"
+version = "2.0.0"
+description = "Control FL Studio with any MCP-compatible LLM: mixing, composition, and mix diagnosis through natural language."
 readme = "README.md"
 license = { text = "MIT" }
 authors = [

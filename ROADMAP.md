@@ -141,7 +141,7 @@ Verified live against FL Studio via TCP bridge on macOS, including guided-fix wo
 
 ## Current Next Release Candidates
 
-### v1.2.0 — Architecture Foundation & Tool Efficiency
+### v2.0.0 — Architecture Foundation & Tool Efficiency
 
 Goal:
 Reduce LLM token consumption, tool-selection noise, and avoidable MCP
@@ -150,30 +150,121 @@ compact domain-driven surface. The target is roughly 19 low-level/domain tools
 plus retained product workflow tools, not a total cap for the whole MCP server.
 
 Current baseline:
-- Latest static audit baseline observed 156 registered/static MCP tools.
-- Phase 0 must regenerate the inventory before implementation and classify each
-  current tool as keep, consolidate, remove, or blocked.
+- 2026-06-05 registration baseline after legacy low-level alias removal:
+  86 registered public FastMCP tools with 86 unique public names.
+- Static audit baseline: 165 audited tool definitions, including 86 legacy
+  low-level aliases intentionally absent from public registration.
+- Registered safety-class summary: 33 `write-safe`, 40 `read-only`, 4
+  `server-state`, 2 `external-write`, and 7 Knowledgebase tools registered
+  outside the static AST audit pattern.
+- The duplicate `project_doctor_tools.register(mcp)` call was removed as
+  behavior-preserving registration cleanup.
+- Phase 0 inventory and registration baseline is complete as of 2026-06-04.
+  Full keep/consolidate/remove/blocked classification remains the next scope
+  item before consolidation work starts.
+- Phase 1 operation registry skeleton is complete as of 2026-06-04 with an
+  internal, unregistered `OperationSpec` model covering representative mixer,
+  channel, and tempo writes.
+- Phase 1 expansion A is complete as of 2026-06-04. The internal registry now
+  covers existing transport, mixer, and channel read, transient, and
+  rollback-backed write primitives without public tool registration changes.
+- Phase 1 expansion B is complete as of 2026-06-04. The internal registry now
+  covers existing pattern, playlist track, effect-slot, native mixer EQ, and
+  plugin-parameter primitives without public tool registration changes.
+- Phase 2 verified grouped write safety is complete as of 2026-06-04.
+  `safe_write_group` now pre-validates grouped writes, snapshots all scopes
+  before mutation, performs per-write readback where supported, enforces
+  explicit verify readback pairs, and attempts immediate reverse rollback after
+  partial execution failure.
+- Phase 3 additive domain tool transport is complete as of 2026-06-04.
+  `fl_transport` validates through the operation registry and dispatches
+  persistent transport writes through the existing rollback-backed safe-write
+  path. As of 2026-06-05 it also exposes `ping`, and legacy transport aliases
+  are no longer registered.
+- Phase 3 additive domain tool mixer is complete as of 2026-06-04.
+  `fl_mixer` validates through the operation registry and dispatches
+  persistent mixer writes through the existing rollback-backed safe-write
+  path. Legacy mixer aliases covered by `fl_mixer` are no longer registered.
+- Phase 3 additive domain tool channel is complete as of 2026-06-04.
+  `fl_channel` validates through the operation registry and dispatches
+  persistent channel writes through the existing rollback-backed safe-write
+  path. Actions: list, get, get_selected, get_steps, classify, select,
+  set_color, set_mute, set_mixer_target, set_name, set_pan, set_solo,
+  set_steps, set_volume. Legacy channel aliases covered by `fl_channel` are no
+  longer registered.
+- Phase 3 additive domain tools pattern and playlist are complete as of
+  2026-06-04. `fl_pattern` and `fl_playlist` validate through the operation
+  registry and dispatch persistent writes through the existing rollback-backed
+  safe-write path. Playlist scope is track metadata/control only; playlist clip
+  editing and pattern deletion remain unsupported.
+- Phase 3 additive domain tools effect and plugin are complete as of
+  2026-06-04. `fl_effect` and `fl_plugin` validate through the operation
+  registry and dispatch persistent effect-slot, native EQ, and already-loaded
+  plugin-parameter writes through the existing rollback-backed safe-write path.
+  Plugin loading/insertion, plugin removal, preset navigation writes, and full
+  effect-chain restore remain unsupported.
+- Phase 3 additive domain tool Piano Roll is complete as of 2026-06-04.
+  `fl_piano_roll` consolidates existing undo-backed note writes, transforms,
+  marker helpers, and explicit readback-limit reports. Legacy Piano Roll
+  one-off aliases are no longer registered. Piano Roll writes stay outside
+  generic persistent batching because rollback is FL undo-backed and
+  note/marker readback remains API-limited.
+- Phase 4 read-only batch is complete as of 2026-06-04. `fl_batch` now accepts
+  only strict-whitelisted operation-registry read specs, rejects raw protocol
+  commands and script text, enforces a hard 50-operation limit, and supports
+  `continue_on_error` for runtime read failures.
+- Phase 4 persistent write batch is complete as of 2026-06-05. `fl_batch` now
+  accepts homogeneous persistent-write registry specs through
+  `safety.safe_write_group` as one named rollback unit, rejects
+  `continue_on_error` for writes, and rejects mixed read/write/transient or
+  excluded batches before mutation.
+- Phase 4 persistent write batch review is complete as of 2026-06-05.
+  `safe_write_group` now includes the current attempted write in immediate
+  reverse rollback, covering bridge failures that mutate FL state before
+  raising. Focused review checks remain green with 0 write gaps.
+- Phase 5 product workflow internal refactor is complete as of 2026-06-05.
+  Routing Doctor bus/route grouped writes and Mix Doctor trim-volume writes now
+  prepare through the operation registry before dispatching through the
+  existing safety layer. Project Organizer channel rename and hex color paths
+  were intentionally left unchanged because their public input shapes do not
+  exactly match current registry validation.
+- Phase 6 legacy low-level removal is complete as of 2026-06-05. Redundant
+  one-off aliases covered by domain tools were removed from public registration
+  without deprecation wrappers. Product workflows, safety/history tools,
+  resources, Knowledgebase tools, plugin preset guidance, and specialized
+  workflow tools remain registered. Direct Internal EQ wrapper registration was
+  removed in favor of `fl_effect`'s rollback-backed native EQ path.
 - Product workflows remain in scope unless explicitly removed by a later
   roadmap item.
 
 Proposed scope:
-- **Phase 0**: Inventory and scope lock, including registration/tool-count
-  checks and duplicate-registration cleanup if confirmed.
+- **Phase 0**: Inventory and registration baseline. Status: completed
+  2026-06-04
+  with `scripts/check_tool_registration_baseline.py`; duplicate Project Doctor
+  registration does not affect the public tool count or tool-name set.
 - **Phase 1**: Operation registry and validation layer sourced from existing
-  safe primitives and Knowledgebase data where available.
+  safe primitives and Knowledgebase data where available. Status: skeleton
+  completed 2026-06-04; transport/mixer/channel expansion A completed
+  2026-06-04; pattern/playlist/effect/plugin expansion B completed
+  2026-06-04.
 - **Phase 2**: Verified grouped write safety. `safe_write_group` is already used
-  by user-facing tools, but generic batch exposure requires stronger readback,
-  validation, and partial-failure rollback handling.
-- **Phase 3**: Add domain tools additively for parity testing
-  (`fl_transport`, `fl_mixer`, `fl_channel`, `fl_pattern`, `fl_playlist`,
-  `fl_effect`, `fl_plugin`, `fl_piano_roll`, and optional `fl_safety`).
+  by user-facing tools. Status: completed 2026-06-04 with stronger readback,
+  explicit verify-pair enforcement, validation, and partial-failure rollback
+  handling. Generic batch exposure remains a later phase and must still enforce
+  strict operation whitelist rules.
+- **Phase 3**: Add domain tools additively for parity testing. Status:
+  transport, mixer, channel, pattern, playlist, effect, plugin, and Piano Roll
+  completed 2026-06-04; remaining domain tool is optional `fl_safety`.
 - **Phase 4**: Add `fl_batch` with strict whitelist validation and a hard max
-  50 operation limit.
+  50 operation limit. Status: read-only batch completed 2026-06-04; persistent
+  writes completed 2026-06-05 through verified grouped write safety.
 - **Phase 5**: Refactor product workflows internally only where the operation
-  registry reduces meaningful duplication without weakening safety.
+  registry reduces meaningful duplication without weakening safety. Status:
+  completed 2026-06-05 for routing route writes, mixer bus renames, and Mix
+  Doctor trim-volume writes.
 - **Phase 6**: Remove legacy low-level tools without deprecation wrappers after
   parity tests, docs, Knowledgebase updates, registration checks, and safety
-  audit pass.
+  audit pass. Status: completed 2026-06-05.
 
 Safety:
 - Consolidation and batching must not weaken the rollback contract.
@@ -186,7 +277,7 @@ Safety:
 - `scripts/audit_tool_safety.py --fail-on-gaps` must remain green with 0 write
   gaps throughout the rollout.
 
-### v1.3.0 — Jam-to-Project Assistant
+### v2.1.0 — Jam-to-Project Assistant
 
 Goal:
 Turn an unstructured jam session into a structured, production-ready FL Studio project.

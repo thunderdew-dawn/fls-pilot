@@ -12,7 +12,7 @@ from typing import Annotated
 from fastmcp import FastMCP
 from pydantic import Field
 
-from .. import protocol, safety
+from .. import operations, protocol, safety
 from ..connection import FLCommandFailed, FLNotRunning, FLTimeout, get_bridge
 
 
@@ -37,38 +37,66 @@ def register(mcp: FastMCP) -> None:
 
         Safety: Read-Only.
         """
+        return _ping_bridge(get_bridge())
+
+    @mcp.tool(
+        annotations={
+            "title": "Transport domain operation",
+            "readOnlyHint": False,
+            "destructiveHint": True,
+            "idempotentHint": False,
+            "openWorldHint": True,
+            "safetyClass": "write-safe",
+        },
+    )
+    def fl_transport(
+        action: Annotated[
+            str,
+            Field(
+                description=(
+                    "Transport action: ping, get_tempo, set_tempo, get_play_state, "
+                    "play, stop, toggle_play, record, get_song_position, set_song_position, "
+                    "get_time_signature, or set_time_signature."
+                )
+            ),
+        ],
+        params: Annotated[
+            dict | None,
+            Field(description="Action parameters. Use {} or omit for parameterless actions."),
+        ] = None,
+    ) -> dict:
+        """Run one consolidated transport operation through the operation registry.
+
+        Read-only actions call the bridge after registry validation. Persistent
+        writes, currently tempo and time signature, use the safety layer:
+        snapshot -> write -> readback -> changelog -> rollback restore. Runtime
+        controls such as play, stop, record, and song-position moves are
+        transient and do not persist project state.
+
+        Safety: Write-Safe with Rollback for persistent writes; Transient
+        Runtime Control for playback controls; Read-Only for transport reads.
+        """
+        if action == "ping":
+            return _ping_bridge(get_bridge())
+
+        try:
+            prepared = operations.prepare_operation("transport", action, params or {})
+        except operations.OperationValidationError as exc:
+            raise ValueError(str(exc)) from exc
+
         bridge = get_bridge()
-        port_info = {
-            "port_to_fl": protocol.port_to_fl_name(),
-            "port_from_fl": protocol.port_from_fl_name(),
-        }
-        age = bridge.heartbeat_age()
-        if age is None:
-            return {
-                "alive": False,
-                "reason": "No heartbeat received. FL Studio is closed, the "
-                "FLStudioMCP controller is not selected, or the "
-                "loopMIDI / IAC output port number does not match "
-                "the input port number in FL's MIDI Settings.",
-                **port_info,
-            }
-        if age > protocol.HEARTBEAT_STALE_SECONDS:
-            return {
-                "alive": False,
-                "reason": f"Heartbeat is {age:.1f}s old (stale > "
-                f"{protocol.HEARTBEAT_STALE_SECONDS:.0f}s). FL may "
-                f"be frozen or the controller stopped responding.",
-                "heartbeat_age_seconds": round(age, 2),
-                **port_info,
-            }
-        # Round-trip a ping so we also confirm the request path is healthy.
-        data = bridge.call(protocol.CMD_PING)
-        return {
-            "alive": True,
-            "heartbeat_age_seconds": round(age, 2),
-            **port_info,
-            **data,
-        }
+        if prepared.safety_class == "write-safe":
+            return safety.safe_write(
+                bridge,
+                **prepared.safe_write_kwargs(tool=f"transport_{prepared.action}"),
+            )
+        if prepared.safety_class in {"read-only", "transient"}:
+            return _bridge_call(
+                bridge,
+                prepared.command.command,
+                prepared.command.params,
+            )
+        raise ValueError(f"unsupported transport safety class: {prepared.safety_class}")
 
     @mcp.tool(
         annotations={
@@ -297,14 +325,52 @@ def register(mcp: FastMCP) -> None:
 
 def _safe_call(command: str, params: dict | None = None):
     """Call the bridge and translate transport errors into MCP-friendly messages."""
+    return _bridge_call(get_bridge(), command, params or {})
+
+
+def _ping_bridge(bridge) -> dict:
+    port_info = {
+        "port_to_fl": protocol.port_to_fl_name(),
+        "port_from_fl": protocol.port_from_fl_name(),
+    }
+    age = bridge.heartbeat_age()
+    if age is None:
+        return {
+            "alive": False,
+            "reason": "No heartbeat received. FL Studio is closed, the "
+            "FLStudioMCP controller is not selected, or the "
+            "loopMIDI / IAC output port number does not match "
+            "the input port number in FL's MIDI Settings.",
+            **port_info,
+        }
+    if age > protocol.HEARTBEAT_STALE_SECONDS:
+        return {
+            "alive": False,
+            "reason": f"Heartbeat is {age:.1f}s old (stale > "
+            f"{protocol.HEARTBEAT_STALE_SECONDS:.0f}s). FL may "
+            f"be frozen or the controller stopped responding.",
+            "heartbeat_age_seconds": round(age, 2),
+            **port_info,
+        }
+    data = bridge.call(protocol.CMD_PING)
+    return {
+        "alive": True,
+        "heartbeat_age_seconds": round(age, 2),
+        **port_info,
+        **data,
+    }
+
+
+def _bridge_call(bridge, command: str, params: dict | None = None):
+    """Call a bridge and translate transport errors into MCP-friendly messages."""
     try:
-        return get_bridge().call(command, params)
+        return bridge.call(command, params or {})
     except FLNotRunning as e:
         # FL not running is the single most common failure mode. Surface it
         # clearly so the LLM can prompt the user to start FL rather than
         # retrying blindly.
         raise RuntimeError(str(e)) from e
     except FLTimeout as e:
-        raise RuntimeError(f"{e}. Try fl_ping to confirm the controller is alive.") from e
+        raise RuntimeError(f"{e}. Try fl_transport(action='ping') to confirm the controller is alive.") from e
     except FLCommandFailed as e:
         raise RuntimeError(f"FL Studio rejected the command: {e}") from e

@@ -1,0 +1,52 @@
+{
+  "date": "2026-06-04",
+  "agent_author": "Codex",
+  "topic": "Consolidated fl_piano_roll MCP wrapper",
+  "affected_file_api": [
+    "src/fl_studio_mcp/tools/pianoroll.py",
+    "src/fl_studio_mcp/safety.py",
+    "CMD_ENSURE_PIANO_ROLL",
+    "CMD_GENERAL_UNDO",
+    "generated Piano Roll .pyscript helpers"
+  ],
+  "context": "v1.2 slice 10 adds an additive Piano Roll domain tool beside legacy Piano Roll tools for parity testing and lower tool-selection overhead.",
+  "observation": "fl_piano_roll consolidates existing undo-backed note writes, chord writes, clear, quantize, transpose, duplicate, velocity ramp, marker helpers, and explicit readback-limit reports. Generated-script writes route through safety.safe_piano_roll_write, which logs FL Studio undo as the restore action.",
+  "tested_values": [
+    "write_notes",
+    "transpose",
+    "add_marker",
+    "invalid action",
+    "invalid note payload",
+    "invalid velocity range",
+    "get_notes",
+    "probe_return_channel"
+  ],
+  "result": "The domain entrypoint dispatches write actions through the existing Piano Roll undo-backed safety path and returns explicit API-limited responses for note readback.",
+  "confidence_level": "implementation_verified",
+  "source_method": "Focused FastMCP unit tests with a fake bridge, static safety audit, and registration baseline check.",
+  "valid_ranges": {
+    "midi_pitch": "0..127",
+    "time_bars": ">= 0.0",
+    "length_bars": "> 0.0",
+    "velocity": "0.0..1.0",
+    "velocity_ramp_start_end": "0.0..1.0",
+    "channel": ">= 0 when provided",
+    "pattern": ">= 1 when provided",
+    "marker_time_bars": ">= 0.0",
+    "time_signature_numerator_denominator": ">= 1"
+  },
+  "example": "fl_piano_roll(action=\"write_notes\", params={\"notes\": [{\"pitch\": 60, \"time_bars\": 0, \"length_bars\": 0.25}], \"mode\": \"append\"})",
+  "known_pitfalls": [
+    "Note and marker readback to MCP remains API-limited.",
+    "Rollback uses FL Studio undo, not scoped note snapshots, so Piano Roll write actions must stay out of generic persistent fl_batch writes.",
+    "The generated script still requires the existing Piano Roll scripting setup where FL must run the MCP Apply script once per session for hotkey replay."
+  ],
+  "reproduction_steps": [
+    ".venv/bin/python -m pytest tests/test_piano_roll_domain.py"
+  ],
+  "open_questions": [
+    "Live FL Studio smoke tests were not run in this slice.",
+    "A stable return channel for Piano Roll note/marker readback remains future research."
+  ],
+  "next_recommended_action": "Implement slice 11, read-only fl_batch, while explicitly rejecting writes, raw protocol calls, script text, and Piano Roll generated-script actions."
+}

@@ -17,7 +17,7 @@ from typing import Annotated
 from fastmcp import FastMCP
 from pydantic import Field
 
-from .. import protocol, safety
+from .. import operations, protocol, safety
 from ..connection import fetch_all_pages, get_bridge
 from ..music import mix_doctor as md
 
@@ -138,16 +138,12 @@ def register(mcp: FastMCP) -> None:
             return {"ok": False, "error": "trim_volume needs both track and target_db."}
         try:
             bridge = get_bridge()
+            prepared = operations.prepare_operation(
+                "mixer", "set_volume", {"track": track, "value": target_db, "unit": "db"}
+            )
             res = safety.safe_write(
                 bridge,
-                tool="mixer_set_volume",
-                scope=f"mixer_track:{track}",
-                command=protocol.CMD_MIXER_SET_VOLUME,
-                params={"track": track, "value": target_db, "unit": "db"},
-                build_restore=lambda b: {
-                    "command": protocol.CMD_MIXER_SET_VOLUME,
-                    "params": {"track": track, "value": b["vol_norm"], "unit": "normalized"},
-                },
+                **prepared.safe_write_kwargs(tool="mixer_set_volume"),
             )
             if res.get("dry_run"):
                 return {"ok": True, "dry_run": True, "planned": res.get("planned")}

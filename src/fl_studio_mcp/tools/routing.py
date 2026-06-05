@@ -18,35 +18,23 @@ from typing import Annotated
 from fastmcp import FastMCP
 from pydantic import Field
 
-from .. import protocol, safety
+from .. import operations, protocol, safety
 from ..connection import fetch_all_pages, get_bridge
 from .targets import mixer_track_error
 
 
 def _route_write_entry(src: int, dst: int, enabled: bool) -> dict:
     """One safe_write_group entry that sets a route and restores its prior state."""
-    return {
-        "snap_scope": f"route:{src}:{dst}",
-        "command": protocol.CMD_MIXER_SET_ROUTE,
-        "params": {"src": src, "dst": dst, "enabled": enabled},
-        "restore": lambda b: {
-            "command": protocol.CMD_MIXER_SET_ROUTE,
-            "params": {"src": b["src"], "dst": b["dst"], "enabled": b["enabled"]},
-        },
-    }
+    return operations.prepare_operation(
+        "mixer", "set_route", {"src": src, "dst": dst, "enabled": enabled}
+    ).safe_write_group_entry()
 
 
 def _bus_rename_entry(bus: int, name: str) -> dict:
     """One safe_write_group entry that renames a track and restores its old name."""
-    return {
-        "snap_scope": f"mixer_track:{bus}",
-        "command": protocol.CMD_MIXER_SET_NAME,
-        "params": {"track": bus, "name": name},
-        "restore": lambda b: {
-            "command": protocol.CMD_MIXER_SET_NAME,
-            "params": {"track": bus, "name": b["name"]},
-        },
-    }
+    return operations.prepare_operation(
+        "mixer", "set_name", {"track": bus, "name": name}
+    ).safe_write_group_entry()
 
 
 # --- server-side judgement helpers (pure) -----------------------------------

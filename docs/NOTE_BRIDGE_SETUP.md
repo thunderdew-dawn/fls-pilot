@@ -34,6 +34,7 @@ confirm the script ran. If notes don't appear, the cause is almost always the
 un-armed state above; the `setup` field in every `apply_notes` response says so.
 
 ## Session start checklist (the whole setup)
-1. loopMIDI ports up + FL open + controller loaded + daemon running (`fl_ping`).
+1. loopMIDI ports up + FL open + controller loaded + daemon running
+   (`fl_transport(action="ping")`).
 2. **Run `MCP Apply` once** from the Piano roll Scripting menu.
 That's it — arrangement / note-writes are automatic from there.

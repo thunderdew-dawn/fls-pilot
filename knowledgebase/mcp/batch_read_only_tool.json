@@ -1,0 +1,67 @@
+{
+  "date": "2026-06-05",
+  "agent_author": "Codex",
+  "topic": "fl_batch MCP wrapper for read-only batches and persistent write batches",
+  "affected_file_api": [
+    "src/fl_studio_mcp/tools/batch.py",
+    "src/fl_studio_mcp/server.py",
+    "src/fl_studio_mcp/operations.py",
+    "safety.safe_write_group",
+    "operation-registry protocol commands"
+  ],
+  "context": "v1.2 slices 11 and 12 expose one public fl_batch surface for strict operation-registry batches.",
+  "observation": "fl_batch validates every operation through the internal operation registry before any bridge calls. It accepts only registry IDs shaped as {domain, action, params?} from read-only or persistent-write whitelists. Read-only batches execute registry-built read commands directly. Persistent write batches must be homogeneous, reject continue_on_error, and execute through safety.safe_write_group as one named rollback unit.",
+  "tested_values": [
+    "transport.get_tempo read",
+    "mixer.get read",
+    "channel.get_selected read",
+    "51-operation max rejection",
+    "raw command rejection",
+    "script_text rejection",
+    "mixed read/write rejection",
+    "runtime read failure without continue_on_error",
+    "runtime read failure with continue_on_error",
+    "successful persistent write batch with two mixer.set_mute operations",
+    "invalid write validation with no bridge calls",
+    "write continue_on_error rejection",
+    "rollback of a successful write batch",
+    "persistent write dry-run plan",
+    "partial write failure with immediate group rollback"
+  ],
+  "result": "Invalid structure, raw/script fields, non-whitelisted actions, mixed categories, transient controls, and excluded actions fail before mutation. Read-only runtime failures stop the batch unless continue_on_error is true. Persistent write batches snapshot all scopes, build restore actions, execute with readback through safe_write_group, log one rollback unit, and roll back executed writes on partial failure.",
+  "confidence_level": "implementation_verified",
+  "source_method": "Focused FastMCP unit tests with a fake bridge, static safety audit, safety-doc audit, and registration baseline check.",
+  "valid_ranges": {
+    "max_operations": 50,
+    "operation_fields": [
+      "domain",
+      "action",
+      "params"
+    ],
+    "params": "object when provided",
+    "batch_categories": [
+      "read_only",
+      "persistent_write"
+    ],
+    "persistent_write_rollback_unit": "fl_batch_persistent"
+  },
+  "examples": {
+    "read": "fl_batch(operations=[{\"domain\": \"transport\", \"action\": \"get_tempo\"}, {\"domain\": \"mixer\", \"action\": \"get\", \"params\": {\"track\": 1}}])",
+    "write": "fl_batch(operations=[{\"domain\": \"mixer\", \"action\": \"set_mute\", \"params\": {\"track\": 1, \"state\": true}}, {\"domain\": \"mixer\", \"action\": \"set_mute\", \"params\": {\"track\": 2, \"state\": true}}])"
+  },
+  "known_pitfalls": [
+    "Batches cannot mix reads and writes.",
+    "Persistent write batches reject continue_on_error.",
+    "Raw protocol commands and script/code text are rejected.",
+    "Transient runtime controls, external writes, and Piano Roll generated-script actions are excluded from fl_batch.",
+    "List operations use their registry command payloads; richer workflow batching remains future scope."
+  ],
+  "reproduction_steps": [
+    ".venv/bin/python -m pytest tests/test_batch_read_only.py tests/test_batch_persistent_writes.py"
+  ],
+  "open_questions": [
+    "Live FL Studio smoke tests were not run for persistent write batching.",
+    "Some underlying registry write specs remain build/API dependent and rely on their existing readback behavior."
+  ],
+  "next_recommended_action": "Run slice 12 review before product workflow refactors."
+}

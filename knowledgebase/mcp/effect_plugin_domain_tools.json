@@ -1,0 +1,63 @@
+{
+  "date": "2026-06-04",
+  "agent_author": "Codex",
+  "topic": "Consolidated fl_effect and fl_plugin MCP wrappers",
+  "affected_file_api": [
+    "src/fl_studio_mcp/tools/effect.py",
+    "src/fl_studio_mcp/tools/plugin_domain.py",
+    "src/fl_studio_mcp/operations.py",
+    "CMD_MIXER_GET_SLOT",
+    "CMD_MIXER_SET_SLOT_MIX",
+    "CMD_MIXER_SET_SLOT_ENABLED",
+    "CMD_MIXER_GET_TRACK_SLOTS",
+    "CMD_MIXER_SET_TRACK_SLOTS",
+    "CMD_MIXER_GET_EQ",
+    "CMD_MIXER_SET_EQ",
+    "CMD_PLUGIN_LIST",
+    "CMD_PLUGIN_GET_PARAMS",
+    "CMD_PLUGIN_GET_PARAM",
+    "CMD_PLUGIN_SET_PARAM"
+  ],
+  "context": "v1.2 slice 09 adds additive domain tools beside legacy effect/plugin tools for parity testing and lower tool-selection overhead.",
+  "observation": "fl_effect validates effect-slot and native EQ actions through the operation registry. fl_plugin validates already-loaded plugin list/parameter actions through the registry and resolves string parameter names to concrete integer indices before dispatch. Persistent writes route through safety.safe_write.",
+  "tested_values": [
+    "effect.get_slot",
+    "effect.get_eq",
+    "effect.set_slot_mix",
+    "effect.set_eq_band",
+    "effect invalid action",
+    "effect invalid slot mix",
+    "plugin.list",
+    "plugin.list_params",
+    "plugin.get_param",
+    "plugin.set_param",
+    "plugin invalid action",
+    "plugin invalid value",
+    "plugin loading rejection"
+  ],
+  "result": "Effect-slot, native EQ, and already-loaded plugin parameter reads/writes execute through the expected registry and safety paths. Plugin loading or insertion attempts are rejected before bridge dispatch.",
+  "confidence_level": "implementation_verified",
+  "source_method": "Focused FastMCP unit tests with a fake bridge, static safety audit, and registration baseline check.",
+  "valid_ranges": {
+    "effect_slot": "0..9",
+    "native_eq_band": "0..2",
+    "normalized_values": "0.0..1.0 for slot mix, plugin parameters, and native EQ gain/frequency/bandwidth",
+    "plugin_param": "non-negative integer index after optional name resolution"
+  },
+  "example": [
+    "fl_effect(action=\"set_slot_mix\", params={\"track\": 1, \"slot\": 0, \"mix\": 0.5})",
+    "fl_plugin(action=\"set_param\", params={\"track\": 1, \"slot\": 0, \"param\": 2, \"value\": 0.75})"
+  ],
+  "known_pitfalls": [
+    "Plugin loading, plugin insertion, plugin removal, preset navigation writes, and full effect-chain restore remain unsupported.",
+    "Native EQ type writes remain documented-unconfirmed on current live evidence and should only be trusted where readback verifies the change.",
+    "Some plugin parameters are plugin/build dependent and may not stick even though rollback remains safe."
+  ],
+  "reproduction_steps": [
+    ".venv/bin/python -m pytest tests/test_effect_plugin_domain.py"
+  ],
+  "open_questions": [
+    "Live FL Studio smoke tests were not run in this slice."
+  ],
+  "next_recommended_action": "Implement slice 10, the additive Piano Roll domain tool, with extra attention to the existing undo-backed safety model and readback limits."
+}

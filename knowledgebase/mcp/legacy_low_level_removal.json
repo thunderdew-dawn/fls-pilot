@@ -1,0 +1,49 @@
+{
+  "date": "2026-06-05",
+  "agent_author": "Codex",
+  "topic": "v1.2 legacy low-level MCP alias removal",
+  "affected_file_api": [
+    "src/fl_studio_mcp/server.py",
+    "scripts/check_tool_registration_baseline.py",
+    "domain MCP tools"
+  ],
+  "context": "v1.2 Phase 6 removed redundant one-off low-level aliases after domain tools and fl_batch were added and parity-tested.",
+  "observation": "The public FastMCP surface now registers 86 tools with 86 unique public names. Redundant aliases covered by domain tools and fl_batch are removed without deprecation wrappers.",
+  "tested_values": {
+    "registered_public_tools": 86,
+    "unique_public_tool_names": 86,
+    "registered_safety_classes": {
+      "write-safe": 33,
+      "read-only": 40,
+      "server-state": 4,
+      "external-write": 2,
+      "unannotated": 7
+    },
+    "focused_domain_tests": 58
+  },
+  "result": "Product workflows, safety/history tools, resources, Knowledgebase tools, plugin preset guidance, and specialized workflows remain registered. Direct Internal EQ wrapper registration was removed in favor of fl_effect's rollback-backed native EQ path.",
+  "confidence_level": "implementation_verified",
+  "source_method": "Local registration check, focused pytest suite, safety audits, and static docs review.",
+  "valid_ranges": "Not applicable; this entry tracks MCP public registration behavior, not FL value ranges.",
+  "example": {
+    "removed_alias": "fl_ping",
+    "replacement": {
+      "tool": "fl_transport",
+      "arguments": {
+        "action": "ping",
+        "params": {}
+      }
+    }
+  },
+  "known_pitfalls": [
+    "Static safety audit still sees retired legacy function definitions in source because helper modules remain for tests and internal imports.",
+    "Public registration is authoritative for the MCP tool surface."
+  ],
+  "reproduction_steps": [
+    ".venv/bin/python scripts/check_tool_registration_baseline.py"
+  ],
+  "open_questions": [
+    "Live FL Studio smoke tests were not run for this slice."
+  ],
+  "next_recommended_action": "Run slice 15 final release docs and audit."
+}

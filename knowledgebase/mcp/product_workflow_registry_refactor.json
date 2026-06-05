@@ -1,0 +1,59 @@
+{
+  "date": "2026-06-05",
+  "agent_author": "Codex",
+  "topic": "Product workflow writes prepared through the operation registry",
+  "affected_file_api": [
+    "src/fl_studio_mcp/tools/routing.py",
+    "src/fl_studio_mcp/tools/mix_doctor.py",
+    "src/fl_studio_mcp/operations.py",
+    "src/fl_studio_mcp/tools/batch.py",
+    "safety.safe_write",
+    "safety.safe_write_group"
+  ],
+  "context": "v1.2 Phase 5 refactors product workflows internally only where operation-registry reuse removes duplicate command/snapshot/restore logic without changing public workflow behavior.",
+  "observation": "Routing Doctor route writes and mixer bus renames now use operations.prepare_operation(...).safe_write_group_entry() before safety.safe_write_group. Mix Doctor trim_volume now prepares mixer.set_volume through the registry before safety.safe_write. Persistent fl_batch uses the same helper for grouped write entries.",
+  "tested_values": [
+    "mixer.set_route source 2 destination 0 enabled false",
+    "mixer.set_name track 8 name DRUM_BUS",
+    "Mix Doctor trim_volume track 4 target -3.0 dB",
+    "persistent fl_batch mixer mute write tests",
+    "operation registry mixer volume helper tests"
+  ],
+  "result": "Registry-prepared route entries preserve command and restore payloads while adding explicit route readback verification. Registry-prepared mixer name and Mix Doctor volume writes preserve previous command/scope/restore behavior. Public FastMCP registration does not change.",
+  "confidence_level": "implementation_verified",
+  "source_method": "Focused offline pytest tests with fake bridges plus static safety audit.",
+  "valid_ranges": {
+    "mixer_route": {
+      "src": "integer >= 0",
+      "dst": "integer >= 0",
+      "enabled": "boolean"
+    },
+    "mixer_name": {
+      "track": "integer >= 0",
+      "name": "string"
+    },
+    "mixer_volume": {
+      "unit": ["normalized", "db"],
+      "normalized_value": "0..1",
+      "db_value": "finite number"
+    }
+  },
+  "example": {
+    "helper": "routing._route_write_entry(2, 0, false)",
+    "prepared_scope": "route:2:0",
+    "command": "mixer_set_route"
+  },
+  "known_pitfalls": [
+    "Project Organizer channel rename helpers were not refactored because channel name registry validation requires non-empty names.",
+    "Project Organizer hex color helpers were not refactored because current registry color specs accept FL-native integer colors or RGB triplets, not hex strings."
+  ],
+  "reproduction_steps": [
+    ".venv/bin/python -m pytest tests/test_operation_registry.py tests/test_batch_persistent_writes.py tests/test_product_workflow_registry_refactor.py",
+    ".venv/bin/python tests/test_mix_doctor.py"
+  ],
+  "open_questions": [
+    "Live FL Studio smoke tests were not run for the refactored product workflow paths.",
+    "Project Organizer color input compatibility should be handled in a separate slice if that public behavior is corrected."
+  ],
+  "next_recommended_action": "Proceed to Slice 14 legacy low-level removal only after parity and registration checks remain green."
+}

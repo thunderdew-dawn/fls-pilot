@@ -67,6 +67,337 @@ def _ensure_piano_roll(bridge, channel: int | None, pattern: int | None) -> dict
     return bridge.call(protocol.CMD_ENSURE_PIANO_ROLL, _target_payload(channel, pattern))
 
 
+def _readback_limit_response() -> dict:
+    return {
+        "ok": False,
+        "error": "Piano Roll readback to the MCP server is currently api-limited.",
+        "readback_available": False,
+        "status": "api-limited",
+        "details": (
+            "Generated Piano Roll scripts can read and mutate notes locally, but this branch "
+            "does not have a verified return channel from that script sandbox back to the MCP "
+            "server. Use undo-backed writes and rollback with fl_rollback_last_change."
+        ),
+    }
+
+
+def _coerce_params(params: dict | None) -> dict:
+    if params is None:
+        return {}
+    if not isinstance(params, dict):
+        raise ValueError("params must be an object")
+    return dict(params)
+
+
+def _target_from_params(params: dict) -> tuple[int | None, int | None]:
+    channel = _optional_int(params, "channel", minimum=0)
+    pattern = _optional_int(params, "pattern", minimum=1)
+    return channel, pattern
+
+
+def _optional_int(params: dict, key: str, *, minimum: int | None = None) -> int | None:
+    value = params.get(key)
+    if value is None:
+        return None
+    if isinstance(value, bool):
+        raise ValueError(f"{key} must be an integer")
+    try:
+        out = int(value)
+    except (TypeError, ValueError) as exc:
+        raise ValueError(f"{key} must be an integer") from exc
+    if minimum is not None and out < minimum:
+        raise ValueError(f"{key} must be >= {minimum}")
+    return out
+
+
+def _required_int(params: dict, key: str, *, minimum: int | None = None) -> int:
+    if key not in params:
+        raise ValueError(f"{key} is required")
+    value = _optional_int(params, key, minimum=minimum)
+    assert value is not None
+    return value
+
+
+def _optional_float(
+    params: dict,
+    key: str,
+    *,
+    default: float | None = None,
+    minimum: float | None = None,
+    maximum: float | None = None,
+    required: bool = False,
+) -> float | None:
+    if key not in params:
+        if required:
+            raise ValueError(f"{key} is required")
+        return default
+    try:
+        out = float(params[key])
+    except (TypeError, ValueError) as exc:
+        raise ValueError(f"{key} must be a number") from exc
+    if minimum is not None and out < minimum:
+        raise ValueError(f"{key} must be >= {minimum}")
+    if maximum is not None and out > maximum:
+        raise ValueError(f"{key} must be <= {maximum}")
+    return out
+
+
+def _mode(params: dict, *, default: str) -> str:
+    mode = str(params.get("mode", default)).strip().lower()
+    if mode not in {"replace", "append"}:
+        raise ValueError("mode must be 'replace' or 'append'")
+    return mode
+
+
+def _notes_from_params(params: dict) -> list[dict]:
+    raw_notes = params.get("notes")
+    if not isinstance(raw_notes, list):
+        raise ValueError("notes must be a list")
+    return [PianoRollNote.model_validate(note).model_dump() for note in raw_notes]
+
+
+def _run_piano_roll_action(action: str, params: dict | None) -> dict:
+    """Dispatch one consolidated Piano Roll action without calling public MCP tools."""
+    resolved = _coerce_params(params)
+    normalized = str(action).strip().lower()
+
+    if normalized in {"get_notes", "readback_limit"}:
+        return _readback_limit_response()
+
+    if normalized == "probe_return_channel":
+        out = _readback_limit_response()
+        out["ok"] = True
+        out["reason"] = out.pop("error")
+        out["recommended_path"] = (
+            "Use write actions with FL undo-backed rollback. Treat note and marker readback "
+            "as unavailable until a version-stable return channel is implemented."
+        )
+        return out
+
+    bridge = get_bridge()
+    channel, pattern = _target_from_params(resolved)
+
+    if normalized == "write_notes":
+        arr = _notes_from_params(resolved)
+        quantize = _optional_float(resolved, "quantize", default=0.0, minimum=0.0)
+        assert quantize is not None
+        if quantize > 0:
+            arr = quantize_notes(arr, quantize)
+        mode = _mode(resolved, default="replace")
+        _ensure_piano_roll(bridge, channel, pattern)
+        return safety.safe_piano_roll_write(
+            bridge,
+            tool="piano_roll_write_notes",
+            params={
+                "notes": arr,
+                "mode": mode,
+                "quantize": quantize,
+                **_target_payload(channel, pattern),
+            },
+            apply=lambda: bridge.apply_notes(arr, mode, channel=channel, pattern=pattern),
+        )
+
+    if normalized == "write_chord":
+        chord_name = str(resolved.get("chord_name", "")).strip()
+        if not chord_name:
+            raise ValueError("chord_name is required")
+        if "root_note" not in resolved:
+            raise ValueError("root_note is required")
+        try:
+            root = parse_root_note(resolved["root_note"])
+        except ValueError as exc:
+            raise ValueError(f"Invalid root note: {exc}") from exc
+        chord_type = chord_name.lower()
+        if chord_type not in CHORD_TEMPLATES:
+            raise ValueError(f"unknown chord type: {chord_name!r}")
+        time_bars = _optional_float(resolved, "time_bars", default=0.0, minimum=0.0)
+        length_bars = _optional_float(resolved, "length_bars", default=1.0, minimum=0.0)
+        velocity = _optional_float(resolved, "velocity", default=100 / 127.0, minimum=0.0, maximum=1.0)
+        assert time_bars is not None and length_bars is not None and velocity is not None
+        if length_bars <= 0:
+            raise ValueError("length_bars must be > 0")
+        mode = _mode(resolved, default="append")
+        chord_notes = [
+            {
+                "pitch": root + offset,
+                "time_bars": time_bars,
+                "length_bars": length_bars,
+                "velocity": velocity,
+            }
+            for offset in CHORD_TEMPLATES[chord_type]
+            if 0 <= root + offset <= 127
+        ]
+        if not chord_notes:
+            raise ValueError("chord produced no in-range MIDI notes")
+        _ensure_piano_roll(bridge, channel, pattern)
+        return safety.safe_piano_roll_write(
+            bridge,
+            tool="piano_roll_write_chord",
+            params={
+                "chord_name": chord_name,
+                "root_note": resolved["root_note"],
+                "time_bars": time_bars,
+                "length_bars": length_bars,
+                "velocity": velocity,
+                "mode": mode,
+                **_target_payload(channel, pattern),
+            },
+            apply=lambda: bridge.apply_notes(chord_notes, mode, channel=channel, pattern=pattern),
+        )
+
+    if normalized == "clear":
+        _ensure_piano_roll(bridge, channel, pattern)
+        return safety.safe_piano_roll_write(
+            bridge,
+            tool="piano_roll_clear",
+            params=_target_payload(channel, pattern),
+            apply=lambda: bridge.apply_notes([], mode="replace", channel=channel, pattern=pattern),
+        )
+
+    if normalized == "quantize":
+        grid_bars = _optional_float(resolved, "grid_bars", default=0.0625, minimum=0.0)
+        assert grid_bars is not None
+        if grid_bars <= 0:
+            raise ValueError("grid_bars must be > 0")
+        snap_ends = bool(resolved.get("snap_ends", False))
+        _ensure_piano_roll(bridge, channel, pattern)
+        return safety.safe_piano_roll_write(
+            bridge,
+            tool="piano_roll_quantize",
+            params={
+                "grid_bars": grid_bars,
+                "snap_ends": snap_ends,
+                **_target_payload(channel, pattern),
+            },
+            apply=lambda: bridge.apply_notes(
+                [],
+                trigger=True,
+                quantize=grid_bars,
+                snap_ends=snap_ends,
+                channel=channel,
+                pattern=pattern,
+            ),
+        )
+
+    if normalized == "transpose":
+        semitones = _required_int(resolved, "semitones")
+        _ensure_piano_roll(bridge, channel, pattern)
+        return safety.safe_piano_roll_write(
+            bridge,
+            tool="piano_roll_transpose",
+            params={"semitones": semitones, **_target_payload(channel, pattern)},
+            apply=lambda: bridge.apply_notes(
+                [], trigger=True, transpose=semitones, channel=channel, pattern=pattern
+            ),
+        )
+
+    if normalized == "duplicate":
+        offset_bars = _optional_float(resolved, "offset_bars", default=1.0, minimum=0.0)
+        assert offset_bars is not None
+        if offset_bars <= 0:
+            raise ValueError("offset_bars must be > 0")
+        _ensure_piano_roll(bridge, channel, pattern)
+        return safety.safe_piano_roll_write(
+            bridge,
+            tool="piano_roll_duplicate",
+            params={"offset_bars": offset_bars, **_target_payload(channel, pattern)},
+            apply=lambda: bridge.apply_notes(
+                [], trigger=True, duplicate_bars=offset_bars, channel=channel, pattern=pattern
+            ),
+        )
+
+    if normalized == "velocity_ramp":
+        start = _optional_float(resolved, "start", minimum=0.0, maximum=1.0, required=True)
+        end = _optional_float(resolved, "end", minimum=0.0, maximum=1.0, required=True)
+        assert start is not None and end is not None
+        _ensure_piano_roll(bridge, channel, pattern)
+        return safety.safe_piano_roll_write(
+            bridge,
+            tool="piano_roll_velocity_ramp",
+            params={"start": start, "end": end, **_target_payload(channel, pattern)},
+            apply=lambda: bridge.apply_notes(
+                [],
+                trigger=True,
+                velocity_ramp=(start, end),
+                channel=channel,
+                pattern=pattern,
+            ),
+        )
+
+    if normalized == "add_marker":
+        time_bars = _optional_float(resolved, "time_bars", minimum=0.0, required=True)
+        name = str(resolved.get("name", "")).strip()
+        if not name:
+            raise ValueError("name is required")
+        mode = _optional_int(resolved, "mode", minimum=0)
+        if mode is None:
+            mode = 0
+        assert time_bars is not None
+        _ensure_piano_roll(bridge, channel, pattern)
+        return safety.safe_piano_roll_write(
+            bridge,
+            tool="piano_roll_add_marker",
+            params={
+                "time_bars": time_bars,
+                "name": name,
+                "mode": mode,
+                **_target_payload(channel, pattern),
+            },
+            apply=lambda: bridge.apply_notes(
+                [],
+                trigger=True,
+                marker_add={"time_bars": time_bars, "name": name, "mode": mode},
+                channel=channel,
+                pattern=pattern,
+            ),
+        )
+
+    if normalized == "add_time_signature_marker":
+        time_bars = _optional_float(resolved, "time_bars", minimum=0.0, required=True)
+        numerator = _required_int(resolved, "numerator", minimum=1)
+        denominator = _required_int(resolved, "denominator", minimum=1)
+        name = str(resolved.get("name", "Time Signature")).strip() or "Time Signature"
+        assert time_bars is not None
+        _ensure_piano_roll(bridge, channel, pattern)
+        return safety.safe_piano_roll_write(
+            bridge,
+            tool="piano_roll_add_time_signature_marker",
+            params={
+                "time_bars": time_bars,
+                "numerator": numerator,
+                "denominator": denominator,
+                "name": name,
+                **_target_payload(channel, pattern),
+            },
+            apply=lambda: bridge.apply_notes(
+                [],
+                trigger=True,
+                marker_add={
+                    "time_bars": time_bars,
+                    "name": name,
+                    "mode": 8,
+                    "ts_num": numerator,
+                    "ts_den": denominator,
+                },
+                channel=channel,
+                pattern=pattern,
+            ),
+        )
+
+    if normalized == "clear_markers":
+        _ensure_piano_roll(bridge, channel, pattern)
+        return safety.safe_piano_roll_write(
+            bridge,
+            tool="piano_roll_clear_markers",
+            params=_target_payload(channel, pattern),
+            apply=lambda: bridge.apply_notes(
+                [], trigger=True, marker_clear=True, channel=channel, pattern=pattern
+            ),
+        )
+
+    raise ValueError(f"unknown piano roll action: {action}")
+
+
 def register(mcp: FastMCP) -> None:
     _RO = {
         "readOnlyHint": True,
@@ -122,6 +453,59 @@ def register(mcp: FastMCP) -> None:
         return fl_piano_quantize(grid_bars, snap_ends)
 
     # ---- Phase 4 First-Class Piano Roll Tools -------------------------------
+
+    @mcp.tool(
+        annotations={
+            "title": "Piano Roll domain operation",
+            "readOnlyHint": False,
+            "destructiveHint": True,
+            "idempotentHint": False,
+            "openWorldHint": True,
+            "safetyClass": "write-safe",
+        }
+    )
+    def fl_piano_roll(
+        action: Annotated[
+            str,
+            Field(
+                description=(
+                    "Piano Roll action: write_notes, write_chord, clear, quantize, "
+                    "transpose, duplicate, velocity_ramp, add_marker, "
+                    "add_time_signature_marker, clear_markers, get_notes, "
+                    "probe_return_channel."
+                )
+            ),
+        ],
+        params: Annotated[
+            dict | None,
+            Field(
+                description=(
+                    "Action parameters. Common optional keys for write actions: "
+                    "{channel?: int, pattern?: int}. write_notes: {notes: list, "
+                    "mode?: replace|append, quantize?: float}. write_chord: "
+                    "{chord_name, root_note, time_bars?, length_bars?, velocity?, mode?}. "
+                    "quantize: {grid_bars?, snap_ends?}. transpose: {semitones}. "
+                    "duplicate: {offset_bars?}. velocity_ramp: {start, end}. "
+                    "add_marker: {time_bars, name, mode?}. "
+                    "add_time_signature_marker: {time_bars, numerator, denominator, name?}."
+                )
+            ),
+        ] = None,
+    ) -> dict:
+        """Run one consolidated Piano Roll note, transform, marker, or probe action.
+
+        Generated-script write actions use the existing Piano Roll safety path:
+        the controller retargets/opens the Piano Roll where requested, the
+        generated script executes inside FL's undo section where available, and
+        ``fl_rollback_last_change`` replays FL Studio undo through
+        ``general.undoUp``. Note and marker readback remain API-limited; use
+        ``get_notes`` or ``probe_return_channel`` to return that explicit limit.
+
+        Safety: Write-Safe with Rollback for generated-script writes; Read-Only
+        for readback-limit reports. Piano Roll actions are intentionally not
+        eligible for generic persistent ``fl_batch`` writes.
+        """
+        return _run_piano_roll_action(action, params)
 
     @mcp.tool(
         annotations={
