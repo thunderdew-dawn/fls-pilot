@@ -1,0 +1,15 @@
+{
+  "date": "2026-05-25",
+  "author": "System Migration",
+  "topic": "Serum 2 Parameter & Preset Exposure",
+  "affected_api": "plugins.getParamName, plugins.getPresetCount, plugins.getName",
+  "confidence_level": "implementation_verified",
+  "source_method": "Probed Serum 2 (scripts/probe_serum.py, scripts/probe_serum_presets.py)",
+  "context": "Investigating if Serum 2 exposes parameters via generator path and if presets can be navigated.",
+  "observation": "Parameters are fully exposed (541 real names and readable values). Internal preset library is walled off.",
+  "result": "Parameter reading is viable. Preset recall is NOT possible via FL API.",
+  "tested_values": "Serum 2 parameter sweep and preset navigation.",
+  "known_pitfalls": "Exposing all 541 parameters blindly is too noisy. Preset recall by name is a dead end.",
+  "open_questions": "None.",
+  "next_recommended_action": "Build/tweak patches from a curated parameter subset instead of relying on preset recall."
+}

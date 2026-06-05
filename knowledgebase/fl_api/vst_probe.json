@@ -1,0 +1,15 @@
+{
+  "date": "2026-05-25",
+  "author": "System Migration",
+  "topic": "3rd-party VST Parameter Exposure",
+  "affected_api": "plugins.getParamName, plugins.getParamValueString",
+  "confidence_level": "implementation_verified",
+  "source_method": "Probed FabFilter Pro-C 3 (scripts/probe_vst.py)",
+  "context": "Verifying if FL VST wrapper exposes real param names and readable value-strings for 3rd-party plugins.",
+  "observation": "Real names and readable units are exposed. getParamCount reports 4240 but real params are at low indices.",
+  "result": "Calibration and intents work for VSTs exactly like native plugins.",
+  "tested_values": "FabFilter Pro-C 3 parameters swept and read.",
+  "known_pitfalls": "Controller truncates names to 30 chars causing potential collisions. Indices might shift across VST updates.",
+  "open_questions": "None.",
+  "next_recommended_action": "Cache indices and re-validate getParamName on connect. Build specific VST intents."
+}

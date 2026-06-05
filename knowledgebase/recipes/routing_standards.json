@@ -1,0 +1,15 @@
+{
+  "date": "2026-05-25",
+  "author": "System Migration",
+  "topic": "Controller/Server Architecture & Mixing/Routing Tools",
+  "affected_api": "tools/mixing.py, tools/routing.py, FL controller scripts",
+  "confidence_level": "implementation_verified",
+  "source_method": "MIXING_ROUTING_REPORT.md",
+  "context": "Documenting architecture split for heavy tasks and summary of routing/mixing logic.",
+  "observation": "Heavy logic in the controller stalls FL. Controller must stay thin, returning raw data. Server must do orchestration.",
+  "result": "Server-side orchestration prevents stalls and removes need for flaky controller reloads.",
+  "tested_values": "Routing logic and mixing intents verified through Python tests.",
+  "known_pitfalls": "SysEx payloads > 1.5KB are dropped. Controller reload via FL is flaky (requires full restart).",
+  "open_questions": "None.",
+  "next_recommended_action": "Keep all heavy orchestration in the Python server. Paginate large SysEx responses."
+}

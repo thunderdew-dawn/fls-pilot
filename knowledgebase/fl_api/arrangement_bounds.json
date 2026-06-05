@@ -1,0 +1,15 @@
+{
+  "date": "2026-05-25",
+  "author": "System Migration",
+  "topic": "Arrangement and Playlist Clip Capabilities",
+  "affected_api": "playlist, arrangement, patterns",
+  "confidence_level": "implementation_verified",
+  "source_method": "API probe via dir() and scripts/probe_arrangement.py",
+  "context": "Determining programmatic limits of FL arrangement and playlist manipulation.",
+  "observation": "Playlist lacks clip placement functions. Arrangement module allows named markers. Patterns can be created, named, and filled.",
+  "result": "Clip placement is impossible. Strategy relies on creating/filling patterns and marking song structure. User must drag patterns manually.",
+  "tested_values": "Pattern creation, marker placement, note application via Piano Roll bridge.",
+  "known_pitfalls": "Piano roll must be focused and MCP_Apply run once per session for bridge to work. Bridge writes to focused channel and selected pattern.",
+  "open_questions": "None.",
+  "next_recommended_action": "Build chord progression workflows using the proven multi-pattern/marker strategy."
+}

@@ -1,0 +1,15 @@
+{
+  "date": "2026-05-25",
+  "author": "System Migration",
+  "topic": "Compression Calibration Curves (Fruity Limiter, COMP section)",
+  "affected_api": "Fruity Limiter plugin parameters",
+  "confidence_level": "measured_repeated",
+  "source_method": "scripts/calibrate_limiter.py sweeps",
+  "context": "Mapping normalized API values [0,1] to actual dB/ratio values for Fruity Limiter.",
+  "observation": "Ratio is bidirectional around 0.5 (norm > 0.5 is compression). Compressor is inert at default. Threshold is non-linear.",
+  "result": "Compression intents must set ratio > 0.5 and lower threshold < 1.0 simultaneously. Table interpolation is required.",
+  "tested_values": "Swept all 8 COMP parameters + global Gain.",
+  "known_pitfalls": "Lowering threshold without raising ratio is a silent no-op. Editing LIMIT/GATE params accidentally.",
+  "open_questions": "None.",
+  "next_recommended_action": "Use safe_write_group to apply ratio, threshold, and timing together."
+}

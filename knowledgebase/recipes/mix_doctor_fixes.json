@@ -1,0 +1,15 @@
+{
+  "date": "2026-05-23",
+  "author": "System Migration",
+  "topic": "SysEx and Tempo Bugs in Controller Script",
+  "affected_api": "fl_controller/FLStudioMCP/device_FLStudioMCP.py, midi",
+  "confidence_level": "implementation_verified",
+  "source_method": "FIX_REPORT.md post-mortem",
+  "context": "Diagnosing bridge failure and tempo scaling bugs.",
+  "observation": "SysEx needs OnSysEx callback in modern FL builds. midi.REC_Updated was replaced by REC_UpdateValue. REC_FromMIDI breaks raw tempo scaling.",
+  "result": "Code refactored to support both OnMidiMsg and OnSysEx. Tempo scaling fixed by dropping REC_FromMIDI flag.",
+  "tested_values": "Tempo set/get end-to-end verified.",
+  "known_pitfalls": "Virtual MIDI ports with duplicate I/O directions confuse midiOutSysex(). Stale controller deployments.",
+  "open_questions": "None.",
+  "next_recommended_action": "Strictly separate MIDI ports (RX input only, TX output only)."
+}
