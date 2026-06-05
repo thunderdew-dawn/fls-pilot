@@ -62,6 +62,25 @@ The guiding split: the controller returns cheap raw data; all judgement (diagnos
 
 Every tool that modifies the project must route through the snapshot → write → readback → rollback safety layer and the persisted change log. Tools should be reversible and should show the planned change before applying it. A new write-tool that bypasses this won't be merged. Read-only tools (state, levels, analysis) don't need it.
 
+## Anti-Vibe Coding Audits (important)
+
+To enforce coding discipline and prevent LLM "vibe coding" (undisciplined trial-and-error, unverified knowledge, sandbox violations, or lazy placeholder code), this repository enforces strict static checks. 
+
+You can run the audit manually at any time:
+```bash
+.venv/bin/python scripts/audit_anti_vibe.py
+```
+
+It is highly recommended to install the pre-commit hook so your commits are blocked if they violate these rules:
+```bash
+.venv/bin/python scripts/install_precommit_anti_vibe.py
+```
+
+The audit blocks:
+- **Sandbox violations**: Importing `os` or calling `open()` inside the FL Studio controller script.
+- **Knowledgebase gaps**: Missing required JSON fields in `knowledgebase/` entries according to `AGENTS.md`.
+- **Lazy coding patterns**: Keywords such as `TODO: fix later`, `HACK`, `print("here")`, `stub implementation`, etc. in source code.
+
 ## Pull requests
 
 1. Open an issue first for anything beyond a small fix, so the approach can be agreed on.

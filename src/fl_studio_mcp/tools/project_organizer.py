@@ -13,8 +13,7 @@ from pydantic import Field
 
 from .. import protocol, safety
 from ..connection import fetch_all_pages, get_bridge
-from .channels import _is_default_mixer_name
-from .routing import _route_write_entry, _bus_rename_entry
+from .routing import _bus_rename_entry
 
 def _looks_default_channel_name(name) -> bool:
     if not name:
@@ -79,7 +78,6 @@ def register(mcp: FastMCP) -> None:
         chans = fetch_all_pages(bridge, protocol.CMD_CHANNEL_ROUTING_SUMMARY, "channels")
         
         unnamed = []
-        uncolored = []
         ungrouped = []
         
         for c in chans.get("channels", []):

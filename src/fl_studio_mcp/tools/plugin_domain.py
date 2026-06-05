@@ -12,7 +12,7 @@ from typing import Annotated
 from fastmcp import FastMCP
 from pydantic import Field
 
-from .. import operations, protocol, safety
+from .. import operations, safety
 from ..connection import FLCommandFailed, FLNotRunning, FLTimeout, fetch_all_pages, get_bridge
 from .plugin import ParamNotFound, resolve_param_index
 from .targets import mixer_track_error
