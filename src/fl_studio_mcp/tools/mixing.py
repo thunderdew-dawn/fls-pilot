@@ -535,7 +535,12 @@ def register(mcp: FastMCP) -> None:
         if level_aware:
             measured = levels.measure_track_level(bridge, track)
             if measured["playing"]:
-                threshold_db = max(-60.0, min(0.0, measured["peak_db"] - T["level_offset"]))
+                # Convert post-fader peak to pre-fader peak by subtracting fader volume
+                track_info = bridge.call(protocol.CMD_MIXER_GET_TRACK, {"index": track})
+                vol_db = track_info.get("vol_db", 0.0)
+                pre_fader_peak = measured["peak_db"] - vol_db
+                
+                threshold_db = max(-60.0, min(0.0, pre_fader_peak - T["level_offset"]))
                 matched = True
             else:
                 note = (

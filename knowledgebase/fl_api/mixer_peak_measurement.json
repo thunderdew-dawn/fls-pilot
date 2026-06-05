@@ -1,0 +1,11 @@
+{
+  "topic": "Mixer Peak Measurement",
+  "affected_api": ["levels.measure_track_level", "CMD_MIXER_GET_TRACK"],
+  "behavior": "post_fader",
+  "conversion": {
+    "to_pre_fader": "measured['peak_db'] - track_info['vol_db']"
+  },
+  "confidence": "implementation_verified",
+  "date": "2026-06-05",
+  "source": "user_patch_mixing_py"
+}
