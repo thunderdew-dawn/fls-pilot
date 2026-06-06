@@ -6,7 +6,7 @@
 ![status](https://img.shields.io/badge/status-beta-yellow)
 ![license](https://img.shields.io/badge/license-MIT-green)
 ![python](https://img.shields.io/badge/python-3.10+-blue)
-![platform](https://img.shields.io/badge/platform-Windows-blue)
+![platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS-blue)
 ![FL Studio](https://img.shields.io/badge/FL%20Studio-2025%2B-orange)
 
 ![Claude diagnosing and fixing a mix in FL Studio](docs/demo.gif)
@@ -26,7 +26,14 @@ scripts\install_windows.bat        :: controller + server + note bridge
 fl-studio-mcp-daemon               :: start the bridge, keep it running
 ```
 
-Wire the two loopMIDI ports in FL (Options > MIDI Settings), arm `MCP_Apply` once in the piano roll, then ask Claude in plain language:
+```bash
+./scripts/install_macos.sh         # macOS: controller + server + note bridge
+fl-studio-mcp-daemon               # start the bridge, keep it running
+```
+
+Wire the two virtual MIDI ports in FL (loopMIDI on Windows, IAC Driver on
+macOS), arm `MCP_Apply` once in the piano roll, then ask Claude in plain
+language:
 
 > "Scan my mix and tell me what's wrong." — "Set up a vocal chain from my plugins." — "Export this arrangement to MIDI."
 
@@ -74,29 +81,56 @@ These are properties of FL Studio's scripting API, stated plainly:
 
 ## Requirements
 
-- **Windows 10/11** (tested on Windows 11)
+- **Windows 10/11** (tested on Windows 11) or **macOS**
 - **FL Studio 2025** or newer
 - **Claude Desktop** (or any MCP client)
 - **Python 3.10+**
-- **loopMIDI** — for the two virtual MIDI ports ([download](https://www.tobias-erichsen.de/software/loopmidi.html))
+- Virtual MIDI ports:
+  - Windows: **loopMIDI** ([download](https://www.tobias-erichsen.de/software/loopmidi.html))
+  - macOS: the built-in **IAC Driver**
 - Optional: **ffmpeg** on PATH (for MP3 analysis)
 
-macOS and Linux are not yet supported — contributions welcome.
+Linux is not yet supported — contributions welcome.
 
 ## Setup
 
-1. **Create two virtual MIDI ports** in loopMIDI, named exactly `FLStudioMCP RX` and `FLStudioMCP TX`.
+1. **Create two virtual MIDI ports**, named exactly `FLStudioMCP RX` and
+   `FLStudioMCP TX`.
+
+   Windows: create both ports in loopMIDI.
+
+   macOS:
+   - Open **Audio MIDI Setup**.
+   - Choose **Window > Show MIDI Studio**.
+   - Double-click **IAC Driver**.
+   - Enable **Device is online**.
+   - Create or rename two ports exactly:
+     - `FLStudioMCP RX`
+     - `FLStudioMCP TX`
 
 2. **Install the controller script and server:**
+
+   Windows:
    ```bat
    git clone https://github.com/rosasynthesiz/flstudio-mcp
    cd flstudio-mcp
    scripts\install_windows.bat
    ```
-   This copies the controller script, seeds the note-bridge pyscript (`MCP_Apply`), installs the server, and checks that your loopMIDI ports exist. For audio features, add the optional extras:
-   ```bat
-   pip install -e ".[audio]"                   :: tempo/key + melody analysis
-   pip install -e ".[audio,audio-accurate]"    :: + CREPE (higher accuracy, ~500 MB)
+
+   macOS:
+   ```bash
+   git clone https://github.com/rosasynthesiz/flstudio-mcp
+   cd flstudio-mcp
+   chmod +x scripts/install_macos.sh
+   ./scripts/install_macos.sh
+   ```
+
+   This copies the controller script, seeds the note-bridge pyscript
+   (`MCP_Apply`), installs the server, and checks that your virtual MIDI ports
+   exist. For audio features, add the optional extras:
+   ```
+   pip install -e ".[audio]"
+   pip install -e ".[audio,audio-accurate]"
    ```
 
 3. **Configure FL Studio** — Options > MIDI Settings:
@@ -109,7 +143,12 @@ macOS and Linux are not yet supported — contributions welcome.
    fl-studio-mcp-daemon
    ```
 
-5. **Register the server with Claude Desktop** (`%APPDATA%\Claude\claude_desktop_config.json`):
+5. **Register the server with Claude Desktop**:
+
+   Windows: `%APPDATA%\Claude\claude_desktop_config.json`
+
+   macOS: `~/Library/Application Support/Claude/claude_desktop_config.json`
+
    ```json
    {
      "mcpServers": {
@@ -124,16 +163,22 @@ macOS and Linux are not yet supported — contributions welcome.
 
 6. **Arm the note bridge (per session)** — open the piano roll and run **MCP_Apply** once from its scripting menu, so note-writing works.
 
+   On macOS, the note bridge re-triggers the armed script with `Cmd+Opt+Y`.
+   Grant Accessibility permission to the app running the MCP server or daemon,
+   for example Terminal, iTerm, Claude Desktop, or Cursor:
+   **System Settings > Privacy & Security > Accessibility**.
+
 Verify the connection by asking Claude to call `fl_ping`.
 
 ## Troubleshooting
 
 | Symptom | Fix |
 |---|---|
-| loopMIDI ports not found / not detected | The two ports must be named **exactly** `FLStudioMCP RX` and `FLStudioMCP TX`. Recreate them in loopMIDI and re-run the installer. |
+| Virtual MIDI ports not found / not detected | The two ports must be named **exactly** `FLStudioMCP RX` and `FLStudioMCP TX`. Recreate them in loopMIDI (Windows) or IAC Driver (macOS), then re-run the installer. |
 | No `[FLStudioMCP] Ready` in FL's Script output | The controller isn't registered: set the `FLStudioMCP RX` input's **Controller type** to **FLStudioMCP** in MIDI Settings, confirm `device_FLStudioMCP.py` is in `Settings\Hardware\FLStudioMCP\`, then fully restart FL Studio. |
 | Claude can't reach FL / `fl_ping` fails | Make sure the daemon is running (`fl-studio-mcp-daemon`); check the transport matches (`FLSTUDIO_MCP_TRANSPORT=tcp` uses the daemon, unset uses direct MIDI); restart Claude Desktop after editing its config. |
 | Note-writing does nothing | Run `MCP_Apply` once from the piano roll's scripting menu this session — it arms the note bridge. |
+| macOS note-trigger fails | Grant Accessibility permission to the app running the MCP server or daemon, then click the FL Piano roll and try `Cmd+Opt+Y`. |
 | Audio tools error or are unavailable | Install the optional extras: `pip install -e ".[audio]"` (or `".[audio,audio-accurate]"`). |
 
 ## Usage examples
@@ -149,7 +194,7 @@ Plain-language prompts:
 
 ## Architecture
 
-A thin controller script runs inside FL Studio and returns only cheap, raw data; all judgement — diagnosis, calibration, planning — happens server-side. A standalone daemon owns the MIDI port so the server works regardless of how the MCP client is launched. Note authoring uses a generated pyscript bridge: the daemon re-triggers the armed `MCP_Apply` script with a keystroke (via pyautogui) after a brief window force-focus. Every project-modifying tool routes through a snapshot → write → readback → rollback safety layer backed by a persisted change log.
+A thin controller script runs inside FL Studio and returns only cheap, raw data; all judgement — diagnosis, calibration, planning — happens server-side. A standalone daemon owns the MIDI port so the server works regardless of how the MCP client is launched. Note authoring uses a generated pyscript bridge: the daemon re-triggers the armed `MCP_Apply` script with the platform run-last-script shortcut after a brief window force-focus. Every project-modifying tool routes through a snapshot → write → readback → rollback safety layer backed by a persisted change log.
 
 Design notes and findings are in [`docs/`](docs/).
 
@@ -159,6 +204,6 @@ MIT — see [LICENSE](LICENSE).
 
 ## Status & contributing
 
-Beta — the public 1.0 release. Windows-only for now; macOS and Linux contributions are welcome. Issues and pull requests: [github.com/rosasynthesiz/flstudio-mcp](https://github.com/rosasynthesiz/flstudio-mcp).
+Beta — the public 1.0 release. Windows and macOS are supported; Linux contributions are welcome. Issues and pull requests: [github.com/rosasynthesiz/flstudio-mcp](https://github.com/rosasynthesiz/flstudio-mcp).
 
 <!-- mcp-name: io.github.rosasynthesiz/flstudio-mcp -->

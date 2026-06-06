@@ -6,7 +6,7 @@ and WRITE the notes through the existing (hardened) piano-roll bridge. raga/root
 are echoed for labelling only.
 
 Setup (same as the note bridge): Piano roll open + 'MCP_Apply' armed once per
-session (Ctrl+Alt+Y target). Writes into the SELECTED pattern + channel.
+session. Writes into the SELECTED pattern + channel.
 """
 from __future__ import annotations
 

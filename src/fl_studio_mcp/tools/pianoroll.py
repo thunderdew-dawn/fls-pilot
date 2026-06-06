@@ -2,9 +2,9 @@
 
 Uses the generate-script bridge (pyscript can't read/write files, so the
 daemon generates a .pyscript with the notes baked in, then force-focuses FL
-and fires Ctrl+Alt+Y). Requires the FL Piano roll open, and a one-time setup:
-run 'MCP_Apply' once from the piano-roll Scripting menu so that
-'Run last script again' (Ctrl+Alt+Y) targets it.
+and fires the platform run-last-script shortcut). Requires the FL Piano roll
+open, and a one-time setup: run 'MCP_Apply' once from the piano-roll Scripting
+menu so that 'Run last script again' targets it.
 """
 
 from __future__ import annotations
@@ -50,7 +50,7 @@ def register(mcp: FastMCP) -> None:
         Each note: {pitch (MIDI), time_bars, length_bars, velocity 0-1}. Set
         quantize (grid in bars) to snap note starts to a grid before writing.
         Setup: open the Piano roll and run 'MCP_Apply' once from its Scripting
-        menu (so Ctrl+Alt+Y targets it). mode='replace' clears first.
+        menu (so Run last script again targets it). mode='replace' clears first.
         """
         arr = [n.model_dump() for n in notes]
         if quantize and quantize > 0:

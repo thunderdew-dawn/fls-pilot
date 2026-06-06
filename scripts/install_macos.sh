@@ -10,7 +10,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
 echo
-echo "[1/3] Installing FL Studio controller script..."
+echo "[1/4] Installing FL Studio controller script..."
 if [[ ! -d "$FL_HARDWARE" ]]; then
   echo "  FL Studio Hardware folder not found at:"
   echo "    $FL_HARDWARE"
@@ -22,7 +22,7 @@ cp "$REPO_ROOT/fl_controller/FLStudioMCP/device_FLStudioMCP.py" "$TARGET/"
 echo "  Installed to $TARGET"
 
 echo
-echo "[2/3] Installing the MCP server (editable)..."
+echo "[2/4] Installing the MCP server (editable)..."
 if ! command -v python3 >/dev/null 2>&1; then
   echo "  python3 not found. Install Python 3.10+ and re-run."
   exit 1
@@ -32,7 +32,21 @@ python3 -m pip install --upgrade pip >/dev/null
 python3 -m pip install -e .
 
 echo
-echo "[3/3] Checking for IAC Driver ports..."
+echo "[3/4] Seeding the note-bridge pyscript (MCP_Apply)..."
+if ! python3 - <<'PYEOF'
+import os
+
+import fl_studio_mcp.pyscript_gen as g
+
+os.makedirs(g.PIANO_ROLL_SCRIPTS_DIR, exist_ok=True)
+print("  Seeded " + g.write_apply_script([], mode="append"))
+PYEOF
+then
+  echo "  Note: Could not pre-seed MCP_Apply. Non-fatal -- the daemon will write it on first note-write."
+fi
+
+echo
+echo "[4/4] Checking for IAC Driver ports..."
 python3 - <<'PYEOF'
 import mido
 names = set(mido.get_output_names()) | set(mido.get_input_names())
@@ -63,4 +77,11 @@ Next steps:
        Output list > click 'FLStudioMCP TX', tick Enable, Port=42 (SAME number).
   4. View > Script output should show '[FLStudioMCP] Ready. ...'.
   5. Run: python3 scripts/test_bridge.py
+
+IMPORTANT (macOS Accessibility):
+  Note writing simulates Cmd+Opt+Y to trigger FL Studio's "Run last script again"
+  command. Grant Accessibility permission to the application running the MCP
+  server or daemon, for example Terminal, iTerm, Claude Desktop, or Cursor:
+
+    System Settings > Privacy & Security > Accessibility
 EOF

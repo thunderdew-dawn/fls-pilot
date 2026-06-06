@@ -207,8 +207,8 @@ class FLBridge:
                 "FL Studio controller is not responding. Verify:\n"
                 "  1. FL Studio is open.\n"
                 "  2. FLStudioMCP is selected as the Controller type for the "
-                "loopMIDI input port in Options > MIDI Settings.\n"
-                "  3. The OUTPUT loopMIDI port has the same Port number as "
+                "virtual MIDI input port in Options > MIDI Settings.\n"
+                "  3. The OUTPUT virtual MIDI port has the same Port number as "
                 "the INPUT port so the script can route SysEx back to the server.\n"
                 "  4. View > Script output shows '[FLStudioMCP] Ready'."
             )
@@ -405,8 +405,8 @@ class TCPBridge:
 
     def apply_notes(self, notes, mode="replace", trigger=True, quantize=None, snap_ends=False):
         """Author piano-roll notes via the daemon (write generated .pyscript +
-        force-focus FL + Ctrl+Alt+Y). ``quantize`` (grid in bars) instead snaps
-        existing notes."""
+        fire the platform run-last-script shortcut). ``quantize`` (grid in
+        bars) instead snaps existing notes."""
         try:
             return self._rpc(
                 {"op": "apply_notes", "notes": notes, "mode": mode, "trigger": trigger,

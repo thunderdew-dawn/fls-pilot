@@ -66,14 +66,14 @@ _bridge_lock = threading.Lock()
 def _get_bridge() -> FLBridge:
     """Return the singleton FLBridge, opening it lazily.
 
-    Re-tried on every request until the loopMIDI ports exist, so the daemon
-    can be started before FL / loopMIDI are ready.
+    Re-tried on every request until the virtual MIDI ports exist, so the
+    daemon can be started before FL and the ports are ready.
     """
     global _bridge
     with _bridge_lock:
         if _bridge is None:
             b = FLBridge()
-            b.open()  # raises FLPortMissing if loopMIDI ports are absent
+            b.open()  # raises FLPortMissing if virtual MIDI ports are absent
             _bridge = b
         return _bridge
 
@@ -112,8 +112,9 @@ def _handle_request(req: dict) -> dict:
 
     if op == "apply_notes":
         # Daemon-side note authoring: generate the .pyscript with notes baked
-        # in, write it, force-focus FL, fire Ctrl+Alt+Y. Runs here (normal
-        # process) so it works even when the MCP server is MSIX-sandboxed.
+        # in, write it, force-focus FL, and fire the platform run-last-script
+        # shortcut. Runs here (normal process) so it works even when the MCP
+        # server is MSIX-sandboxed.
         try:
             trigger = req.get("trigger", True)
             ensured = None
@@ -177,8 +178,10 @@ def main() -> None:
         logger.info("MIDI bridge open.")
     except FLPortMissing as e:
         logger.warning("MIDI ports not ready yet: %s", e)
-        logger.warning("Create the loopMIDI ports and start FL; the daemon "
-                       "will pick them up on the next request.")
+        logger.warning(
+            "Create the virtual MIDI ports and start FL; the daemon will pick "
+            "them up on the next request."
+        )
 
     server = _Server((host, port), _Handler)
     logger.info("fl-studio-mcp daemon %s listening on %s:%d", __version__, host, port)

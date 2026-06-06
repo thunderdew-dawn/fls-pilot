@@ -11,7 +11,7 @@ and platform support.
 - **Report a bug** — open an issue with steps to reproduce, your FL Studio build, and the relevant Script output / server log.
 - **Request or add a tool** — propose a new capability (a mixing intent, an analysis tool, etc.) in an issue first, so we can agree on the shape before you build it.
 - **Improve docs** — README, setup, troubleshooting, and the design notes in docs/ are all fair game.
-- **Port to macOS / Linux** — the server is cross-platform Python; the friction is the virtual MIDI ports and the controller-script paths. This is the most valuable open contribution. Open an issue before starting so we can coordinate.
+- **Port to Linux or improve platform support** — the server is cross-platform Python; the friction is the virtual MIDI ports, controller-script paths, and UI shortcut triggering. Open an issue before starting so we can coordinate.
 
 ## Before you start
 
@@ -27,11 +27,17 @@ A PR that tries to "fix" one of these by working around the sandbox will likely 
 
 You'll need the same environment as a user, plus an editable install:
 
-- Windows 10/11, FL Studio 2025+, Python 3.12
-- loopMIDI with two ports named exactly FLStudioMCP RX and FLStudioMCP TX
+- Windows 10/11 or macOS, FL Studio 2025+, Python 3.12
+- loopMIDI on Windows or IAC Driver on macOS, with two ports named exactly
+  FLStudioMCP RX and FLStudioMCP TX
 - Claude Desktop (or any MCP client) for end-to-end testing
 
-Install steps: clone the repo, cd into it, run scripts\install_windows.bat, then pip install -e ".[audio]" if you'll touch the audio analysis code. Wire the loopMIDI ports in FL (Options > MIDI Settings), confirm [FLStudioMCP] Ready in FL's Script output, start the bridge with fl-studio-mcp-daemon, then verify the link by asking Claude to call fl_ping.
+Install steps: clone the repo, cd into it, run `scripts\install_windows.bat` on
+Windows or `./scripts/install_macos.sh` on macOS, then `pip install -e ".[audio]"`
+if you'll touch the audio analysis code. Wire the virtual MIDI ports in FL
+(Options > MIDI Settings), confirm `[FLStudioMCP] Ready` in FL's Script output,
+start the bridge with `fl-studio-mcp-daemon`, then verify the link by asking
+Claude to call `fl_ping`.
 
 ## Project layout
 

@@ -17,13 +17,13 @@ still passing.
 Goal: prove the SysEx bridge works end-to-end and ship the absolute
 minimum tool surface.
 
-- [x] MIDI SysEx protocol (commands, responses, heartbeat) over two loopMIDI ports.
+- [x] MIDI SysEx protocol (commands, responses, heartbeat) over two virtual MIDI ports.
 - [x] FL controller script with `OnSysEx`/`OnMidiMsg` dispatch and an `OnIdle` heartbeat.
 - [x] FastMCP server skeleton with stdio transport.
 - [x] Transport tools: ping, tempo get/set, play, stop, toggle, record,
       play-state, song-position get/set. **10 tools total.**
 - [x] `scripts/test_bridge.py` standalone harness.
-- [x] Install script for Windows. (macOS / Linux: not shipped — contributions welcome.)
+- [x] Install scripts for Windows and macOS. (Linux: not shipped — contributions welcome.)
 
 ## Phase 1 — Channel rack (~12 tools)
 
