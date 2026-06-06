@@ -137,7 +137,7 @@ so it ships inside the wheel.
 - [ ] `AGENTS.md` describing the agentic workflow for future Claude sessions
       working on this codebase.
 - [ ] Demo video and screenshots in `docs/`.
-- [ ] GitHub Actions for linting and the standalone bridge tests (mock FL).
+- [x] GitHub Actions for linting and the standalone bridge tests (mock FL).
 - [ ] Pin a known-working FL Studio version range in README.
 
 ## Out of scope (intentionally)
