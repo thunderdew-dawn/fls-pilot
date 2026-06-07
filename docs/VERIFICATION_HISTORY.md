@@ -4,6 +4,37 @@ This file stores historical verification evidence, including dated live/offline 
 
 ## Current verification checkpoints
 
+- 2026-06-07: Low-End/Stereo Safety Assistant offline verification.
+  - Verified path: Added read-only `fl_review_low_end_stereo`, extended
+    `mixer_list_tracks` readback with `stereo_sep`, and bumped the controller
+    marker to `channels-v39`. Ran focused `py_compile` over the touched Python
+    files and `.venv/bin/python tests/test_mix_doctor.py`.
+  - Result: 51 focused Mix Review/Low-End tests passed with 0 failures. Safety
+    audit `scripts/audit_tool_safety.py --fail-on-gaps` passed with 0 write
+    gaps. Live FL readback parity for controller marker `channels-v39` remains
+    pending.
+
+- 2026-06-07: Product workflow naming live smoke on macOS.
+  - Verified path: Ran `scripts/probes/test_product_workflow_naming_live.py`
+    over the TCP daemon (port 9787) against FL Studio Producer Edition v25.2.5
+    [build 5055] with controller build marker `channels-v38`. Confirmed public
+    registration contains the new product workflow names and not the removed
+    names. Executed read-only calls `fl_review_mix`, `fl_gain_stage`,
+    `fl_review_routing`, `fl_project_health_overview`,
+    `fl_check_project_preflight`, `fl_start_guided_cleanup`,
+    `fl_get_guided_cleanup_context`, `fl_analyze_project_organization`, and
+    `fl_setup_chain`.
+  - Result: All read-only calls passed. Rollback-safe write smoke
+    `fl_apply_mix_adjustment("trim_volume", track=20, target_db=-7.09)` changed
+    Track 20 from `-6.84 dB` / `0.5718` normalized to `-7.09 dB` / `0.5639`
+    normalized, then `fl_rollback_last_change` restored Track 20 to `-6.84 dB`
+    / `0.5718` normalized. Result artifact:
+    `scratch/product_workflow_naming_live_2026_06_07.json`.
+
+- 2026-06-06: macOS SSE/TCP Live Smoke Sweep and Fader Color Rollback.
+  - Verified path: Ran live verification on FL Studio Producer Edition v25.2.5 [build 5055] with controller build marker `channels-v38` over the SSE server (port 8080) and TCP bridge (port 9787). Executed read-only sweep tools (`fl_diagnose_mix`, `fl_gain_stage`, `fl_preflight_project`, `fl_analyze_routing`, `fl_analyze_project_organization`, and `fl_setup_chain`). Performed a write-and-rollback color modification test on Track 20 ("Toploop") from `#ABA362` to `#FF0080` and back.
+  - Result: All read-only tools correctly reported findings, safety boundaries, and mapped Knowledgebase policy rule references. The fader track color test successfully verified write, readback, LIFO rollback, and clean restoration to the original state.
+
 - 2026-06-05: v2.0.0 Architecture Foundation & Tool Efficiency.
   - Verified path: Executed static safety audit (`scripts/audit_tool_safety.py`). Consolidated dozens of single-purpose functions into unified `fl_transport`, `fl_mixer`, `fl_channel` endpoints. Replaced legacy single-tool registration with centralized operation registry. Validated `safe_write` and `safe_write_group` behavior under the new architecture. Updated package version and documentation.
   - Result: Massive reduction in tool-selection noise and MCP token consumption. Backward-incompatible tool API overhaul correctly signaled via major version bump. Rollback layer integrity maintained.
@@ -433,4 +464,3 @@ Transport-only runtime controls such as play, stop, and preview note triggering
 do not change the saved project structure, but any persisted project mutation
 such as tempo, pattern edits, channel routing, note writes, or mixer/plugin
 changes must follow this contract.
-

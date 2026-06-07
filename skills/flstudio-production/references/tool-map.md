@@ -72,7 +72,7 @@
 - Intent tools for already-loaded plugins: `fl_apply_eq_intent`,
   `fl_apply_reverb_intent`, `fl_apply_delay_intent`,
   `fl_apply_compression_intent`, `fl_get_track_level`.
-- Planning and libraries: `fl_diagnose_mix`, `fl_apply_mix_fix`,
+- Planning and libraries: `fl_review_mix`, `fl_apply_mix_adjustment`,
   `fl_mix_watch_start`, `fl_mix_watch_status`, `fl_mix_watch_stop`,
   `fl_gain_stage`, `fl_reference_match`, `fl_list_chains`,
   `fl_list_installed_plugins`, `fl_setup_chain`, `fl_list_presets`,

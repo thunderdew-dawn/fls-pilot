@@ -246,11 +246,11 @@ mutates and then raises; the immediate group rollback restores both the failed
 attempt and earlier writes.
 
 The Phase 5 product workflow internal refactor was completed on 2026-06-05
-without public tool registration changes. Routing Doctor route writes and
+without public tool registration changes. Routing Review route writes and
 mixer bus renames now prepare their `safe_write_group` entries through the
 operation registry, which adds the registry's existing validation and explicit
 route readback verification while preserving the grouped rollback path. Mix
-Doctor `trim_volume` now prepares its mixer volume write through the registry
+Review `trim_volume` now prepares its mixer volume write through the registry
 before calling `safety.safe_write`. Project Organizer channel renames and hex
 color write helpers were intentionally left on their existing local builders
 because their public input compatibility does not exactly match the current
@@ -262,6 +262,29 @@ safety/history tools, resources, Knowledgebase tools, plugin preset guidance,
 and specialized workflows. Redundant legacy aliases were removed without
 deprecation wrappers, and the unsafe direct Internal EQ wrapper registration was
 removed in favor of `fl_effect`'s rollback-backed native EQ path.
+
+The product workflow Knowledgebase policy pass was completed on 2026-06-06
+without adding new FL Studio API capability claims. The read-only `kb_policy`
+helper loads only whitelisted JSON policy files and returns source-qualified
+rule metadata. Mix Review uses those references to explain findings and
+proposals, including the distinction between Master/output clipping and
+insert-track headroom risk. Project Health, Routing Review, Project Organizer,
+and Chain Planner expose relevant KB policy references in their read-only plans
+or safe-write responses. Mix Review's user-facing findings and proposals keep
+compact per-row rule IDs, confidence levels, and safety limits, while full
+source-qualified rule details stay centralized in top-level `kb_policy_refs`.
+KB policy data is not executable operation data: persistent writes still route
+through operation-registry validation and `safety.safe_write` or
+`safety.safe_write_group`.
+
+The Low-End/Stereo Safety Assistant was added on 2026-06-07 as a read-only Mix
+Review companion. `fl_review_low_end_stereo` uses the existing mixer snapshot
+path plus `mixer_list_tracks.stereo_sep` metadata from controller build
+`channels-v39` to flag conservative bass/sub mono-compatibility risks, widened
+low-end metadata, low-end layering, hot low-end peaks, and Master headroom.
+It does not claim true phase correlation, mono-sum cancellation, or spectral
+sub-band width, and it does not add stereo-separation, mid-side EQ, plugin
+loading, mastering, save, or render writes.
 
 ## API-Backed Feature Packs
 
@@ -516,7 +539,7 @@ Safety requirement:
 - Do not ship randomized bulk writes until deterministic readback and rollback
   are verified.
 
-### Project Doctor and Organizer
+### Project Health and Organizer
 
 Status: orchestration over API-backed primitives.
 

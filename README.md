@@ -29,14 +29,14 @@ This release represents a massive evolution from the original fork, focusing on 
 
 *(For detailed usage, examples, and the full tool catalog, refer to the [User Guide (docs/USER_GUIDE.md)](docs/USER_GUIDE.md)).*
 
-1. **Mix Doctor:** Instantly scan your mix to diagnose clipping, masking, and imbalances, and apply one-click, reversible fixes. Fixes are applied one at a time, only on approval.
+1. **Mix Review:** Instantly scan your mix to diagnose clipping, masking, and imbalances, and apply one-click, reversible fixes. Fixes are applied one at a time, only on approval.
 2. **Project Organizer & Naming Standard Assistant:** Turn a messy project into a neatly colored, grouped, and logically routed session. Batch rename and color Step Sequencer channels and Mixer tracks.
-3. **Routing Doctor 2.0:** Detect routing issues, unrouted channels, and automatically propose and apply optimal bus layouts.
+3. **Routing Review 2.0:** Detect routing issues, unrouted channels, and automatically propose and apply optimal bus layouts.
 4. **Plugin & Preset Assistant:** Get tailored vocal chains and synth patches based directly on your *actual installed* plugins (read directly from FL's plugin database and preset folders on disk).
 5. **Composition & Scale Composer:** Generate chord progressions and melodies in any mode or scale directly into the piano roll, with grid quantization.
 6. **Audio Clip Safe Defaults:** Inspect Audio Clips to dynamically provide safe volume defaults and free mixer tracks.
 7. **Audio Analyzer:** Extract tempo, key, and convert audio melodies to MIDI effortlessly (via CREPE pitch tracking).
-8. **Preflight Project & Health Dashboard:** A single pane of glass aggregating Mix Doctor, Routing Doctor, and Project Organizer insights to ensure export readiness.
+8. **Project Preflight & Health Overview:** A single pane of glass aggregating Mix Review, Routing Review, and Project Organizer insights to ensure export readiness.
 
 Known FL Studio API limitation:
 Deep Audio Clip parameters such as Stretch Mode, Normalize state, and some sample internals are not exposed by the FL Studio Python API. The assistant can organize and route Audio Clips, but it will not claim to set Stretch Pro or Normalize automatically (it will generate manual checklists instead).
@@ -77,7 +77,8 @@ Full setup is below.
 ## Capabilities
 
 ### Mixing & diagnosis
-- **Mix Doctor** — scans the whole mix and reports concrete problems (clipping, low headroom, level imbalance, missing high-pass, ungrouped related tracks, overlapping EQ boosts), each with the exact evidence and a proposed fix. Fixes are applied one at a time, only on approval, through a snapshot → write → readback → rollback safety layer. Master clipping is resolved by trimming the contributing source tracks rather than pulling the master.
+- **Mix Review** — scans the whole mix and reports concrete problems (clipping, low headroom, level imbalance, missing high-pass, ungrouped related tracks, overlapping EQ boosts), each with the exact evidence and a proposed fix. Fixes are applied one at a time, only on approval, through a snapshot → write → readback → rollback safety layer. Master clipping is resolved by trimming the contributing source tracks rather than pulling the master.
+- **Low-End/Stereo Safety Assistant** — read-only review for bass/sub mono compatibility, mixer pan and stereo-separation metadata, low-end layering, and Master headroom. It reports manual checks and KB-backed limits; it does not apply stereo, mid-side, plugin-loading, mastering, save, or render automation.
 - **Knowledgebase & Safe Wrappers** — machine-readable calibration logic prevents destructive API calls. Normalized values, DB/Hz limits, and specific EQ mappings are verified against a live-updated JSON knowledgebase, eliminating hallucinated parameter values from the LLM assistant.
 - **Full-song peak watch** — holds a running peak per track across playback, so level decisions are based on the loudest moment of the actual song, not a single instant.
 - **Calibrated processing intents** — musical EQ, compression, reverb, and delay moves mapped to real plugin parameters (native and third-party), each applied as one reversible change.
@@ -122,8 +123,9 @@ These are properties of FL Studio's scripting API, stated plainly:
 ## Requirements
 
 - **Windows 10/11** (tested on Windows 11) or **macOS 12+** (Intel & Apple Silicon)
-- **Known-working FL Studio build:** Producer Edition v25.2.5, build 5055,
-  with controller build marker `channels-v38`.
+- **Last live-verified FL Studio build:** Producer Edition v25.2.5, build
+  5055, with controller build marker `channels-v38`. The current source
+  controller marker is `channels-v39` and should be live-smoked after reload.
   FL Studio 20.7+ has the required MIDI scripting foundation, but individual
   API behavior can be build-dependent; use `fl_transport(action="ping")` and
   the live smoke/probe scripts before relying on a new FL build for writes.
@@ -261,7 +263,7 @@ MIT — see [LICENSE](LICENSE).
 
 ## Status & contributing
 
-Beta — the public 1.1 release. Fully compatible with Windows and macOS.
+Stable — the public 2.0.0 release. Fully compatible with Windows and macOS.
 Issues and pull requests:
 [github.com/thunderdew-dawn/flstudio-mcp](https://github.com/thunderdew-dawn/flstudio-mcp).
 

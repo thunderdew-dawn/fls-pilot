@@ -3,7 +3,7 @@
 This guide explains what flstudio-mcp is useful for, how a user talks to it
 through an AI assistant, and what every exposed MCP tool does.
 
-Most users should ask in plain language. The assistant leverages safety classes, explicit product boundaries, and the current 94-tool public catalog. It proposes a plan when needed, and applies approved changes through the rollback-first safety layer. Users can also name a specific `fl_*` tool directly when they want precise control.
+Most users should ask in plain language. The assistant leverages safety classes, explicit product boundaries, and the current 87-tool public catalog. It proposes a plan when needed, and applies approved changes through the rollback-first safety layer. Users can also name a specific `fl_*` tool directly when they want precise control.
 
 ## Why This App Exists
 
@@ -138,17 +138,17 @@ Typical tools: `fl_plugin`, `fl_apply_eq_intent`.
 
 > **Note on UI Refresh:** When the assistant applies EQ or plugin changes via `fl_apply_eq_intent`, the parameters take effect immediately in the audio engine. However, if the plugin window is currently open in FL Studio, the GUI may not visually update until the user clicks on it or reopens the window.
 
-### Mix Doctor
+### Mix Review
 
 Prompt:
 
 ```text
-Run Mix Doctor, explain the top three problems, and apply only the safest
+Run Mix Review, explain the top three problems, and apply only the safest
 headroom fix first.
 ```
 
-Typical tools: `fl_diagnose_mix`, `fl_gain_stage`, `fl_apply_mix_fix`,
-`fl_get_change_history`.
+Typical tools: `fl_review_mix`, `fl_review_low_end_stereo`, `fl_gain_stage`,
+`fl_apply_mix_adjustment`, `fl_get_change_history`.
 
 ### Routing, Bulk Control, And Color
 
@@ -162,7 +162,7 @@ then undo the mute when I say so.
 Typical tools: `fl_detect_cleanup_candidates`, `fl_group_tracks`,
 `fl_mute_tracks`, `fl_clear_mute_solo`.
 
-### Project Doctor And Export Readiness
+### Project Health And Export Readiness
 
 Prompt:
 
@@ -303,12 +303,13 @@ registered outside the static annotation pattern.
 |---|---|---|
 | `fl_export_midi` | `external-write` | Writes a type-1 MIDI file to disk from an arrangement specification. |
 
-### Mix Doctor Tools
+### Mix Review Tools
 
 | Tool | Safety | What it does |
 |---|---|---|
-| `fl_diagnose_mix` | `read-only` | Scans the mix and reports concrete issues with evidence and proposed fixes. |
-| `fl_apply_mix_fix` | `write-safe` | Applies one gated Mix Doctor fix through the safety layer. |
+| `fl_review_mix` | `read-only` | Scans the mix and reports concrete issues with evidence and proposed fixes. |
+| `fl_review_low_end_stereo` | `read-only` | Reports bass/sub mono-compatibility, stereo-width metadata risks, low-end layering, and Master headroom as manual-safe guidance. |
+| `fl_apply_mix_adjustment` | `write-safe` | Applies one gated Mix Review fix through the safety layer. |
 | `fl_mix_watch_start` | `read-only` | Starts full-song peak watching for better level evidence. |
 | `fl_mix_watch_status` | `read-only` | Reports current peak-watch status. |
 | `fl_mix_watch_stop` | `read-only` | Stops peak watching and returns a diagnosis. |
@@ -358,46 +359,39 @@ registered outside the static annotation pattern.
 | `fl_apply_naming_standard` | `write-safe` | Batch applies a naming schema (e.g., psytrance) across channels and buses. |
 | `fl_apply_color_standard` | `write-safe` | Batch applies a color schema (e.g., psytrance) across channels and buses. |
 
-### Pattern And Playlist Tools
-
-| Tool | Safety | What it does |
-|---|---|---|
-| `fl_pattern` | `write-safe` | Consolidated pattern domain tool for reads and rollback-backed metadata/control writes. |
-| `fl_playlist` | `write-safe` | Consolidated playlist-track domain tool for track metadata/control only. Playlist clip editing is not supported. |
-
-### Piano Roll Tools
-
-| Tool | Safety | What it does |
-|---|---|---|
-| `fl_piano_roll` | `write-safe` | Consolidated Piano Roll domain tool. Actions include write_notes, write_chord, clear, quantize, transpose, duplicate, velocity_ramp, add_marker, add_time_signature_marker, clear_markers, get_notes, and probe_return_channel. |
-
-### Plugin Tools
-
-| Tool | Safety | What it does |
-|---|---|---|
-| `fl_plugin` | `write-safe` | Consolidated already-loaded plugin domain tool for plugin listing, parameter listing, parameter read, and rollback-backed parameter write. |
-| `fl_plugin_get_preset_name` | `read-only` | Reads the current plugin preset name where FL exposes it. |
-| `fl_plugin_next_preset` | `read-only` | Returns manual guidance for moving to the next preset; it does not mutate FL. |
-| `fl_plugin_prev_preset` | `read-only` | Returns manual guidance for moving to the previous preset; it does not mutate FL. |
-
 ### Preset Tools
 
 | Tool | Safety | What it does |
 |---|---|---|
 | `fl_list_presets` | `read-only` | Lists presets found on disk. |
 | `fl_suggest_preset` | `read-only` | Suggests presets from the local library based on a description. |
+| `fl_plugin_get_preset_name` | `read-only` | Reads the current plugin preset name where FL exposes it. |
+| `fl_plugin_next_preset` | `read-only` | Returns manual guidance for moving to the next preset; it does not mutate FL. |
+| `fl_plugin_prev_preset` | `read-only` | Returns manual guidance for moving to the previous preset; it does not mutate FL. |
 
-### Project Doctor Tools
+### Knowledgebase Tools
+
+| Tool | Safety | What it does |
+|---|---|---|
+| `kb_search` | `unannotated` | Searches the knowledgebase for topics. |
+| `kb_get` | `unannotated` | Retrieves a specific knowledgebase entry. |
+| `kb_get_conversion` | `unannotated` | Gets a verified parameter conversion mapping. |
+| `kb_get_parameter_spec` | `unannotated` | Gets a parameter specification from the knowledgebase. |
+| `kb_list_open_questions` | `unannotated` | Lists unresolved questions from the knowledgebase. |
+| `kb_record_finding` | `unannotated` | Records a new finding in the knowledgebase. |
+| `kb_record_verified_finding` | `unannotated` | Records a verified finding. |
+
+### Project Health Tools
 
 | Tool | Safety | What it does |
 |---|---|---|
 | `fl_project_health_report` | `read-only` | Reports project organization and health issues. |
 | `fl_export_readiness_report` | `read-only` | Reports issues that may block or degrade export readiness. |
 | `fl_project_dry_run_fix_plan` | `read-only` | Produces a fix plan without changing FL Studio. |
-| `fl_project_health_dashboard` | `read-only` | A single pane of glass aggregating Mix Doctor, Routing Doctor, and Project Organizer insights. |
-| `fl_preflight_project` | `read-only` | Export readiness checks covering clipping, unrouted channels, and manual checklists. |
-| `fl_start_guided_fix_mode` | `read-only` | Starts an LLM-orchestrated Guided Fix Mode session by returning a stateless session blueprint. |
-| `fl_get_guided_fix_context` | `read-only` | Reconstructs the current Guided Fix context from fresh diagnostics without relying on conversational history. |
+| `fl_project_health_overview` | `read-only` | A single pane of glass aggregating Mix Review, Routing Review, and Project Organizer insights. |
+| `fl_check_project_preflight` | `read-only` | Export readiness checks covering clipping, unrouted channels, and manual checklists. |
+| `fl_start_guided_cleanup` | `read-only` | Starts an LLM-orchestrated Guided Cleanup Mode session by returning a stateless session blueprint. |
+| `fl_get_guided_cleanup_context` | `read-only` | Reconstructs the current Guided Cleanup context from fresh diagnostics without relying on conversational history. |
 
 ### Routing Tools
 
@@ -406,17 +400,11 @@ registered outside the static annotation pattern.
 | `fl_get_routing_all` | `read-only` | Reads the full mixer routing matrix. |
 | `fl_get_channel_routing` | `read-only` | Reads channel-to-mixer routing. |
 | `fl_detect_cleanup_candidates` | `read-only` | Finds likely routing or organization cleanup candidates. |
-| `fl_analyze_routing` | `read-only` | Analyzes structural routing issues like unrouted channels or generators skipping groups. |
-| `fl_plan_routing_fix` | `read-only` | Proposes renaming and routing fixes for structural issues. |
-| `fl_apply_routing_batch` | `write-safe` | Executes batch routing fixes. |
-| `fl_create_bus_layout` | `write-safe` | Routes sources to newly created grouped buses (e.g., in 10-track blocks). |
+| `fl_review_routing` | `read-only` | Analyzes structural routing issues like unrouted channels or generators skipping groups. |
+| `fl_plan_routing_cleanup` | `read-only` | Proposes renaming and routing fixes for structural issues. |
+| `fl_apply_routing_cleanup` | `write-safe` | Executes batch routing fixes. |
+| `fl_apply_bus_layout` | `write-safe` | Routes sources to newly created grouped buses (e.g., in 10-track blocks). |
 | `fl_group_tracks` | `write-safe` | Routes selected tracks into a named bus as one grouped rollback unit. |
-
-### Transport Tools
-
-| Tool | Safety | What it does |
-|---|---|---|
-| `fl_transport` | `write-safe` | Consolidated transport domain tool for ping, reads, rollback-backed tempo/time-signature writes, and transient playback controls. |
 
 ## Boundaries To State Clearly To Users
 
