@@ -234,7 +234,7 @@ def register(mcp: FastMCP) -> None:
             lambda: _summary(
                 fetch_all_pages(get_bridge(), protocol.CMD_CHANNEL_LIST, "channels"),
                 "channels",
-                "fl_get_channel_state",
+                "fl_channel(action=\"list\")",
             )
         )
 
@@ -245,7 +245,7 @@ def register(mcp: FastMCP) -> None:
             lambda: _summary(
                 fetch_all_pages(get_bridge(), protocol.CMD_MIXER_LIST_TRACKS, "tracks"),
                 "tracks",
-                "fl_get_mixer_state",
+                "fl_mixer(action=\"list\")",
             )
         )
 
@@ -256,6 +256,6 @@ def register(mcp: FastMCP) -> None:
             lambda: _summary(
                 fetch_all_pages(get_bridge(), protocol.CMD_PATTERN_LIST, "patterns"),
                 "patterns",
-                "fl_get_project_state",
+                "fl_pattern(action=\"list\")",
             )
         )
