@@ -263,6 +263,12 @@ and specialized workflows. Redundant legacy aliases were removed without
 deprecation wrappers, and the unsafe direct Internal EQ wrapper registration was
 removed in favor of `fl_effect`'s rollback-backed native EQ path.
 
+The agent orientation resource was added on 2026-06-07 as `fl://agent-briefing`.
+It is read-only and compact: it reports cheap bridge/status context when
+available, lists current domain/workflow entrypoints, and states
+Knowledgebase-first, rollback/readback, and stop-rule guidance. It adds no
+controller command, no FL write capability, and no public FastMCP tool.
+
 The product workflow Knowledgebase policy pass was completed on 2026-06-06
 without adding new FL Studio API capability claims. The read-only `kb_policy`
 helper loads only whitelisted JSON policy files and returns source-qualified

@@ -20,6 +20,7 @@ flstudio-mcp is a Model Context Protocol (MCP) server that lets any MCP client (
 
 **Key upgrades in v2.0.0:**
 - **Consolidated domain tools:** Dozens of single-purpose functions were folded into higher-level endpoints such as `fl_transport`, `fl_mixer`, `fl_channel`, `fl_effect`, and `fl_batch`. This reduces tool-selection noise and leaves more context for the assistant to reason about the project.
+- **Agent orientation resource:** Agents should start with `fl://agent-briefing` and `fl://status` for current tool selection, safety gates, and stop rules before live FL work.
 - **Knowledgebase-backed parameters:** API values, dB/Hz mappings, known limits, and safe ranges are captured in the local Knowledgebase so agents can prefer verified project evidence over guesses.
 - **Rollback-first writes:** Persistent FL Studio mutations route through the safety layer: scoped snapshot, smallest practical write, readback where supported, changelog entry, and rollback path. Grouped writes are stored as named rollback units.
 

@@ -1,5 +1,11 @@
 # FLStudioMCP Tool Map
 
+## Orientation Resources
+
+- Start with `fl://agent-briefing`, then `fl://status`.
+- Use capped resources such as `fl://mixer`, `fl://channels`, and
+  `fl://patterns` before broad state reads.
+
 ## Domain Tools
 
 - Transport: `fl_transport`.

@@ -275,6 +275,11 @@ Current baseline:
   layering, and Master headroom with compact KB policy references. Controller
   build marker `channels-v39` adds `stereo_sep` to `mixer_list_tracks` for
   efficient readback. Live FL verification remains the next stabilization step.
+- Agent orientation resource is complete as of 2026-06-07. `fl://agent-briefing`
+  provides a compact, read-only startup entrypoint with bridge/status summary,
+  current domain/workflow tool guidance, Knowledgebase-first behavior, safety
+  gates, and stop rules. It adds no FL write capability and is safe when the
+  bridge is down.
 
 Proposed scope:
 - **Phase 0**: Inventory and registration baseline. Status: completed

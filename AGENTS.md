@@ -3,6 +3,22 @@
 This file is the repository guide for AI-assisted coding in this workspace.
 Follow it together with the higher-priority system/developer instructions.
 
+## START HERE FOR FL AGENTS
+
+- Read `fl://agent-briefing`, then `fl://status`, before selecting tools.
+- Prefer current domain/workflow tools: `fl_transport`, `fl_mixer`,
+  `fl_channel`, `fl_pattern`, `fl_playlist`, `fl_effect`, `fl_plugin`,
+  `fl_piano_roll`, `fl_batch`, Project Health/Preflight, Mix Review, Routing
+  Review, Project Organizer, audio analysis, MIDI export, and Knowledgebase
+  tools.
+- Check the Knowledgebase before FL state, mixer/plugin parameters, automation,
+  REC events, or MIDI work. Do not guess ranges, mappings, indices, or IDs.
+- No persistent FL write without rollback and readback:
+  snapshot -> smallest write -> readback -> changelog -> rollback path.
+- Stop when API support, readback, rollback, target selection, bridge status, or
+  value evidence is unclear. Use read-only, dry-run, probe-only, or manual
+  guidance instead.
+
 ## Mandatory First Reads
 
 Before changing code, tests, docs, scripts, controller files, skill files, evals,
@@ -175,7 +191,7 @@ export DYLD_LIBRARY_PATH="/usr/local/opt/expat/lib:${DYLD_LIBRARY_PATH:-}"
 ## Live FL Studio Procedure
 
 - Start the TCP daemon yourself when live tests require it.
-- Confirm heartbeat and `fl_ping` before live work.
+- Confirm heartbeat and `fl_transport(action="ping")` before live work.
 - Confirm the controller build marker expected by the current code.
 - Read current state before writing.
 - For live write tests, write a temporary value, verify readback, rollback

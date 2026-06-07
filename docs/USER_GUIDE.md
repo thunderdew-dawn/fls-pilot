@@ -30,8 +30,8 @@ The normal workflow is conversational:
 
 1. The user asks for an outcome, for example "scan my mix and fix the worst
    headroom issue".
-2. The assistant checks `fl_transport(action="ping")` and reads relevant resources such as
-   `fl://status`, `fl://mixer`, `fl://channels`, or specific tools.
+2. The assistant reads `fl://agent-briefing`, checks `fl://status`, and uses
+   relevant resources such as `fl://mixer`, `fl://channels`, or specific tools.
 3. For risky or multi-step work, the assistant explains what it plans to do and
    which changes are reversible.
 4. The assistant applies one approved change or one named rollback unit.
@@ -219,6 +219,7 @@ tool call. They are intentionally capped so automatic context reads stay small.
 
 | Resource | What it gives the assistant |
 |---|---|
+| `fl://agent-briefing` | Compact startup orientation: bridge/status summary, current domain/workflow tools, token strategy, safety rules, and stop rules. |
 | `fl://status` | Bridge health, heartbeat age, FL version, tempo, and playback state. |
 | `fl://project` | Tempo, transport, and project-level counts. |
 | `fl://transport` | Playback, recording, song position, and tempo snapshot. |
