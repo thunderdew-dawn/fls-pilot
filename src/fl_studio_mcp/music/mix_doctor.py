@@ -180,6 +180,14 @@ def gather_snapshot(
         )
         or {}
     ).get("routing", [])
+    channel_routing_raw = (
+        _safe(
+            lambda: fetch_all_pages(bridge, protocol.CMD_CHANNEL_ROUTING_SUMMARY, "channels"),
+            "channel_routing_summary",
+            {"channels": []},
+        )
+        or {}
+    ).get("channels", [])
     route_by = {r.get("i", r.get("index")): (r.get("routes_to") or []) for r in routing_raw}
 
     indices = [t.get("i", t.get("index")) for t in tracks_raw[:max_tracks]]
@@ -253,7 +261,10 @@ def gather_snapshot(
                 "routes_to": route_by.get(i, []),
             }
         )
-    template_context = templates.classify_topology(tracks)
+    template_rows = routing_raw or tracks
+    template_context = templates.classify_topology(
+        template_rows, routing_raw, channel_routing_raw
+    )
     tracks = templates.annotate_tracks(tracks, template_context)
     return {
         "playing": playing,
@@ -279,6 +290,8 @@ _DEFAULT_NAME = re.compile(r"^\s*(insert\s*\d+|master)\s*$", re.I)
 def _is_used(t):
     """Skip empty/unused mixer inserts (default 'Insert N' name, no plugins,
     only the implicit Master route, no signal) -- noise, not real tracks."""
+    if _template_policy_suppresses(t, "suppress_unused_track"):
+        return False
     if t.get("template_role") == templates.ROLE_RESERVED_PLACEHOLDER:
         return False
     if t.get("plugins"):
@@ -318,6 +331,11 @@ def _is_template_judgement_excluded(t):
         templates.ROLE_SIDECHAIN_CONTROL,
         templates.ROLE_RESERVED_PLACEHOLDER,
     }
+
+
+def _template_policy_suppresses(t, key):
+    policy = t.get("template_tool_policy") or {}
+    return bool(policy.get(key))
 
 
 def rule_clipping(tracks):
@@ -462,6 +480,8 @@ def rule_missing_hpf(tracks):
     out = []
     template_matched = _template_matched(tracks)
     for t in _audible(tracks):
+        if _template_policy_suppresses(t, "suppress_missing_hpf"):
+            continue
         if _is_template_judgement_excluded(t):
             continue
         if template_matched and not _has_level_evidence(t):
@@ -722,17 +742,18 @@ def low_end_stereo_safety(snapshot):
         )
 
     for t in low_tracks:
-        if t.get("template_role") in {
-            templates.ROLE_PREMASTER,
-            templates.ROLE_STEM_BUS,
-            templates.ROLE_SIDECHAIN_CONTROL,
-            templates.ROLE_RESERVED_PLACEHOLDER,
-        }:
+        suppress_offcenter = _template_policy_suppresses(t, "suppress_offcenter_bass")
+        suppress_width = _template_policy_suppresses(t, "suppress_low_end_width")
+        if suppress_offcenter and suppress_width:
             continue
         if template_matched and not _has_level_evidence(t):
             continue
         pan = _as_float(t.get("pan"))
-        if pan is not None and abs(pan) >= LOW_END_PAN_RISK:
+        if (
+            not suppress_offcenter
+            and pan is not None
+            and abs(pan) >= LOW_END_PAN_RISK
+        ):
             findings.append(
                 finding(
                     "low_end_off_center",
@@ -756,7 +777,7 @@ def low_end_stereo_safety(snapshot):
             )
 
         sep = _as_float(t.get("stereo_sep"))
-        if sep is not None and sep >= LOW_END_STEREO_SEP_RISK:
+        if not suppress_width and sep is not None and sep >= LOW_END_STEREO_SEP_RISK:
             findings.append(
                 finding(
                     "low_end_stereo_width",
@@ -835,7 +856,8 @@ def low_end_stereo_safety(snapshot):
                     len(active_low),
                     ", ".join(t.get("name") or f"Track {t.get('index')}" for t in active_low[:8]),
                 ),
-                "Multiple kick/sub/bass/808 layers are active. Check masking, phase, and arrangement slots manually.",
+                "Multiple kick/sub/bass/808 layers are active. Check masking, "
+                "phase, and arrangement slots manually.",
                 {
                     "intent": "manual_review",
                     "args": {"tracks": [t["index"] for t in active_low]},
@@ -866,7 +888,8 @@ def low_end_stereo_safety(snapshot):
                     sev,
                     "Master",
                     f"Master peak {mpk:.1f} dBFS",
-                    f"{msg} Prefer source or bus trims before treating Master trim as the default fix.",
+                    f"{msg} Prefer source or bus trims before treating Master trim "
+                    "as the default fix.",
                     {
                         "intent": "fl_gain_stage",
                         "args": {},
@@ -884,8 +907,14 @@ def low_end_stereo_safety(snapshot):
     manual_checks = [
         {
             "topic": "mono_sum",
-            "check": "Mono-sum the loudest section and verify kick, sub, and bass keep level and punch.",
-            "reason": "The MCP snapshot cannot measure true phase correlation or mono cancellation.",
+            "check": (
+                "Mono-sum the loudest section and verify kick, sub, and bass "
+                "keep level and punch."
+            ),
+            "reason": (
+                "The MCP snapshot cannot measure true phase correlation or "
+                "mono cancellation."
+            ),
             **_kb_fields(
                 (
                     "low_end_mono_compatibility",
@@ -895,8 +924,14 @@ def low_end_stereo_safety(snapshot):
         },
         {
             "topic": "side_low_end",
-            "check": "Manually inspect stereo enhancers, Haas delays, chorus, and mid-side EQ on low-end tracks or buses.",
-            "reason": "Mixer pan/stereo_sep metadata cannot prove whether sub energy is present in the side channel.",
+            "check": (
+                "Manually inspect stereo enhancers, Haas delays, chorus, and "
+                "mid-side EQ on low-end tracks or buses."
+            ),
+            "reason": (
+                "Mixer pan/stereo_sep metadata cannot prove whether sub energy "
+                "is present in the side channel."
+            ),
             **_kb_fields(
                 (
                     "low_end_mono_compatibility",
@@ -906,7 +941,10 @@ def low_end_stereo_safety(snapshot):
         },
         {
             "topic": "mastering_boundary",
-            "check": "Treat this as mix-readiness guidance; do not use mastering or render automation as the correction.",
+            "check": (
+                "Treat this as mix-readiness guidance; do not use mastering or "
+                "render automation as the correction."
+            ),
             "reason": "Mastering boundaries stay manual and separate from mix fixes.",
             **_kb_fields(
                 (

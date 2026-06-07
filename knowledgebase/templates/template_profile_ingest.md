@@ -14,5 +14,5 @@
 - **Example:** `knowledgebase/templates/profiles/electro.json` stores `Insert 22`-`Insert 115` as one reserved range routed to track 120 instead of 94 separate placeholder track objects.
 - **Known Pitfalls:** Do not feed raw dumps directly to implementation agents when a compact validated profile is sufficient. Do not let external analysis infer mix-quality recommendations; profiles are factual topology inputs.
 - **Reproduction Steps:** Run `PYTHONPATH=src .venv/bin/python scripts/normalize_template_dump.py <dump.json> --template-name <Name> --template-slug <slug> --output knowledgebase/templates/profiles/<slug>.json`, then run `PYTHONPATH=src .venv/bin/python scripts/validate_template_profiles.py --profile knowledgebase/templates/profiles/<slug>.json`.
-- **Open Questions:** Capture and validate the 12 remaining standard templates. Decide whether later classifier implementation should load JSON profiles at runtime or generate static fixtures from validated profiles.
-- **Next Recommended Action:** Use Gemini or another external analyzer only to normalize large dumps into this schema, then let Codex review the compact profiles, add tests, and implement data-driven template classification.
+- **Open Questions:** Decide whether future live smoke tests should capture an additional discriminator for structurally identical template profiles.
+- **Next Recommended Action:** Keep standard-template updates profile-driven; use Gemini or another external analyzer only to normalize large dumps into this schema, then validate locally before implementation work.

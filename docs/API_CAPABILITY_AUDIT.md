@@ -307,6 +307,15 @@ captured read-only dump JSON and writes compact Knowledgebase profiles under
 validates those profiles against the schema and cross-checks structural
 consistency. These scripts do not contact the bridge or mutate FL Studio state.
 
+Data-driven standard template recognition was added on 2026-06-07 without new
+FL API claims or write paths. The classifier consumes existing read-only
+mixer, routing, and channel-routing data and compact Knowledgebase profiles to
+produce runtime role annotations and tool-policy flags. Product workflows use
+that metadata to preserve template buses, reserved placeholders, and
+sidechain-control routes before making cleanup or mix-review judgements.
+Structurally identical profiles are reported as ambiguous candidates rather
+than exact template identity.
+
 ## API-Backed Feature Packs
 
 ### Step Sequencer

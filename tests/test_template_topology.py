@@ -3,8 +3,11 @@
 
 from __future__ import annotations
 
+import json
 import sys
 from pathlib import Path
+
+import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
@@ -12,6 +15,9 @@ from fl_studio_mcp import project_templates as templates  # noqa: E402
 from fl_studio_mcp import protocol  # noqa: E402
 from fl_studio_mcp.music import mix_doctor as md  # noqa: E402
 from fl_studio_mcp.tools import routing  # noqa: E402
+
+ROOT = Path(__file__).resolve().parents[1]
+PROFILE_FILES = sorted((ROOT / "knowledgebase" / "templates" / "profiles").glob("*.json"))
 
 
 def _route(*dests):
@@ -86,6 +92,138 @@ def _snapshot_tracks(rows):
             }
         )
     return out
+
+
+def _rows_from_profile(profile: dict):
+    rows = []
+    for track in profile.get("mixer_tracks", []):
+        rows.append(
+            {
+                "i": track["index"],
+                "index": track["index"],
+                "name": track["name"],
+                "routes_to": [
+                    {
+                        "dst": route["target"],
+                        "target": route["target"],
+                        "dst_name": route.get("target_name"),
+                        "level": route.get("level"),
+                    }
+                    for route in track.get("routes_to", [])
+                ],
+                "pan": track.get("pan"),
+                "stereo_sep": track.get("stereo_separation"),
+            }
+        )
+    existing = {row["i"] for row in rows}
+    for row in profile.get("reserved_ranges", []):
+        for index in range(row["from"], row["to"] + 1):
+            if index in existing:
+                continue
+            rows.append(
+                {
+                    "i": index,
+                    "index": index,
+                    "name": f"Insert {index}",
+                    "routes_to": [
+                        {
+                            "dst": dst,
+                            "target": dst,
+                            "dst_name": f"Track {dst}",
+                            "level": row.get("route_level"),
+                        }
+                        for dst in row.get("default_routes_to", [])
+                    ],
+                    "pan": 0.0,
+                    "stereo_sep": 0.0,
+                }
+            )
+    return sorted(rows, key=lambda row: row["i"])
+
+
+def _channels_from_profile(profile: dict):
+    return [
+        {
+            "channel": row["channel_index"],
+            "name": row["channel_name"],
+            "target_mixer_track": row["target_mixer_track"],
+            "target_name": row.get("target_name"),
+            "type": {"label": row.get("type") or "unknown"},
+        }
+        for row in profile.get("channel_routes", [])
+    ]
+
+
+@pytest.mark.parametrize("profile_path", PROFILE_FILES, ids=lambda path: path.stem)
+def test_profile_topologies_are_recognized(profile_path: Path) -> None:
+    profile = json.loads(profile_path.read_text())
+    rows = _rows_from_profile(profile)
+    channels = _channels_from_profile(profile)
+    context = templates.classify_topology(rows, rows, channels)
+
+    assert context["matched"] is True
+    assert profile["template_name"] in context["candidate_templates"]
+    assert context["summary"]["reserved_placeholders"] >= profile["template_detection"][
+        "reserved_placeholder_min_count"
+    ]
+    assert context["candidate_slugs"]
+    assert templates.compact_context(context)["template_name"] == context["template_name"]
+
+
+@pytest.mark.parametrize("profile_path", PROFILE_FILES, ids=lambda path: path.stem)
+def test_profile_policies_preserve_template_structure(profile_path: Path) -> None:
+    profile = json.loads(profile_path.read_text())
+    rows = _rows_from_profile(profile)
+    channels = _channels_from_profile(profile)
+    context = templates.classify_topology(rows, rows, channels)
+    reserved = profile["reserved_ranges"][0]
+    first_reserved = reserved["from"]
+
+    assert templates.role_for(context, first_reserved) == templates.ROLE_RESERVED_PLACEHOLDER
+    assert templates.suppresses(context, first_reserved, "suppress_unused_track") is True
+    for route in profile.get("known_control_routes", []):
+        for target in route["targets"]:
+            assert templates.is_template_control_route(
+                context, route["source"], target, route.get("level")
+            )
+
+    tracks = _snapshot_tracks(rows)
+    snap = {
+        "playing": False,
+        "levels_valid": False,
+        "tracks": templates.annotate_tracks(tracks, context),
+        "template_context": context,
+    }
+    result = md.diagnose(snap)
+    assert "ungrouped" not in {finding["rule"] for finding in result["findings"]}
+    assert first_reserved not in {
+        track.get("index")
+        for track in snap["tracks"]
+        if track.get("template_role") != templates.ROLE_RESERVED_PLACEHOLDER
+    }
+
+
+@pytest.mark.parametrize("profile_path", PROFILE_FILES, ids=lambda path: path.stem)
+def test_cleanup_preserves_profile_reserved_placeholders(monkeypatch, profile_path: Path) -> None:
+    profile = json.loads(profile_path.read_text())
+    rows = _rows_from_profile(profile)
+    channels = _channels_from_profile(profile)
+    reserved = profile["reserved_ranges"][0]
+    reserved_tracks = set(range(reserved["from"], reserved["to"] + 1))
+
+    def fake_fetch(_bridge, command, key):
+        if command == protocol.CMD_CHANNEL_ROUTING_SUMMARY:
+            return {"channels": channels}
+        if command == protocol.CMD_MIXER_GET_ROUTING_ALL:
+            return {"routing": rows}
+        raise AssertionError(f"unexpected fetch {command}/{key}")
+
+    monkeypatch.setattr(routing, "fetch_all_pages", fake_fetch)
+    result = routing.detect_cleanup(_CleanupBridge(), max_plugin_checks=140)
+    unused = {row["track"] for row in result["unused_mixer_tracks"]}
+
+    assert not (reserved_tracks & unused)
+    assert result["template_context"]["template_name"] is not None
 
 
 def test_electro_topology_classifier_marks_reserved_placeholders() -> None:

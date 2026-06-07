@@ -4,6 +4,17 @@ This file stores historical verification evidence, including dated live/offline 
 
 ## Current verification checkpoints
 
+- 2026-06-07: Data-driven standard template classifier offline validation.
+  - Verified path: Validated all compact profiles under
+    `knowledgebase/templates/profiles/`, then ran parametric classifier,
+    template-policy, and cleanup-preservation tests across the profile set.
+    Also reran Mix Doctor and Project Doctor regression tests.
+  - Result: The classifier recognizes all 13 unique standard template names
+    represented by the profile set and exposes ambiguity for structurally
+    identical pairs (`Chillout`/`Chillout-Ambient`, `HipHop-Trap`/`Trap`,
+    `Funk`/`Rock`). Product workflows receive shared template context without
+    performing any FL Studio writes.
+
 - 2026-06-07: Template profile ingest offline validation.
   - Verified path: Added `knowledgebase/templates/template_profile.schema.json`,
     generated `knowledgebase/templates/profiles/electro.json` from the
