@@ -123,14 +123,14 @@ Not currently supported:
   possible track, verify count/readback, restore/delete/undo immediately, and
   record the exact FL build and rollback result before promoting the capability.
 
-The current baseline, regenerated on 2026-06-05, reports:
+The current baseline, regenerated on 2026-06-07, reports:
 
-- 86 registered public FastMCP tools with 86 unique public names after v2.0
+- 87 registered public FastMCP tools with 87 unique public names after v2.0
   legacy low-level alias removal.
-- 165 statically audited tool definitions.
+- 166 statically audited tool definitions.
 - 33 registered `write-safe` tools.
 - 0 `write-gap` tools.
-- 40 registered `read-only` tools.
+- 41 registered `read-only` tools.
 - 4 `server-state` tools.
 - 2 `external-write` tools.
 - 7 registered tools are not covered by the static AST audit because they are
@@ -335,10 +335,10 @@ MVP:
 
 Current shipped slice:
 
-- `fl_get_channel_details`
+- `fl_channel(action="get")`
 - `fl_detect_unassigned_channels`
-- `fl_set_channel_name`
-- `fl_set_channel_mixer_track`
+- `fl_channel(action="set_name")`
+- `fl_channel(action="set_mixer_target")`
 - `fl_assign_channel_to_free_mixer_track`
 
 Safety requirement:
@@ -570,7 +570,8 @@ Useful API:
 
 Allowed next steps:
 
-- Build a return-channel probe before promoting `fl_piano_get_notes`. ✅ shipped
+- Build a return-channel probe before promoting
+  `fl_piano_roll(action="get_notes")`. ✅ shipped
 - Add undo-backed transforms for duplicate, humanize, velocity ramp, gate,
   legato, overlap trim, strum, arpeggiate, mute/unmute, note color, slide,
   porta, and snap-to-scale.

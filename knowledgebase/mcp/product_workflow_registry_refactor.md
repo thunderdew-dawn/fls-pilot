@@ -15,4 +15,4 @@
 - **Known Pitfalls**: Project Organizer channel rename and hex color helpers were intentionally not refactored. Channel name registry validation currently requires non-empty names, while the existing Project Organizer helper did not. Color registry specs accept FL-native integer colors or RGB triplets, while Project Organizer public inputs are documented as hex strings.
 - **Reproduction Steps**: Run `.venv/bin/python -m pytest tests/test_operation_registry.py tests/test_batch_persistent_writes.py tests/test_product_workflow_registry_refactor.py` and `.venv/bin/python tests/test_mix_doctor.py`.
 - **Open Questions**: Live FL Studio smoke tests were not run for the refactored product workflow paths. Project Organizer color input compatibility should be handled in a separate slice if that public behavior is corrected.
-- **Next Recommended Action**: Proceed to Slice 14 legacy low-level removal only after parity and registration checks remain green.
+- **Next Recommended Action**: Keep product workflow writes aligned with the operation registry while preserving public workflow behavior.

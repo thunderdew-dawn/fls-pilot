@@ -9,7 +9,7 @@ Use the FLStudioMCP tool surface as a rollback-first production assistant.
 
 ## Start Every Session
 
-1. Call `fl_ping` before live FL work.
+1. Call `fl_transport(action="ping")` before live FL work.
 2. Confirm the reported controller build is the one expected by the current
    code or roadmap checkpoint.
 3. If a write is requested, read current state first, apply the smallest useful

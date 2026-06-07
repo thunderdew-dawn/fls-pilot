@@ -18,28 +18,82 @@
 
 flstudio-mcp is a Model Context Protocol (MCP) server that lets any MCP client (like Claude Desktop, ChatGPT, or Cursor) drive FL Studio 2025 directly — the mixer, plugins, piano roll, routing, and project — from plain-language requests. Ask for a mix diagnosis, a vocal chain, a chord progression in a particular scale, or a full arrangement, and the LLM assistant carries it out through FL's scripting API and a set of calibrated, safety-checked tools.
 
-**Massive Upgrades in v2.0.0:**
-- **Token Optimization & High-Level Tools:** We have drastically reduced boilerplate and token usage by consolidating dozens of single-purpose functions into unified, powerful endpoints (like `fl_transport` and `fl_mixer`). This saves massive amounts of context for the LLM, making requests faster and more reliable.
-- **Knowledgebase Integration:** The LLM no longer has to guess parameters or "reinvent the wheel". API values, dB/Hz mappings, and safe ranges are now verified against a live-updated JSON knowledgebase. Agents document new findings permanently, ensuring the system gets smarter over time.
-- **Safety & Rollback Improvements:** Every project-modifying tool now routes through a strict `snapshot → write → readback → rollback` registry. Changes are grouped into named batch rollback units, guaranteeing that your FL Studio project state is always protected and easily reversible.
+**Key upgrades in v2.0.0:**
+- **Consolidated domain tools:** Dozens of single-purpose functions were folded into higher-level endpoints such as `fl_transport`, `fl_mixer`, `fl_channel`, `fl_effect`, and `fl_batch`. This reduces tool-selection noise and leaves more context for the assistant to reason about the project.
+- **Knowledgebase-backed parameters:** API values, dB/Hz mappings, known limits, and safe ranges are captured in the local Knowledgebase so agents can prefer verified project evidence over guesses.
+- **Rollback-first writes:** Persistent FL Studio mutations route through the safety layer: scoped snapshot, smallest practical write, readback where supported, changelog entry, and rollback path. Grouped writes are stored as named rollback units.
 
 ## High-Level Tools (New in v2.0.0)
 
-This release represents a massive evolution from the original fork, focusing on rollback-first FL Studio production tooling and a strict agent workflow. The tools below represent the most time-saving and powerful features available to you.
+This release focuses on rollback-first FL Studio production tooling and a strict agent workflow. The tools below are the highest-value entry points for day-to-day use.
 
 *(For detailed usage, examples, and the full tool catalog, refer to the [User Guide (docs/USER_GUIDE.md)](docs/USER_GUIDE.md)).*
 
-1. **Mix Review:** Instantly scan your mix to diagnose clipping, masking, and imbalances, and apply one-click, reversible fixes. Fixes are applied one at a time, only on approval.
+1. **Mix Review:** Scan your mix for clipping, masking, and balance issues, then apply gated, reversible fixes one at a time after approval.
 2. **Project Organizer & Naming Standard Assistant:** Turn a messy project into a neatly colored, grouped, and logically routed session. Batch rename and color Step Sequencer channels and Mixer tracks.
 3. **Routing Review 2.0:** Detect routing issues, unrouted channels, and automatically propose and apply optimal bus layouts.
 4. **Plugin & Preset Assistant:** Get tailored vocal chains and synth patches based directly on your *actual installed* plugins (read directly from FL's plugin database and preset folders on disk).
 5. **Composition & Scale Composer:** Generate chord progressions and melodies in any mode or scale directly into the piano roll, with grid quantization.
 6. **Audio Clip Safe Defaults:** Inspect Audio Clips to dynamically provide safe volume defaults and free mixer tracks.
 7. **Audio Analyzer:** Extract tempo, key, and convert audio melodies to MIDI effortlessly (via CREPE pitch tracking).
-8. **Project Preflight & Health Overview:** A single pane of glass aggregating Mix Review, Routing Review, and Project Organizer insights to ensure export readiness.
+8. **Project Preflight & Health Overview:** Combine Mix Review, Routing Review, and Project Organizer checks into an export-readiness report.
 
 Known FL Studio API limitation:
 Deep Audio Clip parameters such as Stretch Mode, Normalize state, and some sample internals are not exposed by the FL Studio Python API. The assistant can organize and route Audio Clips, but it will not claim to set Stretch Pro or Normalize automatically (it will generate manual checklists instead).
+
+## How it Works: 8 Production Phases
+
+FL Studio's Python API is useful but has strict boundaries. This project combines safe controller calls, local file analysis, generated Piano Roll scripts, and a snapshot/rollback safety layer. The summary below explains what is automated and where FL Studio still requires manual action.
+
+### Phase 1: Ideation & Composition (Notes & Audio)
+- **Audio Analysis (`fl_analyze_audio`, `fl_extract_melody`)**
+  - *The Limitation:* FL Studio's API cannot read or analyze audio files.
+  - *How it works:* These tools read `.wav` or `.mp3` files directly from disk and analyze them with Python libraries such as CREPE when the optional accurate audio extras are installed.
+- **Piano Roll & Scales (`fl_piano_roll`, `fl_scale_get`)**
+  - *The Limitation:* The API does not allow external programs to arbitrarily push notes directly into the Piano Roll at runtime.
+  - *How it works:* The assistant generates a temporary `MCP_Apply` script. A background daemon triggers the armed script with a keyboard shortcut (`Cmd+Opt+Y` on macOS), causing FL Studio to write the notes to the selected Piano Roll target.
+
+### Phase 2: Arrangement & Structure
+- **Patterns & Playlist (`fl_pattern`, `fl_playlist`)**
+  - *The Limitation:* Direct editing, splitting, or moving of Audio/MIDI clips in the playlist is blocked by the API.
+  - *How it works:* The assistant manages supported structure such as pattern creation, pattern cloning where exposed, section markers, and track metadata through unified domain tools.
+
+### Phase 3 & 4: Diagnosis & Preparation
+- **Audio Clip Safe Defaults (`fl_inspect_audio_clips`)**
+  - *The Limitation:* Deep Audio Clip features like "Stretch Pro" or the "Normalize" toggle are not exposed.
+  - *How it works:* The tools can apply safe Channel Rack volume limits, check for free mixer tracks, and generate manual checklists for Stretch/Normalize states that the FL API cannot verify.
+- **Project Organizer (`fl_channel`, `fl_mixer`, `fl_apply_color_standard`)**
+  - *Safety:* Renaming and coloring a large project uses scoped snapshots and named rollback units so supported changes can be audited and restored through the MCP safety layer.
+
+### Phase 5: Signal Flow & Routing
+- **Routing Tools (`fl_review_routing`, `fl_apply_bus_layout`, `fl_group_tracks`)**
+  - *How it works:* Routing tools detect structural issues, propose bus layouts, and apply supported routing changes as named rollback units.
+
+### Phase 6: Sound Design (The Strictest API Boundary)
+- **Chain Planner & Presets (`fl_setup_chain`, `fl_suggest_preset`)**
+  - *The Hard Limit:* It is technically impossible to load or insert a plugin via the FL Studio API.
+  - *The workflow:* The assistant scans FL Studio plugin database and preset folders on disk, suggests chains from what it finds, and can configure parameters after the user manually loads the chosen plugin.
+
+### Phase 7: Mixing & Dynamics
+- **Mix Doctor (`fl_review_mix`, `fl_mix_watch_start`)**
+  - *The Limitation:* A static "snapshot" of a song is useless because audio is dynamic.
+  - *How it works:* During peak watch, the user plays the song while the tool polls live API peak meters and keeps running peak evidence for each track.
+- **Knowledgebase & Intents (`fl_apply_eq_intent`)**
+  - *The Problem:* AI notoriously "hallucinates" plugin parameter values (e.g. setting a knob to 150% when the limit is 100%).
+  - *How it works:* Before sending supported parameter changes to FL Studio, the assistant checks requested values against Knowledgebase conversion entries such as `kb_get_conversion` and sends normalized values within verified ranges.
+
+### Phase 8: Export, Health & Safety
+- **Project Health Checks (`fl_check_project_preflight`)**
+  - *How it works:* Before a manual audio render, the assistant can run combined Mix Review, Routing Review, and cleanup checks to report export-readiness risks.
+- **Audio Export (`fl_export_midi`)**
+  - *The Limitation:* The API cannot click "Render to WAV". 
+  - *How it works:* The tools write standard `.mid` files directly to disk for arrangement exports. Audio bouncing remains manual.
+- **The Safety Layer (`fl_rollback_last_change`)**
+  - *The Limitation:* FL Studio's native Undo (`Ctrl+Z`) is highly unreliable for API scripts.
+  - *How it works:* The MCP safety layer stores scoped snapshots and changelog entries for supported writes. Calling rollback restores the affected supported state through the MCP rollback path.
+
+The server exposes a comprehensive suite of tools across all these phases. For a user-facing workflow overview, full tool catalog, and precise command prompts, see the **[USER_GUIDE](docs/USER_GUIDE.md)**.
+
 
 ## Maintained fork
 
@@ -51,8 +105,7 @@ The project keeps the `fl-studio-mcp` package and command names for
 compatibility, while the fork's engineering direction is now explicit:
 rollback-first FL Studio production tooling, documented API-evidence handling,
 live-probe discipline for build-dependent behavior, macOS support, CI safety
-audits, prompt evals, and a committed agent workflow guide. This represents a
-massive architectural leap over the original source.
+audits, prompt evals, and a committed agent workflow guide.
 
 See [`NOTICE.md`](NOTICE.md) for provenance and attribution.
 
@@ -73,59 +126,6 @@ Wire the two loopMIDI ports in FL (Options > MIDI Settings), arm `MCP_Apply` onc
 > "Scan my mix and tell me what's wrong." — "Set up a vocal chain from my plugins." — "Export this arrangement to MIDI."
 
 Full setup is below.
-
-## How it Works: The 8 Phases of Production (Under the Hood)
-
-FL Studio's Python API is powerful but has strict boundaries. This system circumvents the hard limits using intelligent AI wrappers, external parsing, and a rigorous snapshot-rollback safety layer. Here is exactly what happens under the hood during the 8 phases of AI-assisted music production:
-
-### Phase 1: Ideation & Composition (Notes & Audio)
-- **Audio Analysis (`fl_analyze_audio`, `fl_extract_melody`)**
-  - *The Limitation:* FL Studio's API cannot read or analyze audio files.
-  - *Under the Hood:* These tools bypass FL Studio completely. They read the `.wav` or `.mp3` directly from disk and analyze it using Python libraries (like CREPE for pitch tracking).
-- **Piano Roll & Scales (`fl_piano_roll`, `fl_scale_get`)**
-  - *The Limitation:* The API does not allow external programs to arbitrarily push notes directly into the Piano Roll at runtime.
-  - *Under the Hood:* The AI generates a temporary `MCP_Apply` script. A background daemon then simulates a keyboard shortcut (`Cmd+Opt+Y`), forcing FL Studio to execute the script and render the notes to the grid.
-
-### Phase 2: Arrangement & Structure
-- **Patterns & Playlist (`fl_pattern`, `fl_playlist`)**
-  - *The Limitation:* Direct editing, splitting, or moving of Audio/MIDI clips in the playlist is blocked by the API.
-  - *Under the Hood:* The AI manages structural boundaries—cloning patterns, placing section markers, and renaming tracks—using unified domain tools, avoiding single-command API spam.
-
-### Phase 3 & 4: Diagnosis & Preparation
-- **Audio Clip Safe Defaults (`fl_inspect_audio_clips`)**
-  - *The Limitation:* Deep Audio Clip features like "Stretch Pro" or the "Normalize" toggle are not exposed.
-  - *Under the Hood:* The tools lower the base volume in the Channel Rack (as samples are often too loud), check for free mixer tracks, and generate manual text checklists for the user to verify Stretch/Normalize states.
-- **Project Organizer (`fl_channel`, `fl_mixer`, `fl_apply_color_standard`)**
-  - *Safety:* Renaming and coloring a messy 50-track project requires strict safety. Every change is saved as a "Snapshot" before execution, allowing instant rollback of all 50 colors at once.
-
-### Phase 5: Signal Flow & Routing
-- **Routing Tools (`fl_review_routing`, `fl_apply_bus_layout`, `fl_group_tracks`)**
-  - *Under the Hood:* The AI detects unrouted tracks, disconnects them from the Master, creates a named Bus (e.g., "Vocals"), routes the tracks to the Bus, and routes the Bus to the Master. All of this is batched into a single, reversible "Rollback Unit".
-
-### Phase 6: Sound Design (The Strictest API Boundary)
-- **Chain Planner & Presets (`fl_setup_chain`, `fl_suggest_preset`)**
-  - *The Hard Limit:* It is technically impossible to load or insert a plugin via the FL Studio API.
-  - *The Clever Workaround:* The AI secretly scans your FL Studio database folder (`.fst` and `.vst` files) on disk. It *knows* what plugins you own and *suggests* chains. Once you manually load the suggested FabFilter EQ or Serum synth, the `fl_plugin` tool instantly recognizes it and takes control of its parameters.
-
-### Phase 7: Mixing & Dynamics
-- **Mix Doctor (`fl_review_mix`, `fl_mix_watch_start`)**
-  - *The Limitation:* A static "snapshot" of a song is useless because audio is dynamic.
-  - *Under the Hood:* The tool forces the user to play the song. It continuously polls the live API peak meters, remembers the "Running Peak" of the loudest moment for every track, and calculates clipping based on those real values.
-- **Knowledgebase & Intents (`fl_apply_eq_intent`)**
-  - *The Problem:* AI notoriously "hallucinates" plugin parameter values (e.g. setting a knob to 150% when the limit is 100%).
-  - *Under the Hood:* Before sending a value to FL Studio, the AI checks the requested dB change against a strict local Knowledgebase (`kb_get_conversion`). It translates the request into a mathematically exact *Normalized Float Value* (e.g., `0.785`) ensuring millimeter accuracy without hallucinations.
-
-### Phase 8: Export, Health & Safety
-- **Project Health Checks (`fl_check_project_preflight`)**
-  - *Under the Hood:* Before you render the final song, the AI runs a combined Mix Review, Routing check, and Cleanup scan in milliseconds to guarantee the project is export-ready.
-- **Audio Export (`fl_export_midi`)**
-  - *The Limitation:* The API cannot click "Render to WAV". 
-  - *Under the Hood:* The tools write standard `.mid` files directly to disk for arrangement exports. Audio bouncing remains manual.
-- **The Safety Layer (`fl_rollback_last_change`)**
-  - *The Limitation:* FL Studio's native Undo (`Ctrl+Z`) is highly unreliable for API scripts.
-  - *Under the Hood:* The server runs a custom Undo engine. Every API mutation writes a snapshot to a local file. Calling rollback pushes that exact state back into FL Studio.
-
-The server exposes a comprehensive suite of tools across all these phases. For a user-facing workflow overview, full tool catalog, and precise command prompts, see the **[USER_GUIDE](docs/USER_GUIDE.md)**.
 
 ## What sets it apart
 

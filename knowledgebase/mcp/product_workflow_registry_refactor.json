@@ -55,5 +55,5 @@
     "Live FL Studio smoke tests were not run for the refactored product workflow paths.",
     "Project Organizer color input compatibility should be handled in a separate slice if that public behavior is corrected."
   ],
-  "next_recommended_action": "Proceed to Slice 14 legacy low-level removal only after parity and registration checks remain green."
+  "next_recommended_action": "Keep product workflow writes aligned with the operation registry while preserving public workflow behavior."
 }

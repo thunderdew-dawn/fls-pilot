@@ -46,7 +46,7 @@ Please rename mixer track 8 to Drums and color it blue.
 ```
 
 ```text
-Use fl_mixer with action set_name on track 8, then fl_set_track_color on track 8.
+Use fl_mixer with action set_name on track 8, then fl_mixer with action set_color on track 8.
 ```
 
 ## Safety Classes
@@ -228,7 +228,7 @@ tool call. They are intentionally capped so automatic context reads stay small.
 
 ## Full Tool Reference
 
-The current public MCP surface registers 86 tools: 40 `read-only`, 33
+The current public MCP surface registers 87 tools: 41 `read-only`, 33
 `write-safe`, 4 `server-state`, 2 `external-write`, and 7 Knowledgebase tools
 registered outside the static annotation pattern.
 
@@ -364,7 +364,7 @@ registered outside the static annotation pattern.
 | `fl_project_health_report` | `read-only` | Reports project organization and health issues. |
 | `fl_export_readiness_report` | `read-only` | Reports issues that may block or degrade export readiness. |
 | `fl_project_dry_run_fix_plan` | `read-only` | Produces a fix plan without changing FL Studio. |
-| `fl_project_health_overview` | `read-only` | A single pane of glass aggregating Mix Review, Routing Review, and Project Organizer insights. |
+| `fl_project_health_overview` | `read-only` | Aggregates Mix Review, Routing Review, and Project Organizer insights into one overview. |
 | `fl_check_project_preflight` | `read-only` | Export readiness checks covering clipping, unrouted channels, and manual checklists. |
 | `fl_start_guided_cleanup` | `read-only` | Starts an LLM-orchestrated Guided Cleanup Mode session by returning a stateless session blueprint. |
 | `fl_get_guided_cleanup_context` | `read-only` | Reconstructs the current Guided Cleanup context from fresh diagnostics without relying on conversational history. |
@@ -391,7 +391,7 @@ registered outside the static annotation pattern.
 | `fl_export_change_log` | `external-write` | Exports the MCP changelog to a JSON file on disk. |
 | `fl_rollback_last_change` | `server-state` | Rolls back the latest MCP change. |
 | `fl_rollback_change` | `server-state` | Rolls back a specific change by change ID. |
-| `fl_set_dry_run` | `server-state` | Enables or disables dry-run mode for planned changes.
+| `fl_set_dry_run` | `server-state` | Enables or disables dry-run mode for planned changes. |
 
 ## Boundaries To State Clearly To Users
 

@@ -150,11 +150,11 @@ compact domain-driven surface. The target is roughly 19 low-level/domain tools
 plus retained product workflow tools, not a total cap for the whole MCP server.
 
 Current baseline:
-- 2026-06-05 registration baseline after legacy low-level alias removal:
-  86 registered public FastMCP tools with 86 unique public names.
-- Static audit baseline: 165 audited tool definitions, including 86 legacy
+- 2026-06-07 registration baseline after legacy low-level alias removal:
+  87 registered public FastMCP tools with 87 unique public names.
+- Static audit baseline: 166 audited tool definitions, including 86 legacy
   low-level aliases intentionally absent from public registration.
-- Registered safety-class summary: 33 `write-safe`, 40 `read-only`, 4
+- Registered safety-class summary: 33 `write-safe`, 41 `read-only`, 4
   `server-state`, 2 `external-write`, and 7 Knowledgebase tools registered
   outside the static AST audit pattern.
 - The duplicate `project_doctor_tools.register(mcp)` call was removed as
