@@ -66,13 +66,13 @@ def run_tests():
         if audio_report['count'] > 0:
             print(f"Audio Clip Issues: {audio_report['audio_clips'][0].get('issues', [])}")
             
-        routing_report = tools["fl_analyze_routing"]()
+        routing_report = tools["fl_review_routing"]()
         print(f"Unrouted Channels: {len(routing_report['unrouted_channels'])}")
         
-        health = tools["fl_project_health_dashboard"]()
-        print(f"Health Dashboard Status: {health['status']} | Unrouted: {health['metrics']['unrouted_channels']}")
+        health = tools["fl_project_health_overview"]()
+        print(f"Health Overview Status: {health['status']} | Unrouted: {health['metrics']['unrouted_channels']}")
 
-        preflight = tools["fl_preflight_project"]()
+        preflight = tools["fl_check_project_preflight"]()
         print(f"Preflight Status: {preflight['status']} | Blockers: {len(preflight['blockers'])}")
 
         # 3. Test Apply Audio Clip Safe Defaults
@@ -93,7 +93,7 @@ def run_tests():
         
         # 5. Test Bus Layout
         print("\n--- Testing Create Bus Layout ---")
-        res = tools["fl_create_bus_layout"](buses=[
+        res = tools["fl_apply_bus_layout"](buses=[
             {"bus_track": 10, "name": "DRUM_BUS", "source_tracks": [1, 2]}
         ])
         print("Bus Layout Result:", res.get("after"))
