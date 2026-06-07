@@ -74,39 +74,58 @@ Wire the two loopMIDI ports in FL (Options > MIDI Settings), arm `MCP_Apply` onc
 
 Full setup is below.
 
-## Capabilities
+## How it Works: The 8 Phases of Production (Under the Hood)
 
-### Mixing & diagnosis
-- **Mix Review** — scans the whole mix and reports concrete problems (clipping, low headroom, level imbalance, missing high-pass, ungrouped related tracks, overlapping EQ boosts), each with the exact evidence and a proposed fix. Fixes are applied one at a time, only on approval, through a snapshot → write → readback → rollback safety layer. Master clipping is resolved by trimming the contributing source tracks rather than pulling the master.
-- **Low-End/Stereo Safety Assistant** — read-only review for bass/sub mono compatibility, mixer pan and stereo-separation metadata, low-end layering, and Master headroom. It reports manual checks and KB-backed limits; it does not apply stereo, mid-side, plugin-loading, mastering, save, or render automation.
-- **Knowledgebase & Safe Wrappers** — machine-readable calibration logic prevents destructive API calls. Normalized values, DB/Hz limits, and specific EQ mappings are verified against a live-updated JSON knowledgebase, eliminating hallucinated parameter values from the LLM assistant.
-- **Full-song peak watch** — holds a running peak per track across playback, so level decisions are based on the loudest moment of the actual song, not a single instant.
-- **Calibrated processing intents** — musical EQ, compression, reverb, and delay moves mapped to real plugin parameters (native and third-party), each applied as one reversible change.
-- **Level-aware compression** — sets thresholds relative to a track's measured level during playback.
-- **Gain staging** — proposes per-track trims toward a healthy level with proper master headroom.
-- **Reference match** — compares your mix's level and tonal balance against a reference track.
-- **Bulk track control** — solo or mute a whole group (drums, vocals, …) in one step, with a one-call reset.
-- **Track & channel coloring** — color a track, a channel, or a whole group (drums, vocals, …) by color name or hex, reversible like every other change.
+FL Studio's Python API is powerful but has strict boundaries. This system circumvents the hard limits using intelligent AI wrappers, external parsing, and a rigorous snapshot-rollback safety layer. Here is exactly what happens under the hood during the 8 phases of AI-assisted music production:
 
-### Plugin & preset control
-- Read and set plugin parameters by name, on native and third-party plugins (the parameter list is resolved live).
-- **Chain suggestions** and **preset recommendations** drawn from your actual installed library — read directly from FL's plugin database and preset folders on disk, so recommendations are limited to what you own.
+### Phase 1: Ideation & Composition (Notes & Audio)
+- **Audio Analysis (`fl_analyze_audio`, `fl_extract_melody`)**
+  - *The Limitation:* FL Studio's API cannot read or analyze audio files.
+  - *Under the Hood:* These tools bypass FL Studio completely. They read the `.wav` or `.mp3` directly from disk and analyze it using Python libraries (like CREPE for pitch tracking).
+- **Piano Roll & Scales (`fl_piano_roll`, `fl_scale_get`)**
+  - *The Limitation:* The API does not allow external programs to arbitrarily push notes directly into the Piano Roll at runtime.
+  - *Under the Hood:* The AI generates a temporary `MCP_Apply` script. A background daemon then simulates a keyboard shortcut (`Cmd+Opt+Y`), forcing FL Studio to execute the script and render the notes to the grid.
 
-### Composition
-- **Multi-track MIDI export** — generate a complete arrangement as a standard MIDI file to import.
-- **Multi-pattern arrangement** — create, name, clone, and mark sections.
-- **Note and chord writing** into the piano roll, with quantize to a grid (for new notes and existing ones).
-- **Composition in any scale or mode** — Western modes, pentatonic, ragas, maqam, and beyond — through the scale composer, where the LLM assistant supplies the notes for the requested scale.
+### Phase 2: Arrangement & Structure
+- **Patterns & Playlist (`fl_pattern`, `fl_playlist`)**
+  - *The Limitation:* Direct editing, splitting, or moving of Audio/MIDI clips in the playlist is blocked by the API.
+  - *Under the Hood:* The AI manages structural boundaries—cloning patterns, placing section markers, and renaming tracks—using unified domain tools, avoiding single-command API spam.
 
-### Audio analysis
-- Tempo and key estimation from an audio file.
-- Melody-to-MIDI transcription (CREPE pitch tracking, with a lighter fallback).
+### Phase 3 & 4: Diagnosis & Preparation
+- **Audio Clip Safe Defaults (`fl_inspect_audio_clips`)**
+  - *The Limitation:* Deep Audio Clip features like "Stretch Pro" or the "Normalize" toggle are not exposed.
+  - *Under the Hood:* The tools lower the base volume in the Channel Rack (as samples are often too loud), check for free mixer tracks, and generate manual text checklists for the user to verify Stretch/Normalize states.
+- **Project Organizer (`fl_channel`, `fl_mixer`, `fl_apply_color_standard`)**
+  - *Safety:* Renaming and coloring a messy 50-track project requires strict safety. Every change is saved as a "Snapshot" before execution, allowing instant rollback of all 50 colors at once.
 
-The server exposes a comprehensive suite of tools across the production, mixing, composition, safety,
-and project-organization surface, plus 6 live resources (project, mixer,
-transport, channels, patterns, status) that the LLM assistant can read directly.
-For a user-facing value overview, workflow examples, and the full tool catalog,
-see [`docs/USER_GUIDE.md`](docs/USER_GUIDE.md).
+### Phase 5: Signal Flow & Routing
+- **Routing Tools (`fl_review_routing`, `fl_apply_bus_layout`, `fl_group_tracks`)**
+  - *Under the Hood:* The AI detects unrouted tracks, disconnects them from the Master, creates a named Bus (e.g., "Vocals"), routes the tracks to the Bus, and routes the Bus to the Master. All of this is batched into a single, reversible "Rollback Unit".
+
+### Phase 6: Sound Design (The Strictest API Boundary)
+- **Chain Planner & Presets (`fl_setup_chain`, `fl_suggest_preset`)**
+  - *The Hard Limit:* It is technically impossible to load or insert a plugin via the FL Studio API.
+  - *The Clever Workaround:* The AI secretly scans your FL Studio database folder (`.fst` and `.vst` files) on disk. It *knows* what plugins you own and *suggests* chains. Once you manually load the suggested FabFilter EQ or Serum synth, the `fl_plugin` tool instantly recognizes it and takes control of its parameters.
+
+### Phase 7: Mixing & Dynamics
+- **Mix Doctor (`fl_review_mix`, `fl_mix_watch_start`)**
+  - *The Limitation:* A static "snapshot" of a song is useless because audio is dynamic.
+  - *Under the Hood:* The tool forces the user to play the song. It continuously polls the live API peak meters, remembers the "Running Peak" of the loudest moment for every track, and calculates clipping based on those real values.
+- **Knowledgebase & Intents (`fl_apply_eq_intent`)**
+  - *The Problem:* AI notoriously "hallucinates" plugin parameter values (e.g. setting a knob to 150% when the limit is 100%).
+  - *Under the Hood:* Before sending a value to FL Studio, the AI checks the requested dB change against a strict local Knowledgebase (`kb_get_conversion`). It translates the request into a mathematically exact *Normalized Float Value* (e.g., `0.785`) ensuring millimeter accuracy without hallucinations.
+
+### Phase 8: Export, Health & Safety
+- **Project Health Checks (`fl_check_project_preflight`)**
+  - *Under the Hood:* Before you render the final song, the AI runs a combined Mix Review, Routing check, and Cleanup scan in milliseconds to guarantee the project is export-ready.
+- **Audio Export (`fl_export_midi`)**
+  - *The Limitation:* The API cannot click "Render to WAV". 
+  - *Under the Hood:* The tools write standard `.mid` files directly to disk for arrangement exports. Audio bouncing remains manual.
+- **The Safety Layer (`fl_rollback_last_change`)**
+  - *The Limitation:* FL Studio's native Undo (`Ctrl+Z`) is highly unreliable for API scripts.
+  - *Under the Hood:* The server runs a custom Undo engine. Every API mutation writes a snapshot to a local file. Calling rollback pushes that exact state back into FL Studio.
+
+The server exposes a comprehensive suite of tools across all these phases. For a user-facing workflow overview, full tool catalog, and precise command prompts, see the **[USER_GUIDE](docs/USER_GUIDE.md)**.
 
 ## What sets it apart
 

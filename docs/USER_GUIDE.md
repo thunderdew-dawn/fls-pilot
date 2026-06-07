@@ -232,8 +232,25 @@ The current public MCP surface registers 86 tools: 40 `read-only`, 33
 `write-safe`, 4 `server-state`, 2 `external-write`, and 7 Knowledgebase tools
 registered outside the static annotation pattern.
 
-### Arrangement Tools
+### Phase 1: Ideation & Composition Tools
 
+#### Audio Analysis
+| Tool | Safety | What it does |
+|---|---|---|
+| `fl_analyze_audio` | `read-only` | Estimates tempo, key, and audio properties from a file. |
+| `fl_extract_melody` | `read-only` | Extracts a monophonic melody from an audio file using pyin or CREPE when available. |
+
+#### Scale Composition
+| Tool | Safety | What it does |
+|---|---|---|
+| `fl_write_raga_melody` | `write-safe` | Writes a generated scale or raga melody through the Piano Roll bridge. |
+| `fl_write_raga_chords` | `write-safe` | Writes scale-aware chords through the Piano Roll bridge. |
+| `fl_scale_list` | `read-only` | Lists supported scales, modes, ragas, and related scale families. |
+| `fl_scale_get` | `read-only` | Returns intervals and note mapping for a selected scale. |
+
+### Phase 2: Arrangement & Structure Tools
+
+#### Arrangement
 | Tool | Safety | What it does |
 |---|---|---|
 | `fl_arrange_new_pattern` | `write-safe` | Creates a new named pattern and selects it. |
@@ -241,31 +258,9 @@ registered outside the static annotation pattern.
 | `fl_arrange_clone_pattern` | `write-safe` | Clones a pattern, including notes where FL exposes that path. |
 | `fl_arrange_add_marker` | `write-safe` | Adds a section marker at a bar. |
 
-### Audio Analysis Tools
+### Phase 3 & 4: Diagnosis & Preparation Tools
 
-| Tool | Safety | What it does |
-|---|---|---|
-| `fl_analyze_audio` | `read-only` | Estimates tempo, key, and audio properties from a file. |
-| `fl_extract_melody` | `read-only` | Extracts a monophonic melody from an audio file using pyin or CREPE when available. |
-
-### Bulk Control Tools
-
-| Tool | Safety | What it does |
-|---|---|---|
-| `fl_solo_tracks` | `write-safe` | Solos a resolved group of mixer tracks as one reversible operation. |
-| `fl_mute_tracks` | `write-safe` | Mutes a resolved group of mixer tracks as one reversible operation. |
-| `fl_clear_mute_solo` | `write-safe` | Clears mixer mute and solo states in one grouped rollback unit. |
-
-### Chain Planning Tools
-
-| Tool | Safety | What it does |
-|---|---|---|
-| `fl_list_chains` | `read-only` | Lists available genre or purpose chain recipes. |
-| `fl_list_installed_plugins` | `read-only` | Reads installed FL plugin database entries from disk. |
-| `fl_setup_chain` | `read-only` | Plans a chain from available plugins; it does not load plugins. |
-
-### Channel And Step Sequencer Tools
-
+#### Channel & Audio Clips
 | Tool | Safety | What it does |
 |---|---|---|
 | `fl_channel` | `write-safe` | Consolidated Channel Rack domain tool. Actions include list, get, get_selected, get_steps, classify, select, set_color, set_mute, set_mixer_target, set_name, set_pan, set_solo, set_steps, and set_volume. |
@@ -275,36 +270,61 @@ registered outside the static annotation pattern.
 | `fl_plan_audio_clip_safe_defaults` | `read-only` | Plans safe defaults (volume normalization, free track routing) for Audio Clips. |
 | `fl_apply_audio_clip_safe_defaults` | `write-safe` | Applies safe volume limits and routing to Audio Clips with manual checklists for Stretch/Normalize. |
 
-### Color Tools
-
+#### Project Organizer & Color
 | Tool | Safety | What it does |
 |---|---|---|
+| `fl_analyze_project_organization` | `read-only` | Finds unnamed, uncolored, and ungrouped channels. |
+| `fl_plan_project_cleanup` | `read-only` | Plans naming and coloring fixes. |
+| `fl_apply_project_cleanup_step` | `write-safe` | Applies a batch of specific name and color fixes. |
+| `fl_apply_naming_standard` | `write-safe` | Batch applies a naming schema (e.g., psytrance) across channels and buses. |
+| `fl_apply_color_standard` | `write-safe` | Batch applies a color schema (e.g., psytrance) across channels and buses. |
 | `fl_set_track_color` | `write-safe` | Colors one or more mixer tracks by color name or hex value. |
 | `fl_set_channel_color` | `write-safe` | Colors one or more Channel Rack channels by color name or hex value. |
 
-### Scale Composition Tools
+### Phase 5: Signal Flow & Routing Tools
 
+#### Routing
 | Tool | Safety | What it does |
 |---|---|---|
-| `fl_write_raga_melody` | `write-safe` | Writes a generated scale or raga melody through the Piano Roll bridge. |
-| `fl_write_raga_chords` | `write-safe` | Writes scale-aware chords through the Piano Roll bridge. |
-| `fl_scale_list` | `read-only` | Lists supported scales, modes, ragas, and related scale families. |
-| `fl_scale_get` | `read-only` | Returns intervals and note mapping for a selected scale. |
+| `fl_get_routing_all` | `read-only` | Reads the full mixer routing matrix. |
+| `fl_get_channel_routing` | `read-only` | Reads channel-to-mixer routing. |
+| `fl_detect_cleanup_candidates` | `read-only` | Finds likely routing or organization cleanup candidates. |
+| `fl_review_routing` | `read-only` | Analyzes structural routing issues like unrouted channels or generators skipping groups. |
+| `fl_plan_routing_cleanup` | `read-only` | Proposes renaming and routing fixes for structural issues. |
+| `fl_apply_routing_cleanup` | `write-safe` | Executes batch routing fixes. |
+| `fl_apply_bus_layout` | `write-safe` | Routes sources to newly created grouped buses (e.g., in 10-track blocks). |
+| `fl_group_tracks` | `write-safe` | Routes selected tracks into a named bus as one grouped rollback unit. |
 
-### Effect Slot And Native EQ Tools
-
+#### Bulk Control
 | Tool | Safety | What it does |
 |---|---|---|
+| `fl_solo_tracks` | `write-safe` | Solos a resolved group of mixer tracks as one reversible operation. |
+| `fl_mute_tracks` | `write-safe` | Mutes a resolved group of mixer tracks as one reversible operation. |
+| `fl_clear_mute_solo` | `write-safe` | Clears mixer mute and solo states in one grouped rollback unit. |
+
+### Phase 6: Sound Design Tools
+
+#### Chain Planning & Presets
+| Tool | Safety | What it does |
+|---|---|---|
+| `fl_list_chains` | `read-only` | Lists available genre or purpose chain recipes. |
+| `fl_list_installed_plugins` | `read-only` | Reads installed FL plugin database entries from disk. |
+| `fl_setup_chain` | `read-only` | Plans a chain from available plugins; it does not load plugins. |
+| `fl_list_presets` | `read-only` | Lists presets found on disk. |
+| `fl_suggest_preset` | `read-only` | Suggests presets from the local library based on a description. |
+| `fl_plugin_get_preset_name` | `read-only` | Reads the current plugin preset name where FL exposes it. |
+| `fl_plugin_next_preset` | `read-only` | Returns manual guidance for moving to the next preset; it does not mutate FL. |
+| `fl_plugin_prev_preset` | `read-only` | Returns manual guidance for moving to the previous preset; it does not mutate FL. |
+
+#### Plugin & Effect Slots
+| Tool | Safety | What it does |
+|---|---|---|
+| `fl_plugin` | `write-safe` | Consolidated already-loaded plugin domain tool for list, list_params, get_param, and set_param. Plugin loading stays manual. |
 | `fl_effect` | `write-safe` | Consolidated effect-slot and native EQ domain tool. Actions include get_slot, list_slots, get_track_slots_enabled, set_slot_enabled, set_slot_mix, set_track_slots_enabled, get_eq, and set_eq_band. |
 
-### Export Tools
+### Phase 7: Mixing & Dynamics Tools
 
-| Tool | Safety | What it does |
-|---|---|---|
-| `fl_export_midi` | `external-write` | Writes a type-1 MIDI file to disk from an arrangement specification. |
-
-### Mix Review Tools
-
+#### Mix Review
 | Tool | Safety | What it does |
 |---|---|---|
 | `fl_review_mix` | `read-only` | Scans the mix and reports concrete issues with evidence and proposed fixes. |
@@ -316,8 +336,7 @@ registered outside the static annotation pattern.
 | `fl_gain_stage` | `read-only` | Proposes level trims for healthier gain staging. |
 | `fl_reference_match` | `read-only` | Compares level and balance against a reference audio file. |
 
-### Mixing Intent Tools
-
+#### Mixing Intents
 | Tool | Safety | What it does |
 |---|---|---|
 | `fl_apply_eq_intent` | `write-safe` | Applies a musical EQ intent to a target plugin or native EQ path. |
@@ -326,51 +345,7 @@ registered outside the static annotation pattern.
 | `fl_get_track_level` | `read-only` | Reads a mixer track's current level in dB. |
 | `fl_apply_compression_intent` | `write-safe` | Applies a calibrated compression intent, optionally level-aware. |
 
-### Domain, Batch, Project, And Safety Tools
-
-| Tool | Safety | What it does |
-|---|---|---|
-| `fl_transport` | `write-safe` | Consolidated transport domain tool. Actions include ping, get_tempo, set_tempo, get_play_state, play, stop, toggle_play, record, get_song_position, set_song_position, get_time_signature, and set_time_signature. Runtime controls are transient; tempo and time-signature writes use rollback. |
-| `fl_mixer` | `write-safe` | Consolidated mixer domain tool. Actions include list, get, get_selected, get_route, select, set_color, set_mute, set_name, set_pan, set_route, set_solo, set_stereo_separation, and set_volume. |
-| `fl_channel` | `write-safe` | Consolidated Channel Rack domain tool. Actions include list, get, get_selected, get_steps, classify, select, set_color, set_mute, set_mixer_target, set_name, set_pan, set_solo, set_steps, and set_volume. |
-| `fl_pattern` | `write-safe` | Consolidated pattern domain tool. Actions include list, get, get_length, get_selected, find_empty, select, rename, set_color, and set_length. |
-| `fl_playlist` | `write-safe` | Consolidated playlist-track domain tool. Actions include list, get, select, set_color, set_mute, set_name, and set_solo. Playlist clip editing is not supported. |
-| `fl_effect` | `write-safe` | Consolidated effect-slot and native EQ domain tool. |
-| `fl_plugin` | `write-safe` | Consolidated already-loaded plugin domain tool for list, list_params, get_param, and set_param. Plugin loading stays manual. |
-| `fl_piano_roll` | `write-safe` | Consolidated Piano Roll domain tool for undo-backed note writes, transforms, markers, and explicit readback-limit reports. |
-| `fl_batch` | `write-safe` | Runs strict-whitelisted registry read batches or homogeneous persistent-write batches through one named rollback unit. |
-| `fl_get_project_state` | `read-only` | Reads project-level state such as tempo, time signature, and counts. |
-| `fl_mixer_get_levels` | `read-only` | Reads mixer peak levels. |
-| `fl_take_snapshot` | `server-state` | Captures MCP safety-layer snapshot data for inspection. |
-| `fl_get_change_history` | `read-only` | Lists recent MCP changelog entries. |
-| `fl_get_change_log_summary` | `read-only` | Returns a markdown table summary of recent rollback units and IDs. |
-| `fl_export_change_log` | `external-write` | Exports the MCP changelog to a JSON file on disk. |
-| `fl_rollback_last_change` | `server-state` | Rolls back the latest MCP change. |
-| `fl_rollback_change` | `server-state` | Rolls back a specific change by change ID. |
-| `fl_set_dry_run` | `server-state` | Enables or disables dry-run mode for planned changes. |
-
-### Project Organizer Tools
-
-| Tool | Safety | What it does |
-|---|---|---|
-| `fl_analyze_project_organization` | `read-only` | Finds unnamed, uncolored, and ungrouped channels. |
-| `fl_plan_project_cleanup` | `read-only` | Plans naming and coloring fixes. |
-| `fl_apply_project_cleanup_step` | `write-safe` | Applies a batch of specific name and color fixes. |
-| `fl_apply_naming_standard` | `write-safe` | Batch applies a naming schema (e.g., psytrance) across channels and buses. |
-| `fl_apply_color_standard` | `write-safe` | Batch applies a color schema (e.g., psytrance) across channels and buses. |
-
-### Preset Tools
-
-| Tool | Safety | What it does |
-|---|---|---|
-| `fl_list_presets` | `read-only` | Lists presets found on disk. |
-| `fl_suggest_preset` | `read-only` | Suggests presets from the local library based on a description. |
-| `fl_plugin_get_preset_name` | `read-only` | Reads the current plugin preset name where FL exposes it. |
-| `fl_plugin_next_preset` | `read-only` | Returns manual guidance for moving to the next preset; it does not mutate FL. |
-| `fl_plugin_prev_preset` | `read-only` | Returns manual guidance for moving to the previous preset; it does not mutate FL. |
-
-### Knowledgebase Tools
-
+#### Knowledgebase
 | Tool | Safety | What it does |
 |---|---|---|
 | `kb_search` | `unannotated` | Searches the knowledgebase for topics. |
@@ -381,8 +356,9 @@ registered outside the static annotation pattern.
 | `kb_record_finding` | `unannotated` | Records a new finding in the knowledgebase. |
 | `kb_record_verified_finding` | `unannotated` | Records a verified finding. |
 
-### Project Health Tools
+### Phase 8: Export, Health & Safety Tools
 
+#### Project Health Checks
 | Tool | Safety | What it does |
 |---|---|---|
 | `fl_project_health_report` | `read-only` | Reports project organization and health issues. |
@@ -393,18 +369,29 @@ registered outside the static annotation pattern.
 | `fl_start_guided_cleanup` | `read-only` | Starts an LLM-orchestrated Guided Cleanup Mode session by returning a stateless session blueprint. |
 | `fl_get_guided_cleanup_context` | `read-only` | Reconstructs the current Guided Cleanup context from fresh diagnostics without relying on conversational history. |
 
-### Routing Tools
-
+#### Export
 | Tool | Safety | What it does |
 |---|---|---|
-| `fl_get_routing_all` | `read-only` | Reads the full mixer routing matrix. |
-| `fl_get_channel_routing` | `read-only` | Reads channel-to-mixer routing. |
-| `fl_detect_cleanup_candidates` | `read-only` | Finds likely routing or organization cleanup candidates. |
-| `fl_review_routing` | `read-only` | Analyzes structural routing issues like unrouted channels or generators skipping groups. |
-| `fl_plan_routing_cleanup` | `read-only` | Proposes renaming and routing fixes for structural issues. |
-| `fl_apply_routing_cleanup` | `write-safe` | Executes batch routing fixes. |
-| `fl_apply_bus_layout` | `write-safe` | Routes sources to newly created grouped buses (e.g., in 10-track blocks). |
-| `fl_group_tracks` | `write-safe` | Routes selected tracks into a named bus as one grouped rollback unit. |
+| `fl_export_midi` | `external-write` | Writes a type-1 MIDI file to disk from an arrangement specification. |
+
+#### Domain, Batch & Safety
+| Tool | Safety | What it does |
+|---|---|---|
+| `fl_transport` | `write-safe` | Consolidated transport domain tool. Actions include ping, get_tempo, set_tempo, get_play_state, play, stop, toggle_play, record, get_song_position, set_song_position, get_time_signature, and set_time_signature. Runtime controls are transient; tempo and time-signature writes use rollback. |
+| `fl_mixer` | `write-safe` | Consolidated mixer domain tool. Actions include list, get, get_selected, get_route, select, set_color, set_mute, set_name, set_pan, set_route, set_solo, set_stereo_separation, and set_volume. |
+| `fl_pattern` | `write-safe` | Consolidated pattern domain tool. Actions include list, get, get_length, get_selected, find_empty, select, rename, set_color, and set_length. |
+| `fl_playlist` | `write-safe` | Consolidated playlist-track domain tool. Actions include list, get, select, set_color, set_mute, set_name, and set_solo. Playlist clip editing is not supported. |
+| `fl_piano_roll` | `write-safe` | Consolidated Piano Roll domain tool for undo-backed note writes, transforms, markers, and explicit readback-limit reports. |
+| `fl_batch` | `write-safe` | Runs strict-whitelisted registry read batches or homogeneous persistent-write batches through one named rollback unit. |
+| `fl_get_project_state` | `read-only` | Reads project-level state such as tempo, time signature, and counts. |
+| `fl_mixer_get_levels` | `read-only` | Reads mixer peak levels. |
+| `fl_take_snapshot` | `server-state` | Captures MCP safety-layer snapshot data for inspection. |
+| `fl_get_change_history` | `read-only` | Lists recent MCP changelog entries. |
+| `fl_get_change_log_summary` | `read-only` | Returns a markdown table summary of recent rollback units and IDs. |
+| `fl_export_change_log` | `external-write` | Exports the MCP changelog to a JSON file on disk. |
+| `fl_rollback_last_change` | `server-state` | Rolls back the latest MCP change. |
+| `fl_rollback_change` | `server-state` | Rolls back a specific change by change ID. |
+| `fl_set_dry_run` | `server-state` | Enables or disables dry-run mode for planned changes.
 
 ## Boundaries To State Clearly To Users
 
