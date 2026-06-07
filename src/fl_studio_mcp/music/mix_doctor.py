@@ -570,22 +570,21 @@ def rule_ungrouped(tracks):
     for fam, members in fams.items():
         if len(members) < 2:
             continue
-        common = set.intersection(*[_dests(t) for t in members]) if members else set()
-        common_bus = {d for d in common if d not in (None, 0)}
-        if not common_bus:
+        unbused = [m for m in members if not {d for d in _dests(m) if d not in (None, 0)}]
+        if len(unbused) >= 2:
             out.append(
                 finding(
                     "ungrouped",
                     "low",
                     None,
-                    f"{len(members)} {fam} tracks not bused together: "
-                    f"{', '.join(m['name'] for m in members)}",
-                    f"{len(members)} {fam} tracks route straight out with no shared bus "
+                    f"{len(unbused)} {fam} tracks route straight out: "
+                    f"{', '.join(m['name'] for m in unbused)}",
+                    f"{len(unbused)} {fam} tracks route straight out with no bus "
                     "-- group them for shared processing.",
                     {
                         "intent": "fl_group_tracks",
-                        "args": {"tracks": [m["index"] for m in members]},
-                        "desc": f"group the {fam} tracks onto a bus",
+                        "args": {"tracks": [m["index"] for m in unbused]},
+                        "desc": f"group the unbused {fam} tracks onto a bus",
                     },
                     (
                         "send_effects_for_shared_space",
