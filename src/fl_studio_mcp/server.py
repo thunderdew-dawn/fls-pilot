@@ -213,7 +213,7 @@ def build_server() -> FastMCP:
     routing_tools.register(mcp)  # Routing/cleanup Slice 1: read-only
     bulk_tools.register(mcp)  # Bulk mute/solo: server-side group orchestration
     color_tools.register(mcp)  # Track/channel coloring: name/hex -> FL RGB, one rollback unit
-    project_doctor_tools.register(mcp)  # Project Doctor + Export Preflight
+    project_doctor_tools.register(mcp)  # Project health + export preflight
     project_organizer_tools.register(mcp)  # Phase 1: Project Organizer (naming, colors, structure)
     arrange_tools.register(mcp)  # Arrangement Slice 1: pattern create/clone + markers
     resource_defs.register(mcp)  # MCP resources: fl://status, fl://project, ...
@@ -222,7 +222,7 @@ def build_server() -> FastMCP:
     chains_tools.register(mcp)  # Genre chain setup: map recipes to existing plugins
     export_tools.register(mcp)  # MIDI export: arrangement spec -> type-1 .mid on disk
     presets_tools.register(mcp)  # Preset suggester: read preset names from disk
-    mix_doctor_tools.register(mcp)  # Mix Doctor: diagnose whole mix + gated apply-fixes
+    mix_doctor_tools.register(mcp)  # Mix Review: diagnose whole mix + gated adjustments
     patterns_playlist_tools.register(mcp)  # Phase 3: Patterns & Playlist pack
     knowledgebase_tools.register(mcp)  # KB Tools
     for name in sorted(_LEGACY_LOW_LEVEL_TOOLS):

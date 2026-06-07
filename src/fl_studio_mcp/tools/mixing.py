@@ -42,7 +42,8 @@ INTENTS = {
     "add_air": {"type": "high_shelf", "freq_hz": 12000, "max_db": +6.0, "width_pct": None},
     "remove_harshness": {"type": "peaking", "freq_hz": 3000, "max_db": -6.0, "width_pct": 30},
     "add_presence": {"type": "peaking", "freq_hz": 5000, "max_db": +5.0, "width_pct": None},
-    "high_pass": {"type": "high_pass", "freq_range": (40, 120), "max_db": None, "width_pct": None},
+    "high_pass": {"type": "high_pass", "freq_range": (40, 120), "max_db": None, "width_pct": 56.0, "order_norm": 0.0},
+    "low_pass": {"type": "low_pass", "freq_range": (18000, 5000), "max_db": None, "width_pct": 56.0, "order_norm": 0.0},
 }
 _DEFAULT_WIDTH_PCT = 50.0
 
@@ -188,7 +189,7 @@ def register(mcp: FastMCP) -> None:
             int, Field(ge=0, le=9, description="Effect slot of a Fruity Parametric EQ 2.")
         ],
         intent: Annotated[
-            Literal["remove_mud", "add_air", "remove_harshness", "add_presence", "high_pass"],
+            Literal["remove_mud", "add_air", "remove_harshness", "add_presence", "high_pass", "low_pass"],
             Field(description="Which EQ move to apply."),
         ],
         intensity: Annotated[
@@ -251,6 +252,10 @@ def register(mcp: FastMCP) -> None:
                 track, slot, eq2_band_param_index(free, "width"), width_to_norm(width_pct)
             ),
         ]
+        if "order_norm" in spec:
+            writes.append(
+                _param_write(track, slot, eq2_band_param_index(free, "order"), float(spec["order_norm"]))
+            )
         res = safety.safe_write_group(
             bridge,
             tool="apply_eq_intent",

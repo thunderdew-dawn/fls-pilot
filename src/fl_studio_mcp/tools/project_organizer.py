@@ -11,47 +11,41 @@ from typing import Annotated
 from fastmcp import FastMCP
 from pydantic import Field
 
-from .. import protocol, safety
+from .. import kb_policy, operations, protocol, safety
 from ..connection import fetch_all_pages, get_bridge
+from .color import parse_color
 from .routing import _bus_rename_entry
+
 
 def _looks_default_channel_name(name) -> bool:
     if not name:
         return True
     return str(name).split(" ")[0] in ("Channel", "Sampler", "Insert", "AudioClip")
 
-def _color_write_entry(channel: int, color_hex: str) -> dict:
-    return {
-        "snap_scope": f"channel:{channel}",
-        "command": protocol.CMD_CHANNEL_SET_COLOR,
-        "params": {"channel": channel, "color": color_hex},
-        "restore": lambda b, ci=channel: {
-            "command": protocol.CMD_CHANNEL_SET_COLOR,
-            "params": {"channel": ci, "color": b.get("color", "#525B64")}
-        }
-    }
 
-def _mixer_color_entry(track: int, color_hex: str) -> dict:
-    return {
-        "snap_scope": f"mixer_track:{track}",
-        "command": protocol.CMD_MIXER_SET_COLOR,
-        "params": {"track": track, "color": color_hex},
-        "restore": lambda b, ti=track: {
-            "command": protocol.CMD_MIXER_SET_COLOR,
-            "params": {"track": ti, "color": b.get("color", "#525B64")}
-        }
-    }
+def _color_params(spec: str) -> dict:
+    rgb = parse_color(spec)
+    if rgb is None:
+        raise ValueError(f"unknown color {spec!r}; pass a known color name or hex like '#33A1FF'")
+    r, g, b = rgb
+    return {"r": r, "g": g, "b": b}
+
+
+def _color_write_entry(channel: int, color_spec: str) -> dict:
+    params = {"channel": channel, **_color_params(color_spec)}
+    return operations.prepare_operation("channel", "set_color", params).safe_write_group_entry()
+
+
+def _mixer_color_entry(track: int, color_spec: str) -> dict:
+    params = {"track": track, **_color_params(color_spec)}
+    return operations.prepare_operation("mixer", "set_color", params).safe_write_group_entry()
+
 
 def _channel_rename_entry(channel: int, name: str) -> dict:
-    return {
-        "snap_scope": f"channel:{channel}",
-        "command": protocol.CMD_CHANNEL_SET_NAME,
-        "params": {"channel": channel, "name": name},
-        "restore": lambda b, ci=channel: {
-            "command": protocol.CMD_CHANNEL_SET_NAME,
-            "params": {"channel": ci, "name": b.get("name", f"Channel {ci}")}
-        }
-    }
+    return operations.prepare_operation(
+        "channel", "set_name", {"channel": channel, "name": name}
+    ).safe_write_group_entry()
+
 
 def register(mcp: FastMCP) -> None:
     _RO = {
@@ -95,7 +89,19 @@ def register(mcp: FastMCP) -> None:
         return {
             "unnamed_channels": unnamed,
             "ungrouped_channels": ungrouped,
-            "note": "Use plan_project_cleanup to generate an action plan."
+            "note": "Use plan_project_cleanup to generate an action plan.",
+            "policy_notes": [
+                "Preserve linked Channel, Playlist, and Mixer naming/coloring where it is already evident.",
+                "Do not infer Channel, Playlist Track, and Mixer Track links from numeric index alone.",
+                "Only apply cleanup through rollback-safe wrappers.",
+            ],
+            "kb_policy_refs": kb_policy.rule_refs(
+                [
+                    "preserve_existing_structure_first",
+                    "instrument_audio_track_workflow",
+                    "channel_rack_workflow_requires_routing_inference",
+                ]
+            ),
         }
 
     @mcp.tool(annotations={"title": "Plan Project Cleanup", **_RO})
@@ -110,7 +116,19 @@ def register(mcp: FastMCP) -> None:
                 "fl_apply_naming_standard",
                 "fl_apply_color_standard",
                 "fl_apply_project_cleanup_step"
-            ]
+            ],
+            "policy": [
+                "Plan from current project inventory before applying cleanup.",
+                "Use one named rollback unit for approved naming/color groups.",
+                "Do not move playlist clips, delete clips/patterns, or load plugins.",
+            ],
+            "kb_policy_refs": kb_policy.rule_refs(
+                [
+                    "preserve_existing_structure_first",
+                    "instrument_audio_track_workflow",
+                    "routing_ui_guidance_vs_mcp_write",
+                ]
+            ),
         }
 
     @mcp.tool(annotations={"title": "Apply Project Cleanup Step", **_WR})
@@ -126,29 +144,40 @@ def register(mcp: FastMCP) -> None:
         writes = []
         
         if renames:
-            for r in renames:
-                if r["type"] == "channel":
-                    writes.append(_channel_rename_entry(r["index"], r["name"]))
-                elif r["type"] == "mixer":
-                    writes.append(_bus_rename_entry(r["index"], r["name"]))
+            try:
+                for r in renames:
+                    if r["type"] == "channel":
+                        writes.append(_channel_rename_entry(r["index"], r["name"]))
+                    elif r["type"] == "mixer":
+                        writes.append(_bus_rename_entry(r["index"], r["name"]))
+            except (KeyError, ValueError, operations.OperationValidationError) as e:
+                return {"ok": False, "error": str(e)}
                     
         if colors:
-            for c in colors:
-                if c["type"] == "channel":
-                    writes.append(_color_write_entry(c["index"], c["hex"]))
-                elif c["type"] == "mixer":
-                    writes.append(_mixer_color_entry(c["index"], c["hex"]))
+            try:
+                for c in colors:
+                    if c["type"] == "channel":
+                        writes.append(_color_write_entry(c["index"], c["hex"]))
+                    elif c["type"] == "mixer":
+                        writes.append(_mixer_color_entry(c["index"], c["hex"]))
+            except (KeyError, ValueError, operations.OperationValidationError) as e:
+                return {"ok": False, "error": str(e)}
                     
         if not writes:
             return {"status": "No valid writes specified."}
             
-        return safety.safe_write_group(
+        res = safety.safe_write_group(
             bridge,
             tool="apply_project_cleanup",
             scope="project_organizer",
             writes=writes,
             rollback_unit="project_cleanup_step"
         )
+        if isinstance(res, dict):
+            res["kb_policy_refs"] = kb_policy.rule_refs(
+                ["preserve_existing_structure_first", "instrument_audio_track_workflow"]
+            )
+        return res
 
     @mcp.tool(annotations={"title": "Apply Naming Standard", **_WR})
     def fl_apply_naming_standard(
@@ -161,22 +190,30 @@ def register(mcp: FastMCP) -> None:
         """
         bridge = get_bridge()
         writes = []
-        for r in rules:
-            if r["type"] == "channel":
-                writes.append(_channel_rename_entry(r["index"], r["name"]))
-            elif r["type"] == "mixer":
-                writes.append(_bus_rename_entry(r["index"], r["name"]))
+        try:
+            for r in rules:
+                if r["type"] == "channel":
+                    writes.append(_channel_rename_entry(r["index"], r["name"]))
+                elif r["type"] == "mixer":
+                    writes.append(_bus_rename_entry(r["index"], r["name"]))
+        except (KeyError, ValueError, operations.OperationValidationError) as e:
+            return {"ok": False, "error": str(e)}
                 
         if not writes:
             return {"status": "No rules provided."}
             
-        return safety.safe_write_group(
+        res = safety.safe_write_group(
             bridge,
             tool="apply_naming_standard",
             scope="project_organizer",
             writes=writes,
             rollback_unit=f"naming_standard_{style}"
         )
+        if isinstance(res, dict):
+            res["kb_policy_refs"] = kb_policy.rule_refs(
+                ["preserve_existing_structure_first", "instrument_audio_track_workflow"]
+            )
+        return res
 
     @mcp.tool(annotations={"title": "Apply Color Standard", **_WR})
     def fl_apply_color_standard(
@@ -189,19 +226,27 @@ def register(mcp: FastMCP) -> None:
         """
         bridge = get_bridge()
         writes = []
-        for r in rules:
-            if r["type"] == "channel":
-                writes.append(_color_write_entry(r["index"], r["hex"]))
-            elif r["type"] == "mixer":
-                writes.append(_mixer_color_entry(r["index"], r["hex"]))
+        try:
+            for r in rules:
+                if r["type"] == "channel":
+                    writes.append(_color_write_entry(r["index"], r["hex"]))
+                elif r["type"] == "mixer":
+                    writes.append(_mixer_color_entry(r["index"], r["hex"]))
+        except (KeyError, ValueError, operations.OperationValidationError) as e:
+            return {"ok": False, "error": str(e)}
                 
         if not writes:
             return {"status": "No rules provided."}
             
-        return safety.safe_write_group(
+        res = safety.safe_write_group(
             bridge,
             tool="apply_color_standard",
             scope="project_organizer",
             writes=writes,
             rollback_unit=f"color_standard_{style}"
         )
+        if isinstance(res, dict):
+            res["kb_policy_refs"] = kb_policy.rule_refs(
+                ["preserve_existing_structure_first", "instrument_audio_track_workflow"]
+            )
+        return res

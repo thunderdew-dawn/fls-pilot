@@ -23,21 +23,23 @@ def _get_calibration_mapping(domain: str, value_key: str, value: float) -> float
                         return m.get("normalized")
                 
                 # Check if interpolation is allowed
-                if "linear" in str(entry.get("interpolation", "")).lower() or domain in ["eq_gain", "eq_frequency"]:
-                    # For eq_gain, it's perfectly linear: norm = (db + 18) / 36
-                    if domain == "eq_gain":
-                        return (value + 18.0) / 36.0
-                    
-                    # For frequency, interpolate between the two closest points
-                    for i in range(len(mappings) - 1):
-                        p1 = mappings[i]
-                        p2 = mappings[i+1]
-                        v1, n1 = p1.get(value_key, 0.0), p1.get("normalized", 0.0)
-                        v2, n2 = p2.get(value_key, 0.0), p2.get("normalized", 0.0)
-                        if v1 <= value <= v2:
-                            if v2 == v1: return n1
-                            ratio = (value - v1) / (v2 - v1)
-                            return n1 + ratio * (n2 - n1)
+                if "linear" in str(entry.get("interpolation", "")).lower():
+                    v_min = mappings[0].get(value_key, 0.0)
+                    v_max = mappings[-1].get(value_key, 0.0)
+                    if v_min <= value <= v_max:
+                        if domain == "eq_gain":
+                            return (value + 18.0) / 36.0
+                        
+                        # General linear interpolation
+                        for i in range(len(mappings) - 1):
+                            p1 = mappings[i]
+                            p2 = mappings[i+1]
+                            v1, n1 = p1.get(value_key, 0.0), p1.get("normalized", 0.0)
+                            v2, n2 = p2.get(value_key, 0.0), p2.get("normalized", 0.0)
+                            if v1 <= value <= v2:
+                                if v2 == v1: return n1
+                                ratio = (value - v1) / (v2 - v1)
+                                return n1 + ratio * (n2 - n1)
                             
     except Exception as e:
         raise ValueError(f"Error parsing calibration data: {e}")

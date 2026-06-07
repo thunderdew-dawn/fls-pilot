@@ -304,7 +304,7 @@ def _h_ping(params):
     return {
         "fl_version": _fl_version,
         "protocol_version": PROTOCOL_VERSION,
-        "build": "channels-v38",  # reload marker -- bump to verify reloads take
+        "build": "channels-v39",  # reload marker -- bump to verify reloads take
         "ts": time.time(),
     }
 
@@ -490,12 +490,19 @@ def _mixer_track_dict(i):
 
 def _mixer_list_entry(i):
     name, cut = _truncate_name(mixer.getTrackName(i))
+    sep = 0.0
+    try:
+        if hasattr(mixer, "getTrackStereoSep"):
+            sep = round(float(mixer.getTrackStereoSep(i)), 4)
+    except Exception:
+        pass
     e = {
         "i": i,
         "name": name,
         "pan": round(mixer.getTrackPan(i), 4),
         "mute": bool(mixer.isTrackMuted(i)),
         "solo": bool(mixer.isTrackSolo(i)),
+        "stereo_sep": sep,
         **_mixer_vol_out(i, mixer.getTrackVolume(i)),
     }
     if cut:

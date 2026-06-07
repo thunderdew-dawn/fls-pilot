@@ -18,7 +18,7 @@ from typing import Annotated
 from fastmcp import FastMCP
 from pydantic import Field
 
-from .. import operations, protocol, safety
+from .. import kb_policy, operations, protocol, safety
 from ..connection import fetch_all_pages, get_bridge
 from .targets import mixer_track_error
 
@@ -252,10 +252,10 @@ def register(mcp: FastMCP) -> None:
             return res
         return {"ok": True, "sources": srcs, "bus": bus, "name": name, "applied": res.get("after")}
 
-    # --- Phase 1: Routing Doctor 2.0 ---
+# --- Phase 1: Routing Review 2.0 ---
 
-    @mcp.tool(annotations={"title": "Analyze Routing (Routing Doctor)", **_RO})
-    def fl_analyze_routing() -> dict:
+    @mcp.tool(annotations={"title": "Review routing", **_RO})
+    def fl_review_routing() -> dict:
         """Analyze project routing to find structural issues like generators routed to Master,
         unrouted channels, or missing bus structures.
         
@@ -294,11 +294,23 @@ def register(mcp: FastMCP) -> None:
         return {
             "unrouted_channels": unrouted,
             "generators_direct_to_master": direct_to_master,
-            "note": "Use this data to plan bus structures or correct routing."
+            "note": "Use this data to plan bus structures or correct routing.",
+            "policy_notes": [
+                "Preserve recognizable existing routing structure before proposing cleanup.",
+                "Infer Channel Rack to Mixer relationships from channel target tracks, not playlist indices.",
+                "Treat plugin insertion, external inputs, and UI drag-and-drop routing as manual guidance.",
+            ],
+            "kb_policy_refs": kb_policy.rule_refs(
+                [
+                    "preserve_existing_structure_first",
+                    "channel_rack_workflow_requires_routing_inference",
+                    "routing_ui_guidance_vs_mcp_write",
+                ]
+            ),
         }
 
-    @mcp.tool(annotations={"title": "Plan Routing Fix", **_RO})
-    def fl_plan_routing_fix(
+    @mcp.tool(annotations={"title": "Plan routing cleanup", **_RO})
+    def fl_plan_routing_cleanup(
         issues: Annotated[list[str], Field(description="List of issues identified to fix")],
         proposed_buses: Annotated[list[dict], Field(description="Buses to create (track, name, sources)")]
     ) -> dict:
@@ -307,19 +319,35 @@ def register(mcp: FastMCP) -> None:
         Safety: Read-Only (Dry-run).
         """
         return {
-            "status": "Plan created. Please review and apply using fl_apply_routing_batch.",
+            "status": "Plan created. Please review and apply using fl_apply_routing_cleanup.",
             "issues": issues,
             "proposed_buses": proposed_buses,
             "rules": [
-                "Keep buses right next to the groups they sum.",
-                "Place buses PREFERABLY BEFORE the group.",
-                "Organize large main groups in 10-track blocks.",
-                "Use tracks 100+ ONLY for utility, print, reference, or tech channels."
-            ]
+                "Preserve existing structure when it is recognizable.",
+                "Do not infer Playlist Track N maps to Mixer Track N.",
+                "Prefer bus placement before the group when it fits the current project.",
+                "Use one named rollback unit for approved grouped routing writes.",
+                "Keep plugin loading, external I/O, and broad UI routing manual.",
+            ],
+            "supported_bus_placement_policy": [
+                "before_group",
+                "after_group",
+                "central_front",
+                "central_end",
+                "preserve_existing",
+            ],
+            "kb_policy_refs": kb_policy.rule_refs(
+                [
+                    "preserve_existing_structure_first",
+                    "channel_rack_workflow_requires_routing_inference",
+                    "routing_ui_guidance_vs_mcp_write",
+                    "send_effects_for_shared_space",
+                ]
+            ),
         }
 
-    @mcp.tool(annotations={"title": "Apply Routing Batch", **_WR})
-    def fl_apply_routing_batch(
+    @mcp.tool(annotations={"title": "Apply routing cleanup", **_WR})
+    def fl_apply_routing_cleanup(
         routes: Annotated[list[dict], Field(description="List of route writes: {src, dst, enabled}")],
         renames: Annotated[list[dict], Field(description="List of bus renames: {track, name}")] = None
     ) -> dict:
@@ -340,25 +368,30 @@ def register(mcp: FastMCP) -> None:
         if not writes:
             return {"status": "No writes specified."}
             
-        return safety.safe_write_group(
+        res = safety.safe_write_group(
             bridge,
-            tool="apply_routing_batch",
-            scope="routing_doctor",
+            tool="apply_routing_cleanup",
+            scope="routing_review",
             writes=writes,
-            rollback_unit="routing_doctor_batch"
+            rollback_unit="routing_cleanup_batch"
         )
+        if isinstance(res, dict):
+            res["kb_policy_refs"] = kb_policy.rule_refs(
+                ["routing_ui_guidance_vs_mcp_write", "send_effects_for_shared_space"]
+            )
+        return res
 
-    @mcp.tool(annotations={"title": "Create Bus Layout", **_WR})
-    def fl_create_bus_layout(
+    @mcp.tool(annotations={"title": "Apply bus layout", **_WR})
+    def fl_apply_bus_layout(
         buses: Annotated[list[dict], Field(description="List of bus configs: {bus_track: int, name: str, source_tracks: list[int]}")]
     ) -> dict:
         """Create multiple group buses at once. Ensures each source track sends exclusively to its assigned bus,
         and the bus routes to the Master.
         
-        Remember: 
-        - Keep buses next to groups, preferably BEFORE them.
-        - Organize in 10-track blocks.
-        - Tracks 100+ are for utility/reference only.
+        Policy:
+        - Preserve existing structure where recognizable.
+        - Prefer buses before their group when that fits the project.
+        - Keep UI-only routing and plugin insertion manual.
         
         Safety: Write-Safe with Rollback.
         """
@@ -381,10 +414,19 @@ def register(mcp: FastMCP) -> None:
         if not writes:
             return {"status": "No bus writes specified."}
             
-        return safety.safe_write_group(
+        res = safety.safe_write_group(
             bridge,
             tool="create_bus_layout",
             scope="bus_layout",
             writes=writes,
             rollback_unit="bus_layout_creation"
         )
+        if isinstance(res, dict):
+            res["kb_policy_refs"] = kb_policy.rule_refs(
+                [
+                    "preserve_existing_structure_first",
+                    "routing_ui_guidance_vs_mcp_write",
+                    "send_effects_for_shared_space",
+                ]
+            )
+        return res
