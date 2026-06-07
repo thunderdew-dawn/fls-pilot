@@ -20,6 +20,7 @@ from pydantic import Field
 from .. import kb_policy, operations, protocol, safety
 from ..connection import fetch_all_pages, get_bridge
 from ..music import mix_doctor as md
+from ..project_templates import compact_context
 
 
 def _compact_kb_fields(row: dict) -> dict:
@@ -89,6 +90,7 @@ def register(mcp: FastMCP) -> None:
         return {
             "track_count": snap["track_count"],
             "levels_valid": snap.get("levels_valid"),
+            "template_context": compact_context(diag.get("template_context") or {}),
             "summary": plan["summary"],
             "findings": findings,
             "proposals": proposals,
@@ -114,6 +116,7 @@ def register(mcp: FastMCP) -> None:
         return {
             "track_count": report["track_count"],
             "levels_valid": report["levels_valid"],
+            "template_context": compact_context(report.get("template_context") or {}),
             "summary": report["summary"],
             "low_end_tracks": report["low_end_tracks"],
             "findings": findings,

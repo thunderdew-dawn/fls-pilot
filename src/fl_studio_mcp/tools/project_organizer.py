@@ -12,6 +12,7 @@ from fastmcp import FastMCP
 from pydantic import Field
 
 from .. import kb_policy, operations, protocol, safety
+from .. import project_templates as templates
 from ..connection import fetch_all_pages, get_bridge
 from .color import parse_color
 from .routing import _bus_rename_entry
@@ -70,6 +71,12 @@ def register(mcp: FastMCP) -> None:
         """
         bridge = get_bridge()
         chans = fetch_all_pages(bridge, protocol.CMD_CHANNEL_ROUTING_SUMMARY, "channels")
+        routing = fetch_all_pages(bridge, protocol.CMD_MIXER_GET_ROUTING_ALL, "routing")
+        template_context = templates.classify_topology(
+            routing.get("routing", []),
+            routing.get("routing", []),
+            chans.get("channels", []),
+        )
 
         unnamed = []
         ungrouped = []
@@ -83,12 +90,17 @@ def register(mcp: FastMCP) -> None:
             # But the agent can use this as a structural check.
 
             tgt = c.get("target_mixer_track")
-            if not isinstance(tgt, int) or tgt == 0:
+            if (
+                not isinstance(tgt, int)
+                or tgt == 0
+                and not templates.is_template_bus(template_context, tgt)
+            ):
                 ungrouped.append(c)
 
         return {
             "unnamed_channels": unnamed,
             "ungrouped_channels": ungrouped,
+            "template_context": templates.compact_context(template_context),
             "note": "Use plan_project_cleanup to generate an action plan.",
             "policy_notes": [
                 "Preserve linked Channel, Playlist, and Mixer naming/coloring where it is already evident.",

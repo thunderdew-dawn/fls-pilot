@@ -19,6 +19,7 @@ from fastmcp import FastMCP
 from pydantic import Field
 
 from .. import kb_policy, operations, protocol, safety
+from .. import project_templates as templates
 from ..connection import fetch_all_pages, get_bridge
 from .targets import mixer_track_error
 
@@ -64,6 +65,9 @@ def detect_cleanup(bridge, *, max_plugin_checks: int = 60) -> dict:
     chans = fetch_all_pages(bridge, protocol.CMD_CHANNEL_ROUTING_SUMMARY, "channels")
     routing = fetch_all_pages(bridge, protocol.CMD_MIXER_GET_ROUTING_ALL, "routing")
     tracks = routing.get("routing", [])
+    template_context = templates.classify_topology(
+        tracks, tracks, chans.get("channels", [])
+    )
 
     targeted = set()
     for c in chans.get("channels", []):
@@ -90,6 +94,8 @@ def detect_cleanup(bridge, *, max_plugin_checks: int = 60) -> dict:
         i = r.get("i")
         if i == 0 or i in targeted:  # Master, or a channel feeds it
             continue
+        if templates.is_reserved_placeholder(template_context, i):
+            continue
         if not _is_default_mixer_name(i, r.get("name")):
             continue  # named -> intentional
         if incoming.get(i):  # a send feeds it -> a bus
@@ -113,12 +119,15 @@ def detect_cleanup(bridge, *, max_plugin_checks: int = 60) -> dict:
             "default name",
             "no sends routed in",
             "no plugins",
+            "not a recognized template-reserved placeholder",
         ],
         "unused_mixer_tracks": unused,
         "unused_mixer_track_truncated": truncated,
+        "template_context": templates.compact_context(template_context),
         "note": "READ-ONLY. Judgement done server-side from cheap controller "
         "reads. Unused tracks reliable; channel emptiness is a name "
-        "heuristic. Verify before any delete (Slice 2).",
+        "heuristic. Recognized template reservations are preserved. Verify "
+        "before any delete (Slice 2).",
     }
 
 
@@ -265,6 +274,9 @@ def register(mcp: FastMCP) -> None:
         chans = fetch_all_pages(bridge, protocol.CMD_CHANNEL_ROUTING_SUMMARY, "channels")
         routing = fetch_all_pages(bridge, protocol.CMD_MIXER_GET_ROUTING_ALL, "routing")
         tracks = routing.get("routing", [])
+        template_context = templates.classify_topology(
+            tracks, tracks, chans.get("channels", [])
+        )
 
         unrouted = []
         direct_to_master = []
@@ -285,7 +297,11 @@ def register(mcp: FastMCP) -> None:
                         {"channel": c.get("channel"), "name": c.get("name"), "type": ctype}
                     )
             else:
-                if track_to_master.get(tgt) and ctype == "genplug":
+                if (
+                    track_to_master.get(tgt)
+                    and ctype == "genplug"
+                    and not templates.is_template_bus(template_context, tgt)
+                ):
                     direct_to_master.append(
                         {
                             "channel": c.get("channel"),
@@ -301,6 +317,7 @@ def register(mcp: FastMCP) -> None:
         return {
             "unrouted_channels": unrouted,
             "generators_direct_to_master": direct_to_master,
+            "template_context": templates.compact_context(template_context),
             "note": "Use this data to plan bus structures or correct routing.",
             "policy_notes": [
                 "Preserve recognizable existing routing structure before proposing cleanup.",

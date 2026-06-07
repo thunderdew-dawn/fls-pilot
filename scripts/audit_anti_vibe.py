@@ -29,7 +29,8 @@ errors = []
 
 def report_error(filepath, line, violation_type, suggestion):
     errors.append(
-        f"{RED}[VIBE CODING] {filepath}:{line}{RESET} - {YELLOW}{violation_type}{RESET} -> {suggestion}"
+        f"{RED}[VIBE CODING] {filepath}:{line}{RESET} - "
+        f"{YELLOW}{violation_type}{RESET} -> {suggestion}"
     )
 
 
@@ -65,10 +66,14 @@ def check_kb_schema():
         return
 
     for json_file in KNOWLEDGEBASE_DIR.rglob("*.json"):
+        rel_path = json_file.relative_to(ROOT_DIR)
+        if json_file.name.endswith(".schema.json"):
+            continue
+        if rel_path.parts[:3] == ("knowledgebase", "templates", "profiles"):
+            continue
         if "calibration" in json_file.name or "mapping" in json_file.name:
             continue  # Calibration matrices and mappings are data, not reports
 
-        rel_path = json_file.relative_to(ROOT_DIR)
         try:
             with open(json_file, encoding="utf-8") as f:
                 data = json.load(f)
@@ -91,7 +96,10 @@ def check_kb_schema():
                         rel_path,
                         1,
                         "Missing KB Fields",
-                        f"Entry {i}: Add missing keys: {', '.join(missing)} to comply with AGENTS.md",
+                        "Entry {i}: Add missing keys: {missing} to comply with AGENTS.md".format(
+                            i=i,
+                            missing=", ".join(missing),
+                        ),
                     )
 
                 conf = entry.get("confidence_level")
@@ -100,7 +108,11 @@ def check_kb_schema():
                         rel_path,
                         1,
                         "Invalid Confidence Level",
-                        f"Entry {i}: '{conf}' is not allowed. Must be one of: {', '.join(ALLOWED_CONFIDENCE_LEVELS)}",
+                        "Entry {i}: '{conf}' is not allowed. Must be one of: {levels}".format(
+                            i=i,
+                            conf=conf,
+                            levels=", ".join(ALLOWED_CONFIDENCE_LEVELS),
+                        ),
                     )
 
         except json.JSONDecodeError as e:
@@ -123,7 +135,8 @@ class SandboxVisitor(ast.NodeVisitor):
                     self.rel_path,
                     node.lineno,
                     "Sandbox Violation (Import)",
-                    f"Remove 'import {alias.name}'. FL Studio sandbox blocks OS/filesystem calls. Do judgment on the Python server instead.",
+                    f"Remove 'import {alias.name}'. FL Studio sandbox blocks "
+                    "OS/filesystem calls. Do judgment on the Python server instead.",
                 )
         self.generic_visit(node)
 
@@ -135,7 +148,8 @@ class SandboxVisitor(ast.NodeVisitor):
                     self.rel_path,
                     node.lineno,
                     "Sandbox Violation (ImportFrom)",
-                    f"Remove 'from {node.module} import ...'. FL Studio sandbox blocks OS/filesystem calls.",
+                    f"Remove 'from {node.module} import ...'. FL Studio sandbox blocks "
+                    "OS/filesystem calls.",
                 )
         self.generic_visit(node)
 
@@ -145,7 +159,8 @@ class SandboxVisitor(ast.NodeVisitor):
                 self.rel_path,
                 node.lineno,
                 "Sandbox Violation (open() call)",
-                "Remove 'open()'. The FL controller cannot write files. Route data over SysEx and write it on the server.",
+                "Remove 'open()'. The FL controller cannot write files. "
+                "Route data over SysEx and write it on the server.",
             )
         self.generic_visit(node)
 
@@ -169,7 +184,9 @@ def check_controller_sandbox():
 
 # --- 3. Vibe Keywords ---
 VIBE_REGEX = re.compile(
-    r"(TODO:\s*fix later|TODO\s*maybe|FIXME\s*later|HACK|quick hack|dirty fix|placeholder implementation|stub implementation|untested|probably works|guessing|print\(['\"]here\d*['\"]\)|print\(['\"]wtf['\"]\))",
+    r"(TODO:\s*fix later|TODO\s*maybe|FIXME\s*later|HACK|quick hack|dirty fix|"
+    r"placeholder implementation|stub implementation|untested|probably works|guessing|"
+    r"print\(['\"]here\d*['\"]\)|print\(['\"]wtf['\"]\))",
     re.IGNORECASE,
 )
 
@@ -194,7 +211,9 @@ def check_vibe_keywords():
                             rel_path,
                             i,
                             f"Vibe Keyword Detected ('{match.group(1)}')",
-                            "Remove lazy/unverified patterns. Write a proper implementation, file a strict TODO with a real issue/roadmap reference, or remove lazy print debugging.",
+                            "Remove lazy/unverified patterns. Write a proper implementation, "
+                            "file a strict TODO with a real issue/roadmap reference, or "
+                            "remove lazy print debugging.",
                         )
 
 

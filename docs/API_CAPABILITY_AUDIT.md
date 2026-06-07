@@ -292,6 +292,21 @@ It does not claim true phase correlation, mono-sum cancellation, or spectral
 sub-band width, and it does not add stereo-separation, mid-side EQ, plugin
 loading, mastering, save, or render writes.
 
+Electro template topology awareness was added on 2026-06-07 without new FL API
+claims or write paths. The classifier consumes existing mixer, routing, and
+channel readbacks to recognize the live-measured `Electro` stem/M/S setup and
+marks premaster, stem bus, sidechain-control, source, and reserved-placeholder
+tracks. Product workflows use this metadata to suppress false cleanup,
+missing-high-pass, ungrouped-routing, and low-end stereo findings for template
+structure while preserving normal diagnostics outside matched templates.
+
+Template profile ingest tooling was added on 2026-06-07 without new FL API
+claims or write paths. `scripts/normalize_template_dump.py` reads previously
+captured read-only dump JSON and writes compact Knowledgebase profiles under
+`knowledgebase/templates/profiles/`; `scripts/validate_template_profiles.py`
+validates those profiles against the schema and cross-checks structural
+consistency. These scripts do not contact the bridge or mutate FL Studio state.
+
 ## API-Backed Feature Packs
 
 ### Step Sequencer

@@ -4,6 +4,31 @@ This file stores historical verification evidence, including dated live/offline 
 
 ## Current verification checkpoints
 
+- 2026-06-07: Template profile ingest offline validation.
+  - Verified path: Added `knowledgebase/templates/template_profile.schema.json`,
+    generated `knowledgebase/templates/profiles/electro.json` from the
+    read-only Electro dump, and ran
+    `scripts/validate_template_profiles.py --profile knowledgebase/templates/profiles/electro.json`.
+    Added focused regression coverage in `tests/test_template_profile_tools.py`.
+  - Result: The compact Electro profile validates against the schema and
+    preserves placeholder ranges, sidechain-control routes, plugin signatures,
+    channel routes, and tool-policy flags without reading or writing live FL
+    Studio state.
+
+- 2026-06-07: Electro template topology live read and workflow regression.
+  - Verified path: Ran read-only live dump
+    `scratch/scripts/read_electro_template_live.py` against the open `Electro`
+    template over TCP on FL Studio Producer Edition v25.2.5 [build 5055],
+    controller marker `channels-v38`. Added KB entries under
+    `knowledgebase/templates/` and `knowledgebase/known_pitfalls/`. Ran focused
+    offline tests and read-only live regressions for Mix Doctor and cleanup
+    detection.
+  - Result: The classifier recognized the `Electro` M/S premaster, stem buses,
+    sidechain control bus, source tracks, and reserved placeholder bank.
+    Stopped-template Mix Doctor output changed from 111 low findings to 0.
+    Cleanup detection changed from 95 placeholder false positives to only
+    `Insert 126`. No FL Studio project writes were performed.
+
 - 2026-06-07: Low-End/Stereo Safety Assistant live verification.
   - Verified path: Added read-only `fl_review_low_end_stereo`, extended
     `mixer_list_tracks` readback with `stereo_sep`, and bumped the controller

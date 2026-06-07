@@ -275,6 +275,21 @@ Current baseline:
   layering, and Master headroom with compact KB policy references. Controller
   build marker `channels-v39` adds `stereo_sep` to `mixer_list_tracks` for
   efficient readback. Live FL verification is complete as of 2026-06-06, successfully reviewing stereo separation and low-end metadata across a loaded project.
+- Electro template topology awareness is complete as of 2026-06-07. A new
+  read-only classifier recognizes the live-measured `Electro` stem/M/S mixer
+  setup and annotates premaster, stem bus, sidechain-control, source, and
+  reserved-placeholder tracks. Mix Review, Low-End/Stereo Review, Routing
+  Review/Cleanup, Project Health/Preflight, and Project Organizer now preserve
+  this topology before generating cleanup or improvement findings. Live
+  read-only verification on FL Studio Producer Edition v25.2.5 [build 5055]
+  with controller marker `channels-v38` reduced the stopped-template Mix
+  Doctor report from 111 low findings to 0 and cleanup candidates from 95
+  placeholder false positives to only `Insert 126`.
+- Template profile ingest foundation is complete as of 2026-06-07. A compact
+  JSON Schema, reference `Electro` profile, offline normalizer, validator, and
+  focused tests now support token-efficient intake for the 12 remaining
+  standard templates without feeding raw live dumps into implementation
+  context. This adds no FL write path and no new controller/API claim.
 - Agent orientation resource is complete as of 2026-06-07. `fl://agent-briefing`
   provides a compact, read-only startup entrypoint with bridge/status summary,
   current domain/workflow tool guidance, Knowledgebase-first behavior, safety

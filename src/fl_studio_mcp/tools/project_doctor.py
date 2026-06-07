@@ -8,6 +8,7 @@ from __future__ import annotations
 from fastmcp import FastMCP
 
 from .. import kb_policy, protocol
+from .. import project_templates as templates
 from ..connection import fetch_all_pages, get_bridge
 from ..music import mix_doctor as md
 
@@ -53,6 +54,15 @@ def register(mcp: FastMCP) -> None:
         )
         mixer_tracks = fetch_all_pages(bridge, protocol.CMD_MIXER_LIST_TRACKS, "tracks").get(
             "tracks", []
+        )
+        routing = fetch_all_pages(bridge, protocol.CMD_MIXER_GET_ROUTING_ALL, "routing").get(
+            "routing", []
+        )
+        channel_routing = fetch_all_pages(
+            bridge, protocol.CMD_CHANNEL_ROUTING_SUMMARY, "channels"
+        ).get("channels", [])
+        template_context = templates.classify_topology(
+            mixer_tracks, routing, channel_routing
         )
 
         unassigned_channels = []
@@ -127,6 +137,7 @@ def register(mcp: FastMCP) -> None:
                 "mixer_tracks": len(mixer_tracks),
                 "findings": len(findings),
             },
+            "template_context": templates.compact_context(template_context),
             "findings": findings,
             "details": {
                 "unassigned_channels": unassigned_channels,
@@ -297,6 +308,10 @@ def register(mcp: FastMCP) -> None:
         mixer_tracks = fetch_all_pages(bridge, protocol.CMD_MIXER_LIST_TRACKS, "tracks").get(
             "tracks", []
         )
+        routing = fetch_all_pages(bridge, protocol.CMD_MIXER_GET_ROUTING_ALL, "routing").get(
+            "routing", []
+        )
+        template_context = templates.classify_topology(mixer_tracks, routing, chans)
 
         return {
             "status": "Overview Generated",
@@ -306,6 +321,7 @@ def register(mcp: FastMCP) -> None:
                 "total_patterns": len(patterns),
                 "total_mixer_tracks": len(mixer_tracks),
             },
+            "template_context": templates.compact_context(template_context),
             "recommendations": [
                 "Run fl_analyze_project_organization to find unnamed/uncolored channels.",
                 "Run fl_review_routing to find structural routing issues.",
@@ -332,6 +348,10 @@ def register(mcp: FastMCP) -> None:
         chans = fetch_all_pages(bridge, protocol.CMD_CHANNEL_ROUTING_SUMMARY, "channels").get(
             "channels", []
         )
+        routing = fetch_all_pages(bridge, protocol.CMD_MIXER_GET_ROUTING_ALL, "routing").get(
+            "routing", []
+        )
+        template_context = templates.classify_topology(routing, routing, chans)
         unrouted = [
             c
             for c in chans
@@ -377,6 +397,7 @@ def register(mcp: FastMCP) -> None:
                 "master_peak_db": round(master_peak_db, 1) if master_peak_db is not None else None,
                 "master_peak_source": "mix_review_watch" if master_peak_db is not None else None,
             },
+            "template_context": templates.compact_context(template_context),
             "manual_checklist": manual_checklist,
             "kb_policy_refs": kb_policy.rule_refs(
                 [

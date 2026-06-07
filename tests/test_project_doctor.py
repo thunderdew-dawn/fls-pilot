@@ -81,6 +81,13 @@ def _fake_fetch_all_pages(_bridge, command, key):
         return {"tracks": [{"index": 1, "name": "PL1", "mute": True}]}
     if command == protocol.CMD_MIXER_LIST_TRACKS and key == "tracks":
         return {"tracks": [{"i": 1, "name": "Bus A"}, {"i": 2, "name": "Bus A"}]}
+    if command == protocol.CMD_MIXER_GET_ROUTING_ALL and key == "routing":
+        return {
+            "routing": [
+                {"i": 1, "name": "Bus A", "routes_to": [{"dst": 0, "dst_name": "Master"}]},
+                {"i": 2, "name": "Bus A", "routes_to": [{"dst": 0, "dst_name": "Master"}]},
+            ]
+        }
     raise RuntimeError(f"unexpected fetch: {command}/{key}")
 
 

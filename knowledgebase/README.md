@@ -13,6 +13,8 @@ API, planning safe MCP actions, or reasoning about production workflows.
 - `mixing/`: Non-genre-specific mixing guidance and assistant heuristics.
 - `mastering/`: Mastering guidance, boundaries, and manual-only workflows.
 - `performance/`: CPU, audio-buffer, and project-performance guidance.
+- `templates/`: FL Studio standard project template topology reports,
+  machine-readable compact profiles, and profile schemas.
 - `genres/`: Genre-specific production knowledge. Keep generic rules elsewhere.
 - `known_pitfalls/`: Recurring errors and known issues.
 - `agent_notes/`: Ongoing notes, learning logs (`learning_log.md`), and open questions.

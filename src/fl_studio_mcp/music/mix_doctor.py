@@ -20,6 +20,7 @@ import math
 import re
 
 from .. import kb_policy
+from .. import project_templates as templates
 
 # --------------------------------------------------------------------------
 # Thresholds (transparent + tunable)
@@ -252,6 +253,8 @@ def gather_snapshot(
                 "routes_to": route_by.get(i, []),
             }
         )
+    template_context = templates.classify_topology(tracks)
+    tracks = templates.annotate_tracks(tracks, template_context)
     return {
         "playing": playing,
         "levels_valid": levels_valid,
@@ -262,6 +265,7 @@ def gather_snapshot(
             "source": peak_source,
         },
         "tracks": tracks,
+        "template_context": template_context,
         "gather_errors": errors,
     }
 
@@ -275,6 +279,8 @@ _DEFAULT_NAME = re.compile(r"^\s*(insert\s*\d+|master)\s*$", re.I)
 def _is_used(t):
     """Skip empty/unused mixer inserts (default 'Insert N' name, no plugins,
     only the implicit Master route, no signal) -- noise, not real tracks."""
+    if t.get("template_role") == templates.ROLE_RESERVED_PLACEHOLDER:
+        return False
     if t.get("plugins"):
         return True
     nm = t.get("name") or ""
@@ -290,6 +296,28 @@ def _is_used(t):
 
 def _audible(tracks):
     return [t for t in tracks if t.get("index") != 0 and not t.get("mute") and _is_used(t)]
+
+
+def _template_context_from_tracks(tracks):
+    return templates.classify_topology(tracks)
+
+
+def _template_matched(tracks):
+    return bool(_template_context_from_tracks(tracks).get("matched"))
+
+
+def _has_level_evidence(t):
+    pk = t.get("peak_db")
+    return pk is not None and pk > -60.0
+
+
+def _is_template_judgement_excluded(t):
+    return t.get("template_role") in {
+        templates.ROLE_PREMASTER,
+        templates.ROLE_STEM_BUS,
+        templates.ROLE_SIDECHAIN_CONTROL,
+        templates.ROLE_RESERVED_PLACEHOLDER,
+    }
 
 
 def rule_clipping(tracks):
@@ -432,7 +460,12 @@ def rule_missing_hpf(tracks):
     (drum buses keep their lows), so it only flags melodic/vocal material. Low
     confidence -- a suggestion, not a confirmed problem (we have no spectrum)."""
     out = []
+    template_matched = _template_matched(tracks)
     for t in _audible(tracks):
+        if _is_template_judgement_excluded(t):
+            continue
+        if template_matched and not _has_level_evidence(t):
+            continue
         nm = (t.get("name") or "").lower()
         if any(k in nm for k in LOW_END):  # bass/kick: HPF not expected
             continue
@@ -501,10 +534,14 @@ def _dests(t):
 
 def rule_ungrouped(tracks):
     out = []
+    if _template_matched(tracks):
+        return out
     fams = {}
     for t in _audible(tracks):
+        if _is_template_judgement_excluded(t):
+            continue
         nm = (t.get("name") or "").lower()
-        if "bus" in nm:
+        if "bus" in nm or "\u25ba mix" in nm or "premaster" in nm:
             continue
         for fam, kws in FAMILIES.items():
             if any(k in nm for k in kws):
@@ -611,6 +648,9 @@ def diagnose(snapshot):
     """Run all rules on a snapshot. Returns findings ranked by severity +
     notes (e.g. 'play the project for level data'). PURE -- no writes."""
     tracks = snapshot.get("tracks", [])
+    template_context = snapshot.get("template_context") or _template_context_from_tracks(tracks)
+    if template_context.get("matched"):
+        tracks = templates.annotate_tracks(tracks, template_context)
     playing = snapshot.get("playing")
     levels_valid = snapshot.get("levels_valid", playing)  # watch capture also counts
     findings, notes = [], []
@@ -638,6 +678,7 @@ def diagnose(snapshot):
     return {
         "playing": playing,
         "track_count": len(tracks),
+        "template_context": template_context,
         "findings": findings,
         "notes": notes,
         "summary": summary,
@@ -664,6 +705,10 @@ def low_end_stereo_safety(snapshot):
     true phase-correlation, mono-sum, or spectral sub-band analysis.
     """
     tracks = snapshot.get("tracks", [])
+    template_context = snapshot.get("template_context") or _template_context_from_tracks(tracks)
+    if template_context.get("matched"):
+        tracks = templates.annotate_tracks(tracks, template_context)
+    template_matched = bool(template_context.get("matched"))
     playing = snapshot.get("playing")
     levels_valid = snapshot.get("levels_valid", playing)
     audible = _audible(tracks)
@@ -677,6 +722,15 @@ def low_end_stereo_safety(snapshot):
         )
 
     for t in low_tracks:
+        if t.get("template_role") in {
+            templates.ROLE_PREMASTER,
+            templates.ROLE_STEM_BUS,
+            templates.ROLE_SIDECHAIN_CONTROL,
+            templates.ROLE_RESERVED_PLACEHOLDER,
+        }:
+            continue
+        if template_matched and not _has_level_evidence(t):
+            continue
         pan = _as_float(t.get("pan"))
         if pan is not None and abs(pan) >= LOW_END_PAN_RISK:
             findings.append(
@@ -759,11 +813,17 @@ def low_end_stereo_safety(snapshot):
             and _as_float(t.get("peak_db")) > LOW_END_LAYER_FLOOR_DB
         ]
     else:
-        notes.append(
-            "No level data available. Structural pan/stereo checks still run, but "
-            "hot low-end and Master-headroom checks need playback or Mix Review watch."
-        )
-        active_low = low_tracks
+        if template_matched:
+            notes.append(
+                "No level data available. Recognized template low-end routing/pan "
+                "is preserved; low-end warnings need playback or Mix Review watch."
+            )
+        else:
+            notes.append(
+                "No level data available. Structural pan/stereo checks still run, but "
+                "hot low-end and Master-headroom checks need playback or Mix Review watch."
+            )
+        active_low = [] if template_matched else low_tracks
 
     if len(active_low) >= LOW_END_LAYER_COUNT:
         findings.append(
@@ -873,6 +933,7 @@ def low_end_stereo_safety(snapshot):
         "playing": playing,
         "levels_valid": levels_valid,
         "track_count": len(tracks),
+        "template_context": template_context,
         "summary": summary,
         "low_end_tracks": [
             {
