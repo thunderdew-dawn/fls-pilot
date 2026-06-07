@@ -1,75 +1,49 @@
 # Changelog
 
-## v0.2.0 -- MIDI SysEx transport
+## v2.0.0 -- Architecture Foundation, Tool Efficiency, and TCP Transport
 
-**Breaking change**: the transport between the MCP server and the FL
-controller script switched from a file-based JSON queue to MIDI SysEx.
-Protocol version bumped 1 -> 2. v0.1 clients and v0.2 controllers (or vice
-versa) refuse to talk.
-
-### Why
-
-FL Studio's controller-script Python sandbox blocks every form of file
-write. Confirmed on FL 24+ with MIDI scripting version 40 / embedded Python
-3.12.1:
-
-- `open("...", "w").write("...")` ->
-  `SystemError: <class '_io.FileIO'> returned NULL without setting an exception`
-- `os.open(..., O_WRONLY|O_CREAT|O_TRUNC)` ->
-  `TypeError: bad argument type for built-in operation`
-- `os.makedirs(...)` ->
-  `mkdir returned NULL without setting an exception`
-
-A normal OS process writing to the same directory succeeds, so it is the
-controller-script sandbox specifically, not OS permissions. Piano Roll
-`.pyscript`s run in a different sandbox and do allow file I/O, but those
-only execute on explicit user trigger -- they're not suitable for the
-heartbeat / always-on loop the server depends on.
-
-So all transport moved to MIDI SysEx, which is allowed in controller
-scripts via `device.midiOutSysex` (out) and `OnMidiMsg` (in).
+**Major Release**: This release marks a significant architectural shift towards domain-driven tools, strict safety guarantees, and the migration from MIDI SysEx to a robust TCP daemon for FL Studio communication. It consolidates redundant legacy tools, drastically reducing LLM token consumption and tool-selection noise.
 
 ### What changed
 
-- `src/fl_studio_mcp/protocol.py`: new SysEx wire format, manufacturer ID
-  `0x7D`, magic `"MCP"`, base64-JSON payload. Default port names
-  `FLStudioMCP RX` (server -> FL) and `FLStudioMCP TX` (FL -> server).
-- `src/fl_studio_mcp/connection.py`: rewritten on `mido` + `python-rtmidi`.
-  Background callback dispatches incoming SysEx, blocks the caller on a
-  `threading.Event` keyed by request id. Heartbeat detected via incoming
-  `DIR_HEARTBEAT` messages from FL.
-- `fl_controller/FLStudioMCP/device_FLStudioMCP.py`: rewritten with
-  `OnMidiMsg` dispatch and `device.midiOutSysex` response, plus a 500 ms
-  heartbeat in `OnIdle`. No more file I/O.
-- `pyproject.toml`: added `mido>=1.3.2` and `python-rtmidi>=1.5.8`.
-- `server.py`: new `--list-ports` flag for debugging port mismatches.
-- `fl_ping`: reports `port_to_fl` and `port_from_fl` instead of a bridge
-  root.
+#### Architecture & Transport
+* **TCP Transport Protocol**: Migrated communication from the legacy file-queue and MIDI SysEx implementations to a native `socketserver.ThreadingTCPServer` running inside the FL Studio controller script sandbox. This bypasses sandbox file I/O restrictions natively while providing stable, high-throughput communication.
+* **FastMCP Orchestration**: Shifted orchestration logic into `FastMCP` (via `@mcp.tool` registration).
 
-### What did NOT change
+#### Tool Consolidation & Domain Tools
+* **Consolidated Domain Surface**: Replaced 86 legacy, one-off low-level aliases with a compact set of domain tools: `fl_transport`, `fl_mixer`, `fl_channel`, `fl_pattern`, `fl_playlist`, `fl_effect`, `fl_plugin`, `fl_piano_roll`, and `fl_batch`.
+* **Read-Only & Persistent Batching (`fl_batch`)**: Introduced generic batching with strict whitelist validation, a hard 50-operation limit, and `continue_on_error` support for read operations.
+* **Public Tool Footprint**: Reduced the registered public FastMCP tools to 87, focusing entirely on domain primitives and product workflows. 
 
-- The 10 Phase 0 tool names and signatures
-  (`fl_ping`, `fl_get_tempo`, `fl_set_tempo`, `fl_play`, `fl_stop`,
-  `fl_toggle_play`, `fl_record`, `fl_get_play_state`,
-  `fl_get_song_position`, `fl_set_song_position`).
-- The command-name catalogue (`CMD_PING`, `CMD_GET_TEMPO`, etc).
-- The tool-side error model (`FLNotRunning`, `FLTimeout`,
-  `FLCommandFailed`). A new `FLPortMissing` was added for the MIDI-port
-  setup failure mode.
+#### Safety & State Mutation
+* **Verified Grouped Write Safety**: `safety.safe_write_group` now pre-validates operations, snapshots all scopes before mutation, performs per-write readback where supported, enforces explicit verify readback pairs, and attempts immediate reverse rollback after a partial failure.
+* **Zero Write Gaps**: All persistent FL Studio state mutations are strictly rollback-capable. The repository now passes `scripts/audit_tool_safety.py --fail-on-gaps` in CI.
+* **Anti-Vibe Coding Compliance**: The codebase is strictly enforced by `audit_anti_vibe.py`, eliminating lazy evaluation, missing exception chains, and undocumented "quick fixes".
 
-### Setup deltas vs v0.1
+#### New Product Workflows
+* **Low-End/Stereo Safety Assistant (`fl_review_low_end_stereo`)**: Reports bass/sub mono-compatibility risks, mixer pan/stereo-separation metadata, and Master headroom with compact Knowledgebase policy references.
+* **Mix Review Polish**: User-facing findings now keep compact per-row KB metadata (`kb_rule_ids`, `kb_confidence_levels`), moving heavy rule context into top-level references.
+* **Agent Orientation (`fl://agent-briefing`)**: A new compact entrypoint providing bridge status, Knowledgebase-first rules, and stop rules for LLM agents.
 
-You now need two virtual MIDI ports created up front:
+## v1.1.0 -- Project Organization & Routing Intelligence
 
-- Windows: install loopMIDI, create `FLStudioMCP RX` and `FLStudioMCP TX`.
-- macOS: add two ports of those names under IAC Driver in Audio MIDI Setup.
+* **Introduced**: Channel Type Classifier, Project Organizer MVP, Naming Standard Assistant, Color Standardizer, Routing Review 2.0.
+* **Audio Clip Intelligence**: Added Audio Clip Inspector and Safe Defaults Assistant to help manage unwieldy sample drops.
+* **Project Health**: Released Project Health Overview MVP, Project Preflight MVP, and Guided Cleanup Mode to orchestrate multi-step project standardizations.
+* **Safety UX**: Change Log and Rollback UX improvements. Verified live against FL Studio via TCP bridge on macOS.
 
-Then in FL: Options -> MIDI Settings, enable both ports, set their Port
-numbers to the same value (the controller script uses the matching number
-to route its responses to the correct output).
+## v0.2.0 -- MIDI SysEx transport
+
+**Breaking change**: The transport between the MCP server and the FL controller script switched from a file-based JSON queue to MIDI SysEx. Protocol version bumped 1 -> 2.
+
+### Why
+FL Studio's controller-script Python sandbox blocks every form of file write (e.g., `open("...", "w")`, `os.makedirs()`).
+
+### What changed
+* `protocol.py`: New SysEx wire format, base64-JSON payload.
+* `connection.py`: Rewritten on `mido` + `python-rtmidi`.
+* **Virtual MIDI Ports**: Requires `FLStudioMCP RX` and `FLStudioMCP TX`.
 
 ## v0.1.0 -- File-queue bridge (withdrawn)
 
-Initial release. Withdrawn because the file-queue design did not work on
-FL builds that sandbox controller-script file I/O (which appears to be
-every recent FL build, not an edge case).
+Initial release. Withdrawn because the file-queue design did not work on FL builds that sandbox controller-script file I/O.
