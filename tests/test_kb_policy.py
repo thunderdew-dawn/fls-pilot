@@ -37,10 +37,18 @@ def main() -> int:
     check("loads Mix Review recipe rule", mix.get("available") is True, str(mix))
 
     limits = kb_policy.safety_limits(["mix_doctor_existing_plugin_only"])
-    check("loads safety limits", any("Do not load missing plugins" in item for item in limits), str(limits))
+    check(
+        "loads safety limits",
+        any("Do not load missing plugins" in item for item in limits),
+        str(limits),
+    )
 
     missing = kb_policy.rule_ref("does_not_exist")
-    check("missing rule is explicit", missing == {"id": "does_not_exist", "available": False}, str(missing))
+    check(
+        "missing rule is explicit",
+        missing == {"id": "does_not_exist", "available": False},
+        str(missing),
+    )
 
     print(f"\nKB policy tests: {_P} passed, {_F} failed.")
     return 1 if _F else 0

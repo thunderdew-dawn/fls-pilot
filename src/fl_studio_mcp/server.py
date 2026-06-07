@@ -27,20 +27,23 @@ from .connection import list_ports
 from .protocol import port_from_fl_name, port_to_fl_name
 from .tools import arrange as arrange_tools
 from .tools import audio as audio_tools
-from .tools import bulk as bulk_tools
 from .tools import batch as batch_tools
+from .tools import bulk as bulk_tools
 from .tools import chains as chains_tools
+from .tools import channel as channel_domain_tools
 from .tools import channels as channel_tools
 from .tools import color as color_tools
 from .tools import compose as compose_tools
-from .tools import effects as effects_tools
 from .tools import effect as effect_domain_tools
+from .tools import effects as effects_tools
 from .tools import export as export_tools
+from .tools import knowledgebase as knowledgebase_tools
 from .tools import mix_doctor as mix_doctor_tools
-from .tools import mixing as mixing_tools
+from .tools import mixer as mixer_tools
 from .tools import mixer_core as mixer_core_tools
-from .tools import patterns_playlist as patterns_playlist_tools
+from .tools import mixing as mixing_tools
 from .tools import pattern as pattern_domain_tools
+from .tools import patterns_playlist as patterns_playlist_tools
 from .tools import pianoroll as pianoroll_tools
 from .tools import playlist as playlist_domain_tools
 from .tools import plugin as plugin_tools
@@ -50,10 +53,7 @@ from .tools import project_doctor as project_doctor_tools
 from .tools import project_organizer as project_organizer_tools
 from .tools import resources as resource_defs
 from .tools import routing as routing_tools
-from .tools import channel as channel_domain_tools
-from .tools import mixer as mixer_tools
 from .tools import transport as transport_tools
-from .tools import knowledgebase as knowledgebase_tools
 
 logger = logging.getLogger("fl_studio_mcp")
 
@@ -197,7 +197,7 @@ def build_server() -> FastMCP:
         instructions=SERVER_INSTRUCTIONS,
     )
     transport_tools.register(mcp)
-    mixer_tools.register(mcp)         # v1.2 mixer domain tool (additive shadow)
+    mixer_tools.register(mcp)  # v1.2 mixer domain tool (additive shadow)
     channel_domain_tools.register(mcp)  # v1.2 channel domain tool (additive shadow)
     pattern_domain_tools.register(mcp)  # v1.2 pattern domain tool (additive shadow)
     playlist_domain_tools.register(mcp)  # v1.2 playlist domain tool (track metadata only)

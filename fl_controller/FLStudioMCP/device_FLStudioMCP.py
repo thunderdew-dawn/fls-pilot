@@ -121,10 +121,8 @@ def OnInit():
             "responses cannot be sent back to the MCP server."
         )
     # Enable track metering
-    try:
+    with contextlib.suppress(Exception):
         device.setHasMeters()
-    except Exception:
-        pass
     # Send a heartbeat immediately so the server doesn't have to wait.
     _emit_heartbeat()
     return
@@ -617,7 +615,7 @@ def _vol_out(norm):
 
 # Mixer-specific fader calibration data (empirically swept)
 MIXER_CALIBRATION = [
-    (0.0000, float('-inf')),
+    (0.0000, float("-inf")),
     (0.0100, -50.3347),
     (0.0200, -44.1829),
     (0.0300, -40.5293),
@@ -734,7 +732,7 @@ def _mixer_db_to_norm(db):
         return 1.0
     for i in range(1, len(MIXER_CALIBRATION) - 1):
         x0, y0 = MIXER_CALIBRATION[i]
-        x1, y1 = MIXER_CALIBRATION[i+1]
+        x1, y1 = MIXER_CALIBRATION[i + 1]
         if y0 <= db <= y1:
             return x0 + (db - y0) * (x1 - x0) / (y1 - y0)
     return 1.0
@@ -772,16 +770,18 @@ def _h_mixer_set_pan(p):
     mixer.setTrackPan(t, _clamp_pan(p["value"]))
     return {"track": t, "pan": round(mixer.getTrackPan(t), 4)}
 
+
 def _h_mixer_set_stereo_sep(p):
     t = int(p["track"])
     val = max(-1.0, min(1.0, float(p["value"])))
     if hasattr(mixer, "setTrackStereoSep"):
         mixer.setTrackStereoSep(t, val)
-    
+
     current = 0.0
     if hasattr(mixer, "getTrackStereoSep"):
         current = round(mixer.getTrackStereoSep(t), 4)
     return {"track": t, "stereo_sep": current}
+
 
 def _h_mixer_get_stereo_sep(p):
     t = int(p["track"])
@@ -1097,11 +1097,12 @@ def _h_mixer_get_free_track(p):
             return {"track": int(t)}
     except Exception:
         pass
-    
+
     # Fallback manual scan if getFreeTrack is unavailable or returned a lower track
     start = int(p.get("start", 1))
     for i in range(start, mixer.trackCount()):
-        if i == 0: continue
+        if i == 0:
+            continue
         name = mixer.getTrackName(i)
         if not (name.startswith("Insert ") or name.startswith("Track ")):
             continue
@@ -1771,10 +1772,8 @@ def _h_mixer_get_slot(p):
     mute_fn = getattr(plugins, "getPluginMuteState", None)
     enabled = True
     if mute_fn is not None:
-        try:
+        with contextlib.suppress(Exception):
             enabled = not bool(mute_fn(track, slot))
-        except Exception:
-            pass
     return {
         "track": track,
         "slot": slot,
@@ -1834,12 +1833,12 @@ def _h_mixer_get_eq(p):
         except TypeError:
             # Fallback if FL Studio version does not support mode
             gain = round(mixer.getEqGain(track, b), 4)
-            
+
         try:
             frequency = round(mixer.getEqFrequency(track, b, mode), 4)
         except TypeError:
             frequency = round(mixer.getEqFrequency(track, b), 4)
-            
+
         bands.append(
             {
                 "band": b,
@@ -2052,7 +2051,7 @@ def _h_set_time_sig(p):
         general.setNumerator(num)
         general.setDenominator(den)
     except Exception as e:
-        raise _ClientError(f"failed to set time signature: {e}")
+        raise _ClientError(f"failed to set time signature: {e}") from e
     return _h_get_time_sig({})
 
 
@@ -2145,10 +2144,8 @@ def _h_channel_set_steps(p):
                     except Exception as e:
                         failures.append({"step": step_idx, "param": "pitch", "error": str(e)})
 
-        try:
+        with contextlib.suppress(Exception):
             channels.updateGraphEditor()
-        except Exception:
-            pass
         out = _h_channel_get_steps({"channel": idx, "pattern": target_pattern})
         if failures:
             out["step_param_failures"] = failures

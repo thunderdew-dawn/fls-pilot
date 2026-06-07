@@ -372,11 +372,7 @@ def register(mcp: FastMCP) -> None:
             for p in plan["plans"]
         ]
         used_rule_ids = sorted(
-            {
-                rule_id
-                for proposal in proposals
-                for rule_id in (proposal.get("kb_rule_ids") or [])
-            }
+            {rule_id for proposal in proposals for rule_id in (proposal.get("kb_rule_ids") or [])}
         )
         return {
             "ok": True,

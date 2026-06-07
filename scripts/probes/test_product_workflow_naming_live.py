@@ -34,7 +34,6 @@ from fl_studio_mcp.tools import (  # noqa: E402
     transport,
 )
 
-
 NEW_TOOL_NAMES = {
     "fl_review_mix",
     "fl_review_low_end_stereo",
@@ -167,7 +166,9 @@ def main() -> int:
     for name, fn in read_only_calls:
         try:
             value = fn()
-            results["checks"].append({"tool": name, "ok": True, "summary": _summarize_result(value)})
+            results["checks"].append(
+                {"tool": name, "ok": True, "summary": _summarize_result(value)}
+            )
             print(f"[PASS] {name}")
         except Exception as exc:
             ok = False

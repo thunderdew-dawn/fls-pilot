@@ -65,27 +65,27 @@ def register(mcp: FastMCP) -> None:
     @mcp.tool(annotations={"title": "Analyze Project Organization", **_RO})
     def fl_analyze_project_organization() -> dict:
         """Analyze project to find unnamed channels, uncolored channels, and unassigned tracks.
-        
+
         Safety: Read-Only.
         """
         bridge = get_bridge()
         chans = fetch_all_pages(bridge, protocol.CMD_CHANNEL_ROUTING_SUMMARY, "channels")
-        
+
         unnamed = []
         ungrouped = []
-        
+
         for c in chans.get("channels", []):
             if _looks_default_channel_name(c.get("name")):
                 unnamed.append(c)
-            
+
             # Simple heuristic for uncolored (assuming default FL color or no color)
             # We don't have color in routing summary currently, we'd need to fetch or assume.
             # But the agent can use this as a structural check.
-            
+
             tgt = c.get("target_mixer_track")
             if not isinstance(tgt, int) or tgt == 0:
                 ungrouped.append(c)
-                
+
         return {
             "unnamed_channels": unnamed,
             "ungrouped_channels": ungrouped,
@@ -107,7 +107,7 @@ def register(mcp: FastMCP) -> None:
     @mcp.tool(annotations={"title": "Plan Project Cleanup", **_RO})
     def fl_plan_project_cleanup() -> dict:
         """Create a dry-run plan for project cleanup.
-        
+
         Safety: Read-Only.
         """
         return {
@@ -115,7 +115,7 @@ def register(mcp: FastMCP) -> None:
             "available_tools": [
                 "fl_apply_naming_standard",
                 "fl_apply_color_standard",
-                "fl_apply_project_cleanup_step"
+                "fl_apply_project_cleanup_step",
             ],
             "policy": [
                 "Plan from current project inventory before applying cleanup.",
@@ -133,16 +133,21 @@ def register(mcp: FastMCP) -> None:
 
     @mcp.tool(annotations={"title": "Apply Project Cleanup Step", **_WR})
     def fl_apply_project_cleanup_step(
-        renames: Annotated[list[dict], Field(description="List of {type: 'channel'|'mixer', index: int, name: str}")] = None,
-        colors: Annotated[list[dict], Field(description="List of {type: 'channel'|'mixer', index: int, hex: str}")] = None
+        renames: Annotated[
+            list[dict],
+            Field(description="List of {type: 'channel'|'mixer', index: int, name: str}"),
+        ] = None,
+        colors: Annotated[
+            list[dict], Field(description="List of {type: 'channel'|'mixer', index: int, hex: str}")
+        ] = None,
     ) -> dict:
         """Apply a batch of names and colors in one rollback unit.
-        
+
         Safety: Write-Safe with Rollback.
         """
         bridge = get_bridge()
         writes = []
-        
+
         if renames:
             try:
                 for r in renames:
@@ -152,7 +157,7 @@ def register(mcp: FastMCP) -> None:
                         writes.append(_bus_rename_entry(r["index"], r["name"]))
             except (KeyError, ValueError, operations.OperationValidationError) as e:
                 return {"ok": False, "error": str(e)}
-                    
+
         if colors:
             try:
                 for c in colors:
@@ -162,16 +167,16 @@ def register(mcp: FastMCP) -> None:
                         writes.append(_mixer_color_entry(c["index"], c["hex"]))
             except (KeyError, ValueError, operations.OperationValidationError) as e:
                 return {"ok": False, "error": str(e)}
-                    
+
         if not writes:
             return {"status": "No valid writes specified."}
-            
+
         res = safety.safe_write_group(
             bridge,
             tool="apply_project_cleanup",
             scope="project_organizer",
             writes=writes,
-            rollback_unit="project_cleanup_step"
+            rollback_unit="project_cleanup_step",
         )
         if isinstance(res, dict):
             res["kb_policy_refs"] = kb_policy.rule_refs(
@@ -181,11 +186,16 @@ def register(mcp: FastMCP) -> None:
 
     @mcp.tool(annotations={"title": "Apply Naming Standard", **_WR})
     def fl_apply_naming_standard(
-        style: Annotated[str, Field(description="Naming schema (e.g. 'psytrance', 'default', 'dynamic')")],
-        rules: Annotated[list[dict], Field(description="Specific rewrite rules applied by LLM: {type, index, name}")]
+        style: Annotated[
+            str, Field(description="Naming schema (e.g. 'psytrance', 'default', 'dynamic')")
+        ],
+        rules: Annotated[
+            list[dict],
+            Field(description="Specific rewrite rules applied by LLM: {type, index, name}"),
+        ],
     ) -> dict:
         """Batch apply standardized names across the project.
-        
+
         Safety: Write-Safe with Rollback.
         """
         bridge = get_bridge()
@@ -198,16 +208,16 @@ def register(mcp: FastMCP) -> None:
                     writes.append(_bus_rename_entry(r["index"], r["name"]))
         except (KeyError, ValueError, operations.OperationValidationError) as e:
             return {"ok": False, "error": str(e)}
-                
+
         if not writes:
             return {"status": "No rules provided."}
-            
+
         res = safety.safe_write_group(
             bridge,
             tool="apply_naming_standard",
             scope="project_organizer",
             writes=writes,
-            rollback_unit=f"naming_standard_{style}"
+            rollback_unit=f"naming_standard_{style}",
         )
         if isinstance(res, dict):
             res["kb_policy_refs"] = kb_policy.rule_refs(
@@ -217,11 +227,15 @@ def register(mcp: FastMCP) -> None:
 
     @mcp.tool(annotations={"title": "Apply Color Standard", **_WR})
     def fl_apply_color_standard(
-        style: Annotated[str, Field(description="Color schema (e.g. 'psytrance', 'default', 'dynamic')")],
-        rules: Annotated[list[dict], Field(description="Specific color rules applied by LLM: {type, index, hex}")]
+        style: Annotated[
+            str, Field(description="Color schema (e.g. 'psytrance', 'default', 'dynamic')")
+        ],
+        rules: Annotated[
+            list[dict], Field(description="Specific color rules applied by LLM: {type, index, hex}")
+        ],
     ) -> dict:
         """Batch apply standardized colors across the project. Hex should be e.g. '#FF0000'.
-        
+
         Safety: Write-Safe with Rollback.
         """
         bridge = get_bridge()
@@ -234,16 +248,16 @@ def register(mcp: FastMCP) -> None:
                     writes.append(_mixer_color_entry(r["index"], r["hex"]))
         except (KeyError, ValueError, operations.OperationValidationError) as e:
             return {"ok": False, "error": str(e)}
-                
+
         if not writes:
             return {"status": "No rules provided."}
-            
+
         res = safety.safe_write_group(
             bridge,
             tool="apply_color_standard",
             scope="project_organizer",
             writes=writes,
-            rollback_unit=f"color_standard_{style}"
+            rollback_unit=f"color_standard_{style}",
         )
         if isinstance(res, dict):
             res["kb_policy_refs"] = kb_policy.rule_refs(

@@ -74,6 +74,12 @@
       ],
       "confidence_level": "docs_confirmed"
     }
-  ]
+  ],
+  "affected_api": "N/A",
+  "observation": "N/A",
+  "tested_values": "N/A",
+  "context": "N/A",
+  "result": "N/A",
+  "open_questions": "N/A",
+  "next_recommended_action": "N/A"
 }
-

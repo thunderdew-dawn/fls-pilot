@@ -454,7 +454,10 @@ def main() -> int:
     )
     check(
         "top-level KB refs keep source-qualified rule detail",
-        any(ref.get("recommendation") and ref.get("source_file") for ref in tool_out.get("kb_policy_refs", [])),
+        any(
+            ref.get("recommendation") and ref.get("source_file")
+            for ref in tool_out.get("kb_policy_refs", [])
+        ),
     )
     check("tool gain-stage output ok", gain_out.get("ok") is True)
     check(

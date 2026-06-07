@@ -14,9 +14,9 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
+from audit_tool_safety import TOOLS_DIR, audit_file, count_by_status  # noqa: E402
 from fastmcp import FastMCP  # noqa: E402
 
-from audit_tool_safety import TOOLS_DIR, audit_file, count_by_status  # noqa: E402
 from fl_studio_mcp import __version__  # noqa: E402
 from fl_studio_mcp import server as server_module  # noqa: E402
 
@@ -67,11 +67,7 @@ def _registration_calls() -> list[RegistrationCall]:
             and isinstance(func.value, ast.Name)
         ):
             continue
-        if (
-            not call.args
-            or not isinstance(call.args[0], ast.Name)
-            or call.args[0].id != "mcp"
-        ):
+        if not call.args or not isinstance(call.args[0], ast.Name) or call.args[0].id != "mcp":
             continue
         calls.append(RegistrationCall(alias=func.value.id, line=node.lineno))
     return calls

@@ -455,9 +455,7 @@ def rule_missing_hpf(tracks):
                         "desc": "consider a high-pass on {}".format(t["name"]),
                         "requires": "already-loaded Fruity Parametric EQ 2 with a free band",
                     },
-                    (
-                        "mix_doctor_existing_plugin_only",
-                    ),
+                    ("mix_doctor_existing_plugin_only",),
                 )
             )
     return out
@@ -603,9 +601,7 @@ def rule_eq_clash(tracks):
                         "args": {},
                         "desc": "ease overlapping boosts on {}".format(" / ".join(names)),
                     },
-                    (
-                        "mix_doctor_existing_plugin_only",
-                    ),
+                    ("mix_doctor_existing_plugin_only",),
                 )
             )
     return out
@@ -776,7 +772,8 @@ def low_end_stereo_safety(snapshot):
                 "low",
                 None,
                 "{} active low-end tracks: {}".format(
-                    len(active_low), ", ".join(t.get("name") or f"Track {t.get('index')}" for t in active_low[:8])
+                    len(active_low),
+                    ", ".join(t.get("name") or f"Track {t.get('index')}" for t in active_low[:8]),
                 ),
                 "Multiple kick/sub/bass/808 layers are active. Check masking, phase, and arrangement slots manually.",
                 {

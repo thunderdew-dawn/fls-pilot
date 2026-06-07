@@ -118,8 +118,7 @@ _WORKFLOWS = [
 ]
 
 _SAFETY_RULES = [
-    "Use Knowledgebase evidence before values, ranges, REC events, plugin params, "
-    "or MIDI data.",
+    "Use Knowledgebase evidence before values, ranges, REC events, plugin params, or MIDI data.",
     "Prefer workflow/domain tools over legacy one-off aliases or raw FL API calls.",
     "No persistent FL write without snapshot, smallest write, readback, changelog, "
     "and rollback path.",
@@ -234,7 +233,7 @@ def register(mcp: FastMCP) -> None:
             lambda: _summary(
                 fetch_all_pages(get_bridge(), protocol.CMD_CHANNEL_LIST, "channels"),
                 "channels",
-                "fl_channel(action=\"list\")",
+                'fl_channel(action="list")',
             )
         )
 
@@ -245,7 +244,7 @@ def register(mcp: FastMCP) -> None:
             lambda: _summary(
                 fetch_all_pages(get_bridge(), protocol.CMD_MIXER_LIST_TRACKS, "tracks"),
                 "tracks",
-                "fl_mixer(action=\"list\")",
+                'fl_mixer(action="list")',
             )
         )
 
@@ -256,6 +255,6 @@ def register(mcp: FastMCP) -> None:
             lambda: _summary(
                 fetch_all_pages(get_bridge(), protocol.CMD_PATTERN_LIST, "patterns"),
                 "patterns",
-                "fl_pattern(action=\"list\")",
+                'fl_pattern(action="list")',
             )
         )

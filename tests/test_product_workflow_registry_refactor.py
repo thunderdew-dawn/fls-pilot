@@ -186,7 +186,10 @@ def _exercise_mix_doctor_trim_volume_uses_registry_safe_write(tmp_path, monkeypa
     assert result["before_db"] == -1.0
     assert result["after_db"] == -3.0
     assert result["applied"] is True
-    assert (protocol.CMD_MIXER_SET_VOLUME, {"track": 4, "value": -3.0, "unit": "db"}) in bridge.calls
+    assert (
+        protocol.CMD_MIXER_SET_VOLUME,
+        {"track": 4, "value": -3.0, "unit": "db"},
+    ) in bridge.calls
 
 
 def main() -> int:

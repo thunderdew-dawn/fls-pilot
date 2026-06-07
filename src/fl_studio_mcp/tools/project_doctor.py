@@ -275,19 +275,29 @@ def register(mcp: FastMCP) -> None:
     @mcp.tool(annotations={"title": "Project health overview", **_RO})
     def fl_project_health_overview() -> dict:
         """Aggregates Project Organizer, Routing Review, and Mix Review insights into a single overview.
-        
+
         Safety: Read-Only.
         """
         bridge = get_bridge()
-        
+
         # 1. Routing Summary
-        chans = fetch_all_pages(bridge, protocol.CMD_CHANNEL_ROUTING_SUMMARY, "channels").get("channels", [])
-        unrouted = sum(1 for c in chans if not isinstance(c.get("target_mixer_track"), int) or c.get("target_mixer_track") == 0)
-        
+        chans = fetch_all_pages(bridge, protocol.CMD_CHANNEL_ROUTING_SUMMARY, "channels").get(
+            "channels", []
+        )
+        unrouted = sum(
+            1
+            for c in chans
+            if not isinstance(c.get("target_mixer_track"), int) or c.get("target_mixer_track") == 0
+        )
+
         # 2. General Health
-        patterns = fetch_all_pages(bridge, protocol.CMD_PATTERN_LIST, "patterns").get("patterns", [])
-        mixer_tracks = fetch_all_pages(bridge, protocol.CMD_MIXER_LIST_TRACKS, "tracks").get("tracks", [])
-        
+        patterns = fetch_all_pages(bridge, protocol.CMD_PATTERN_LIST, "patterns").get(
+            "patterns", []
+        )
+        mixer_tracks = fetch_all_pages(bridge, protocol.CMD_MIXER_LIST_TRACKS, "tracks").get(
+            "tracks", []
+        )
+
         return {
             "status": "Overview Generated",
             "metrics": {
@@ -313,15 +323,21 @@ def register(mcp: FastMCP) -> None:
     @mcp.tool(annotations={"title": "Project preflight check", **_RO})
     def fl_check_project_preflight() -> dict:
         """Export readiness preflight checks including clipping, unrouted channels, and Stretch mode checklists.
-        
+
         Safety: Read-Only.
         """
         bridge = get_bridge()
-        
+
         # Basic scan
-        chans = fetch_all_pages(bridge, protocol.CMD_CHANNEL_ROUTING_SUMMARY, "channels").get("channels", [])
-        unrouted = [c for c in chans if not isinstance(c.get("target_mixer_track"), int) or c.get("target_mixer_track") == 0]
-        
+        chans = fetch_all_pages(bridge, protocol.CMD_CHANNEL_ROUTING_SUMMARY, "channels").get(
+            "channels", []
+        )
+        unrouted = [
+            c
+            for c in chans
+            if not isinstance(c.get("target_mixer_track"), int) or c.get("target_mixer_track") == 0
+        ]
+
         audio_clips = [c for c in chans if c.get("type", {}).get("label") == "audioclip"]
         loud_audio_clips = [c for c in audio_clips if c.get("vol_norm", c.get("vol", 0)) > 0.8]
 
@@ -329,7 +345,7 @@ def register(mcp: FastMCP) -> None:
         master_peak_db = None
         if wmax and 0 in wmax:
             master_peak_db = md.lin_to_db(wmax.get(0))
-        
+
         blockers = []
         if unrouted:
             blockers.append(f"{len(unrouted)} channels are unrouted (go straight to Master).")
@@ -337,7 +353,7 @@ def register(mcp: FastMCP) -> None:
             blockers.append(
                 f"Master peak from Mix Review watch is {master_peak_db:.1f} dBFS (output/render clipping risk)."
             )
-            
+
         advisories = []
         if loud_audio_clips:
             advisories.append(f"{len(loud_audio_clips)} audio clips are very loud (>80% vol).")
@@ -345,7 +361,7 @@ def register(mcp: FastMCP) -> None:
             advisories.append(
                 f"Master peak from Mix Review watch is {master_peak_db:.1f} dBFS; leave more headroom before mastering/export."
             )
-            
+
         manual_checklist = [
             "Run Mix Review watch mode through the loudest section if Master peak data is missing.",
             "Check Audio Clip Stretch Mode manually; automatic Stretch Pro read/write is API-limited.",
@@ -375,17 +391,17 @@ def register(mcp: FastMCP) -> None:
     @mcp.tool(annotations={"title": "Start guided cleanup assistant", **_RO})
     def fl_start_guided_cleanup() -> dict:
         """Start an LLM-orchestrated Guided Cleanup session.
-        
+
         This tool returns a stateless session blueprint. It analyzes the current project
         using several diagnostic tools and returns the fix policy, prioritization strategy,
         and user-facing prompt instructions. The LLM must then drive the conversation
         using this blueprint.
-        
+
         Safety: Read-Only (returns a policy and diagnostics, applies no fixes itself).
         """
         health = fl_project_health_overview()
         readiness = fl_check_project_preflight()
-        
+
         return {
             "workflow_type": "LLM_ORCHESTRATED_WIZARD",
             "state_model": "STATELESS_MCP_AUTHORITATIVE",
@@ -398,22 +414,19 @@ def register(mcp: FastMCP) -> None:
                 "6. Ask for the user's approval.",
                 "7. Apply the fix. Then immediately read back the affected state and show the before/after result.",
                 "8. Offer to rollback (via fl_rollback_last_change) or continue to the next issue.",
-                "9. If the user continues, re-check diagnostics (via fl_get_guided_cleanup_context) to find the next issue."
+                "9. If the user continues, re-check diagnostics (via fl_get_guided_cleanup_context) to find the next issue.",
             ],
             "prioritization_strategy": [
                 "Priority 1: Export Blockers (Unrouted channels to Master, Clipping)",
                 "Priority 2: Audio Clip Safe Defaults (Loud clips, Stretch mode warnings)",
                 "Priority 3: Routing Organization (Bus layouts, grouping)",
-                "Priority 4: Project Cleanup (Naming, coloring)"
+                "Priority 4: Project Cleanup (Naming, coloring)",
             ],
             "recommended_next_actions": [
                 "Read fl_get_guided_cleanup_context to get the detailed current state.",
-                "Present the highest priority finding to the user."
+                "Present the highest priority finding to the user.",
             ],
-            "initial_diagnostics": {
-                "health_overview": health,
-                "project_preflight": readiness
-            },
+            "initial_diagnostics": {"health_overview": health, "project_preflight": readiness},
             "kb_policy_refs": kb_policy.rule_refs(
                 [
                     "preserve_existing_structure_first",
@@ -426,15 +439,15 @@ def register(mcp: FastMCP) -> None:
     @mcp.tool(annotations={"title": "Get guided cleanup context", **_RO})
     def fl_get_guided_cleanup_context() -> dict:
         """Reconstruct the current Guided Cleanup context from fresh diagnostics.
-        
+
         Use this tool during Guided Cleanup to get the latest, authoritative project state
         without relying on conversational history.
-        
+
         Safety: Read-Only.
         """
         health = fl_project_health_overview()
         readiness = fl_check_project_preflight()
-        
+
         # We instruct the LLM to run the deeper analyzers for the active priority
         return {
             "context_type": "FRESH_DIAGNOSTICS",
@@ -446,7 +459,7 @@ def register(mcp: FastMCP) -> None:
                 "Priority 2 (Audio Clips)": "Run fl_inspect_audio_clips",
                 "Priority 3 (Bus Layouts)": "Run fl_review_routing",
                 "Priority 4 (Naming/Coloring)": "Run fl_analyze_project_organization",
-                "Priority 5 (Mix Headroom)": "Run fl_review_mix"
+                "Priority 5 (Mix Headroom)": "Run fl_review_mix",
             },
             "changelog_state_hint": "Run fl_get_change_log_summary to review recently applied fixes if needed.",
             "kb_policy_refs": kb_policy.rule_refs(
