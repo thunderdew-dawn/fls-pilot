@@ -36,6 +36,9 @@ def connect():
         reset_bridge()
         try:
             b = get_bridge()
+            wait = getattr(b, "wait_for_heartbeat", None)
+            if callable(wait):
+                wait(timeout=1.0)
             if b.is_alive():
                 return b, t
         except Exception as e:
