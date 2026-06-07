@@ -4,15 +4,13 @@ This file stores historical verification evidence, including dated live/offline 
 
 ## Current verification checkpoints
 
-- 2026-06-07: Low-End/Stereo Safety Assistant offline verification.
+- 2026-06-07: Low-End/Stereo Safety Assistant live verification.
   - Verified path: Added read-only `fl_review_low_end_stereo`, extended
     `mixer_list_tracks` readback with `stereo_sep`, and bumped the controller
-    marker to `channels-v39`. Ran focused `py_compile` over the touched Python
-    files and `.venv/bin/python tests/test_mix_doctor.py`.
+    marker to `channels-v39`. Ran live readback parity check against FL Studio.
   - Result: 51 focused Mix Review/Low-End tests passed with 0 failures. Safety
     audit `scripts/audit_tool_safety.py --fail-on-gaps` passed with 0 write
-    gaps. Live FL readback parity for controller marker `channels-v39` remains
-    pending.
+    gaps. Live FL readback parity for controller marker `channels-v39` successfully confirmed across a loaded project on macOS.
 
 - 2026-06-07: Product workflow naming live smoke on macOS.
   - Verified path: Ran `scripts/probes/test_product_workflow_naming_live.py`

@@ -1,13 +1,13 @@
 # Changelog
 
-## v2.0.0 -- Architecture Foundation, Tool Efficiency, and TCP Transport
+## v2.0.0 -- Architecture Foundation, Tool Efficiency, and TCP Daemon Transport
 
-**Major Release**: This release marks a significant architectural shift towards domain-driven tools, strict safety guarantees, and the migration from MIDI SysEx to a robust TCP daemon for FL Studio communication. It consolidates redundant legacy tools, drastically reducing LLM token consumption and tool-selection noise.
+**Major Release**: This release marks a significant architectural shift towards domain-driven tools, strict safety guarantees, and the migration to a robust TCP daemon for MCP server communication. It consolidates redundant legacy tools, drastically reducing LLM token consumption and tool-selection noise.
 
 ### What changed
 
 #### Architecture & Transport
-* **TCP Transport Protocol**: Migrated communication from the legacy file-queue and MIDI SysEx implementations to a native `socketserver.ThreadingTCPServer` running inside the FL Studio controller script sandbox. This bypasses sandbox file I/O restrictions natively while providing stable, high-throughput communication.
+* **TCP Daemon Transport**: Migrated MCP-to-MIDI communication to a standalone `socketserver.ThreadingTCPServer` daemon (`fl-studio-mcp-daemon`). The MCP server now connects via TCP (`FLSTUDIO_MCP_TRANSPORT=tcp`), allowing the daemon to safely hold the virtual MIDI ports (SysEx) open across MCP client restarts. This ensures stable, high-throughput communication.
 * **FastMCP Orchestration**: Shifted orchestration logic into `FastMCP` (via `@mcp.tool` registration).
 
 #### Tool Consolidation & Domain Tools

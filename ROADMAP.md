@@ -274,7 +274,7 @@ Current baseline:
   mono-compatibility risks, mixer pan and stereo-separation metadata, low-end
   layering, and Master headroom with compact KB policy references. Controller
   build marker `channels-v39` adds `stereo_sep` to `mixer_list_tracks` for
-  efficient readback. Live FL verification remains the next stabilization step.
+  efficient readback. Live FL verification is complete as of 2026-06-06, successfully reviewing stereo separation and low-end metadata across a loaded project.
 - Agent orientation resource is complete as of 2026-06-07. `fl://agent-briefing`
   provides a compact, read-only startup entrypoint with bridge/status summary,
   current domain/workflow tool guidance, Knowledgebase-first behavior, safety
