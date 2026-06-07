@@ -23,5 +23,8 @@ A clear and concise description of what the bug is.
 **Expected Behavior**
 A clear and concise description of what you expected to happen.
 
+**Ping Test**
+Does `fl_transport(action="ping")` succeed?
+
 **Logs & Output**
 If applicable, paste the terminal output, daemon logs, or SysEx midi logs here.
