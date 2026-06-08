@@ -50,6 +50,7 @@ jobs:
           fi
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
+          git fetch origin "$branch" || true
           git checkout -B "$branch"
           git add ROADMAP.md docs/CHANGELOG.md docs/generated/ROADMAP.github.md docs/generated/CHANGELOG.github.md
           git commit -m "docs: sync GitHub markdown snapshots"
