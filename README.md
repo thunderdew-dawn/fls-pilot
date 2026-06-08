@@ -32,7 +32,7 @@ fls-pilot is a Model Context Protocol (MCP) server that lets any MCP client (lik
 - **Knowledgebase-backed parameters:** API values, dB/Hz mappings, known limits, and safe ranges are captured in the local Knowledgebase so agents can prefer verified project evidence over guesses.
 - **Rollback-first writes:** Persistent FL Studio mutations route through the safety layer: scoped snapshot, smallest practical write, readback where supported, changelog entry, and rollback path. Grouped writes are stored as named rollback units.
 
-## High-Level Tools (New in v2.0.0)
+## High-Level Tools
 
 This release focuses on rollback-first FL Studio production tooling and a strict agent workflow. The tools below are the highest-value entry points for day-to-day use.
 
