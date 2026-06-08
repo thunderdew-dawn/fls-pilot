@@ -95,6 +95,9 @@ prepared slices in order.
 2. Assign or confirm the milestone and labels.
 3. Ask a high-reasoning planning agent for a token-efficient implementation
    plan and slice queue.
+4. Require the planning agent to save the accepted plan as a GitHub issue
+   comment on the same issue. If the agent has no GitHub write access, it must
+   return the exact comment body for the human to paste.
 
 ### High-Reasoning Planning Prompt
 
@@ -119,25 +122,65 @@ Output must be token-efficient and execution-oriented:
 7. GitHub field updates needed.
 
 Do not implement. Do not broaden scope beyond the issue.
+
+Save the final plan as a GitHub issue comment on issue #<number> with heading:
+"Implementation Plan And Slice Queue". If an earlier comment with that heading
+exists, update that comment instead of adding a duplicate. If you cannot write
+to GitHub, return the exact comment body and say that it still needs to be
+posted.
 ```
 
-### Slice Issue Comment Template
+### Required Issue Comment Location And Format
 
-Post this as a GitHub issue comment so agents can self-serve:
+The durable plan must be stored as a GitHub issue comment on the roadmap issue
+being executed. Do not store it only in chat, scratch files, or a local IDE
+session. Use this format so agents can self-serve:
 
 ```text
-Slice queue for issue #<number>
+Implementation Plan And Slice Queue
+
+Issue: #<number>
+Planner: <agent or human name>
+Date: <YYYY-MM-DD>
+
+Scope:
+<one paragraph>
+
+Required first reads:
+- <exact file>
+
+Dependency order:
+1. <dependency>
+
+Safety/API evidence:
+- <requirement or known limit>
+
+Slice queue:
+- Slice: <id>
+  Status: pending
+  Agent class: <low-reasoning | high-reasoning>
+  Objective: <one sentence>
+  Files to inspect: <exact files>
+  Files likely to edit: <exact files or none>
+  Commands/checks: <commands>
+  Stop conditions: <conditions>
+
+PR strategy:
+<one PR or multiple PRs>
+
+GitHub field updates:
+<labels, milestone, Project #7 lane/status changes>
 
 Rules for agents:
 - Take the first unclaimed slice.
 - Comment "Claiming slice <id>" before work.
+- Update the slice status in this comment or add a progress comment when
+  status changes to in-progress, done, or blocked.
 - Work only on that slice.
 - Stop if safety, API evidence, rollback, readback, or target selection is
   unclear.
 - Open a PR titled "<slice id>: <short objective>".
 - Link the PR back to this issue.
-
-<paste slice queue>
 ```
 
 ### Low-Reasoning Agent Prompt
