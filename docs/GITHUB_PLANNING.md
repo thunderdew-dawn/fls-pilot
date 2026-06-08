@@ -7,10 +7,6 @@ readable snapshots until automated GitHub-to-Markdown generation is implemented.
 ## Current Structure
 
 - Canonical project: [FL Studio MCP Core Roadmap](https://github.com/users/thunderdew-dawn/projects/7).
-- Existing similar project: [FL Studio MCP Roadmap](https://github.com/users/thunderdew-dawn/projects/6).
-  It also contains the migrated issues, but Project #7 is the canonical roadmap
-  view because it has the richer planning fields. Do not create a third
-  duplicate project.
 - Fingerprint: [`issue_project_fingerprint.md`](issue_project_fingerprint.md)
   records the expected project IDs, fields, item range, and count checks.
 - Label `github-source-of-truth` marks migrated planning issues.

@@ -9,7 +9,7 @@ agent chats are execution surfaces, not durable planning storage.
 
 - Start from the canonical project:
   <https://github.com/users/thunderdew-dawn/projects/7>
-- Do not create duplicate roadmap projects. Project #6 is a legacy view; Project
+- Do not create duplicate roadmap projects. Project
   #7 is canonical.
 - Every non-trivial change starts with a GitHub issue or updates an existing
   one.
@@ -108,6 +108,7 @@ Output must be token-efficient and execution-oriented:
 4. Safety/API evidence requirements.
 5. Slice queue:
    - slice id
+   - status: pending, in-progress, done, blocked
    - agent class: low-reasoning or high-reasoning
    - objective
    - files to inspect
