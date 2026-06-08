@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import tomllib
 from pathlib import Path
 
 
@@ -13,13 +12,30 @@ def test_fls_pilot_is_the_only_source_package() -> None:
 
 
 def test_console_scripts_have_no_old_aliases() -> None:
-    data = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))
-    scripts = data["project"]["scripts"]
+    pyproject = (ROOT / "pyproject.toml").read_text(encoding="utf-8")
+    scripts = _project_scripts(pyproject)
 
-    assert data["project"]["name"] == "fls-pilot"
+    assert 'name = "fls-pilot"' in pyproject
     assert scripts == {
         "fls-pilot": "fls_pilot.server:main",
         "fls-pilot-daemon": "fls_pilot.daemon:main",
     }
     assert "fl-studio-mcp" not in scripts
     assert "fl-studio-mcp-daemon" not in scripts
+
+
+def _project_scripts(pyproject: str) -> dict[str, str]:
+    in_scripts = False
+    scripts: dict[str, str] = {}
+    for line in pyproject.splitlines():
+        stripped = line.strip()
+        if stripped == "[project.scripts]":
+            in_scripts = True
+            continue
+        if in_scripts and stripped.startswith("["):
+            break
+        if not in_scripts or not stripped or stripped.startswith("#"):
+            continue
+        name, value = stripped.split("=", 1)
+        scripts[name.strip()] = value.strip().strip('"')
+    return scripts
