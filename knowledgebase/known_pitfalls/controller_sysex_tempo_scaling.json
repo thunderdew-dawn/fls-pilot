@@ -2,7 +2,7 @@
   "date": "2026-05-23",
   "agent_author": "System Migration",
   "topic": "SysEx routing and tempo scaling bugs in the FL controller script",
-  "affected_file_api": "fl_controller/FLStudioMCP/device_FLStudioMCP.py, midi, general.processRECEvent",
+  "affected_file_api": "fl_controller/FLStudioPilot/device_FLStudioPilot.py, midi, general.processRECEvent",
   "context": "Bridge failures showed heartbeat timeouts and tempo writes collapsed to extremely low BPM values.",
   "observation": "Modern FL builds can deliver incoming SysEx through OnSysEx(event), and midi.REC_FromMIDI makes tempo writes interpret raw BPM values as normalized MIDI fractions.",
   "tested_values": "End-to-end bridge checks for ping, get tempo, set tempo, play, get play state, and stop.",

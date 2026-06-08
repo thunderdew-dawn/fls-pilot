@@ -10,7 +10,7 @@ Use this before demoting a documented Image-Line API to api-limited. The probe:
 
 Pre-req:
 - FL Studio open with the fixture project copy loaded.
-- fl-studio-mcp daemon running (TCP).
+- fls-pilot daemon running (TCP).
 """
 
 from __future__ import annotations
@@ -21,12 +21,12 @@ import time
 from dataclasses import dataclass
 from pathlib import Path
 
-os.environ.setdefault("FLSTUDIO_MCP_TRANSPORT", "tcp")
+os.environ.setdefault("FLS_PILOT_TRANSPORT", "tcp")
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from fl_studio_mcp import protocol, safety  # noqa: E402
-from fl_studio_mcp.connection import FLCommandFailed, get_bridge  # noqa: E402
+from fls_pilot import protocol, safety  # noqa: E402
+from fls_pilot.connection import FLCommandFailed, get_bridge  # noqa: E402
 
 
 @dataclass

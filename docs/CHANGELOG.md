@@ -26,6 +26,34 @@ snapshot backed by the GitHub-to-Markdown snapshot workflow.
 - Added release tag/version validation and prerelease-aware GitHub release
   metadata for future alpha, beta, and RC tags.
 
+## v3.0.0-alpha.1 - FL Studio Pilot Breaking Rename
+
+**Status:** Alpha
+**Release target:** `v3.0.0-alpha.1`
+
+### Breaking changes
+
+- Renamed the project identity to `fls-pilot`, meaning FL Studio Pilot.
+- Renamed the Python distribution and only supported CLI command to
+  `fls-pilot`.
+- Renamed the only supported Python import package to `fls_pilot`.
+- Renamed the FL Studio controller script identity to `FLStudioPilot`, with
+  default MIDI ports `FLStudioPilot RX` and `FLStudioPilot TX`.
+- Renamed runtime environment variables to the `FLS_PILOT_*` prefix.
+- Removed compatibility aliases for the old package, CLI, import path,
+  controller name, and environment variable names.
+
+### Migration notes
+
+- Reinstall from the renamed repository target:
+  `https://github.com/thunderdew-dawn/fls-pilot`.
+- Update MCP client configs from `fl-studio-mcp` to `fls-pilot`.
+- Update daemon commands from `fl-studio-mcp-daemon` to `fls-pilot-daemon`.
+- Update Python imports from `fl_studio_mcp` to `fls_pilot`.
+- Rename FL Studio virtual MIDI ports and controller selection from
+  `FLStudioMCP` to `FLStudioPilot`.
+- Update `FLSTUDIO_MCP_*` environment variables to `FLS_PILOT_*`.
+
 ## v2.0.0-stable - Architecture Foundation, Tool Efficiency, and Safety-First Production Workflows
 
 **Release date:** 2026-06-07  

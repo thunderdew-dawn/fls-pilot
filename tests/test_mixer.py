@@ -12,7 +12,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from fl_studio_mcp import (
+from fls_pilot import (
     protocol,  # noqa: E402
     safety,  # noqa: E402
 )
@@ -78,7 +78,7 @@ def main() -> int:
     bridge = FakeBridge()
 
     # Setup connection mock injection
-    from fl_studio_mcp import connection
+    from fls_pilot import connection
 
     orig_get_bridge = connection.get_bridge
     connection.get_bridge = lambda: bridge
@@ -188,7 +188,7 @@ def main() -> int:
         )
 
         # 6. Test fl_mixer_get_levels sampling
-        from fl_studio_mcp.music import levels
+        from fls_pilot.music import levels
 
         res_levels = levels.measure_track_level(bridge, 5, samples=2, interval_ms=1)
         check("measure_track_level returned playing is True", res_levels["playing"] is True)

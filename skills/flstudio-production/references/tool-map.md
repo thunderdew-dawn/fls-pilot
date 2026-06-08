@@ -1,4 +1,4 @@
-# FLStudioMCP Tool Map
+# FLStudioPilot Tool Map
 
 ## Orientation Resources
 

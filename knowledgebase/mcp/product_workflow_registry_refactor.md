@@ -3,7 +3,7 @@
 - **Date**: 2026-06-05
 - **Agent/Author**: Codex
 - **Topic**: Product workflow writes prepared through the operation registry.
-- **Affected File/API**: `src/fl_studio_mcp/tools/routing.py`, `src/fl_studio_mcp/tools/mix_doctor.py`, `src/fl_studio_mcp/operations.py`, `src/fl_studio_mcp/tools/batch.py`, `safety.safe_write`, `safety.safe_write_group`.
+- **Affected File/API**: `src/fls_pilot/tools/routing.py`, `src/fls_pilot/tools/mix_doctor.py`, `src/fls_pilot/operations.py`, `src/fls_pilot/tools/batch.py`, `safety.safe_write`, `safety.safe_write_group`.
 - **Context**: v1.2 Phase 5 refactors product workflows internally only where registry reuse removes duplicate command/snapshot/restore logic without changing public workflow behavior.
 - **Observation**: Routing Review route writes and mixer bus renames now use `operations.prepare_operation(...).safe_write_group_entry()` before dispatching through `safety.safe_write_group`. Mix Review `trim_volume` now uses `operations.prepare_operation("mixer", "set_volume", ...)` before dispatching through `safety.safe_write`. Persistent `fl_batch` uses the same registry helper for grouped write entries.
 - **Tested Values**: `mixer.set_route` entry for source `2`, destination `0`, disabled route; `mixer.set_name` entry for track `8`; Mix Review `trim_volume` on track `4` targeting `-3.0` dB; persistent `fl_batch` mixer mute write tests; operation registry mixer volume helper tests.

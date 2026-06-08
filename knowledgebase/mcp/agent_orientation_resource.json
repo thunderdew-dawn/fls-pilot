@@ -3,7 +3,7 @@
   "agent_author": "Codex",
   "topic": "fl://agent-briefing read-only MCP resource",
   "affected_file_api": [
-    "src/fl_studio_mcp/tools/resources.py",
+    "src/fls_pilot/tools/resources.py",
     "tests/test_agent_briefing_resource.py",
     "tests/test_resources.py",
     "docs/AGENT_ORIENTATION.md",
@@ -13,7 +13,7 @@
     "skills/flstudio-production/SKILL.md",
     "skills/flstudio-production/references/tool-map.md"
   ],
-  "context": "Agents need a compact, current, safety-first entrypoint before choosing FLStudioMCP tools.",
+  "context": "Agents need a compact, current, safety-first entrypoint before choosing FLStudioPilot tools.",
   "observation": "fl://agent-briefing returns startup guidance, safe bridge/status summary or error, current domain tools, workflow categories, token-saving strategy, safety rules, and stop rules. It avoids broad list reads and does not add controller commands or write behavior.",
   "tested_values": [
     "resource read through real FastMCP server path",

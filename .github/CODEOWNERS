@@ -4,5 +4,5 @@
 docs/ @thunderdew-dawn
 knowledgebase/ @thunderdew-dawn
 fl_controller/ @thunderdew-dawn
-src/fl_studio_mcp/safety.py @thunderdew-dawn
-src/fl_studio_mcp/protocol.py @thunderdew-dawn
+src/fls_pilot/safety.py @thunderdew-dawn
+src/fls_pilot/protocol.py @thunderdew-dawn

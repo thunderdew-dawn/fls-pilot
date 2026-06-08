@@ -102,7 +102,7 @@ def kb_record_finding(
 
     date_str = datetime.now().strftime("%Y-%m-%d")
     entry = f"\\n## {date_str} — {topic}\\n\\n"
-    entry += "Agent/Source: FL Studio MCP Agent\\n"
+    entry += "Agent/Source: FL Studio Pilot Agent\\n"
     entry += f"Context: {context}\\n"
     entry += f"Observation: {observation}\\n"
     entry += f"Tested values: {tested_values}\\n"

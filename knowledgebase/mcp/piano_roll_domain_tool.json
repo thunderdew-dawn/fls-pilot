@@ -3,8 +3,8 @@
   "agent_author": "Codex",
   "topic": "Consolidated fl_piano_roll MCP wrapper",
   "affected_file_api": [
-    "src/fl_studio_mcp/tools/pianoroll.py",
-    "src/fl_studio_mcp/safety.py",
+    "src/fls_pilot/tools/pianoroll.py",
+    "src/fls_pilot/safety.py",
     "CMD_ENSURE_PIANO_ROLL",
     "CMD_GENERAL_UNDO",
     "generated Piano Roll .pyscript helpers"

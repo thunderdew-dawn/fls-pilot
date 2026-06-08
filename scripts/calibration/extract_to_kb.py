@@ -4,7 +4,7 @@ from pathlib import Path
 
 
 def main():
-    root = Path("/Users/venkatesha/Documents/Projects/fl-studio-mcp-macos")
+    root = Path("/Users/venkatesha/Documents/Projects/fls-pilot-macos")
     scratch = root / "scratch"
     kb_fl_api = root / "knowledgebase" / "fl_api"
 

@@ -13,8 +13,8 @@ from pathlib import Path
 # Add src/ to path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from fl_studio_mcp import protocol, safety  # noqa: E402
-from fl_studio_mcp.tools import plugin as pl_tools  # noqa: E402
+from fls_pilot import protocol, safety  # noqa: E402
+from fls_pilot.tools import plugin as pl_tools  # noqa: E402
 
 _P = _F = 0
 
@@ -65,7 +65,7 @@ def main() -> int:
     bridge = FakeBridge()
 
     # Inject mock bridge
-    from fl_studio_mcp import connection
+    from fls_pilot import connection
 
     orig_get_bridge = connection.get_bridge
     connection.get_bridge = lambda: bridge

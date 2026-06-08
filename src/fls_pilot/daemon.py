@@ -20,9 +20,9 @@ client's launch context (this is also why socket-based MCPs like AbletonMCP
 
 Run it::
 
-    fl-studio-mcp-daemon            # or: python -m fl_studio_mcp.daemon
+    fls-pilot-daemon            # or: python -m fls_pilot.daemon
 
-Then point the MCP server at it by setting ``FLSTUDIO_MCP_TRANSPORT=tcp`` in
+Then point the MCP server at it by setting ``FLS_PILOT_TRANSPORT=tcp`` in
 the client's MCP config env.
 
 Wire protocol (newline-delimited JSON, one object per line):
@@ -55,7 +55,7 @@ from .connection import (
     FLTimeout,
 )
 
-logger = logging.getLogger("fl_studio_mcp.daemon")
+logger = logging.getLogger("fls_pilot.daemon")
 
 
 _bridge: FLBridge | None = None
@@ -185,11 +185,11 @@ class _Server(socketserver.ThreadingTCPServer):
 
 def main() -> None:
     logging.basicConfig(
-        level=os.environ.get("FLSTUDIO_MCP_LOG", "INFO").upper(),
+        level=os.environ.get("FLS_PILOT_LOG", "INFO").upper(),
         format="%(asctime)s %(levelname)s %(name)s: %(message)s",
     )
-    host = os.environ.get("FLSTUDIO_MCP_TCP_HOST", DEFAULT_TCP_HOST)
-    port = int(os.environ.get("FLSTUDIO_MCP_TCP_PORT", DEFAULT_TCP_PORT))
+    host = os.environ.get("FLS_PILOT_TCP_HOST", DEFAULT_TCP_HOST)
+    port = int(os.environ.get("FLS_PILOT_TCP_PORT", DEFAULT_TCP_PORT))
 
     # Pre-open so port problems surface in the log immediately. Non-fatal:
     # health/call retry until the ports exist.
@@ -204,7 +204,7 @@ def main() -> None:
         )
 
     server = _Server((host, port), _Handler)
-    logger.info("fl-studio-mcp daemon %s listening on %s:%d", __version__, host, port)
+    logger.info("fls-pilot daemon %s listening on %s:%d", __version__, host, port)
     try:
         server.serve_forever()
     except KeyboardInterrupt:  # pragma: no cover

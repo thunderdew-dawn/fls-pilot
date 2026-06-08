@@ -7,8 +7,8 @@
     "tests/test_mix_doctor.py",
     "knowledgebase/mixing/mixing_fundamentals.json",
     "knowledgebase/mastering/mastering_boundaries.json",
-    "src/fl_studio_mcp/music/mix_doctor.py",
-    "src/fl_studio_mcp/tools/mix_doctor.py"
+    "src/fls_pilot/music/mix_doctor.py",
+    "src/fls_pilot/tools/mix_doctor.py"
   ],
   "rules": [
     {

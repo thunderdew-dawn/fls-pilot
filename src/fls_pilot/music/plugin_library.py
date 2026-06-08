@@ -14,7 +14,7 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
-_ENV = "FLSTUDIO_MCP_PLUGIN_DB"  # override: full path to the 'Installed' folder
+_ENV = "FLS_PILOT_PLUGIN_DB"  # override: full path to the 'Installed' folder
 
 # Rough keyword buckets for EFFECTS, a convenience for chain suggestions. Fuzzy
 # (a name can land in several roles); the full effects list stays authoritative.

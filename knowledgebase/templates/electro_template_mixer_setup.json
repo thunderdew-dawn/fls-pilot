@@ -121,7 +121,7 @@
   "reproduction_steps": [
     "Open the Electro template in FL Studio.",
     "Start the TCP daemon and confirm ping.",
-    "Run PYTHONPATH=src FLSTUDIO_MCP_TRANSPORT=tcp .venv/bin/python scratch/scripts/read_electro_template_live.py."
+    "Run PYTHONPATH=src FLS_PILOT_TRANSPORT=tcp .venv/bin/python scratch/scripts/read_electro_template_live.py."
   ],
   "open_questions": [
     "Verify the other 12 standard templates.",

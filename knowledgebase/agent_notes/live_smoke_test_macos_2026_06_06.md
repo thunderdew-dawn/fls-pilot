@@ -3,7 +3,7 @@
 * **Date:** 2026-06-06
 * **Agent/Author:** Antigravity (Advanced Agentic Coding)
 * **Topic:** Live macOS Smoke Test - Architecture Foundation & Tool Efficiency (v2.0.0 Metadata Layer Verification)
-* **Affected File/API:** Core MCP tools (`fl_transport`, `fl_mixer`, `fl_channel`, `fl_pattern`, `fl_playlist`, `fl_effect`, `fl_plugin`, `fl_piano_roll`, `fl_batch`), Safety layer (`src/fl_studio_mcp/safety.py`), TCP Bridge, SSE Server.
+* **Affected File/API:** Core MCP tools (`fl_transport`, `fl_mixer`, `fl_channel`, `fl_pattern`, `fl_playlist`, `fl_effect`, `fl_plugin`, `fl_piano_roll`, `fl_batch`), Safety layer (`src/fls_pilot/safety.py`), TCP Bridge, SSE Server.
 * **Context:** Verifying the newly restructured metadata layer and consolidated domain tools against a live running FL Studio instance on macOS via the SSE server (port 8080) and TCP bridge (port 9787).
 * **Observation:** The consolidated domain tools correctly execute read-only audits and successfully enforce safety policies/KB metadata at runtime. The rollback contract was fully verified on a mixer color modification.
 * **Tested Values:**

@@ -1,13 +1,13 @@
-# flstudio-mcp
+# fls-pilot
 
 **Control FL Studio with any MCP-compatible LLM: AI mixing, composition, and mix diagnosis through natural language.**
 
-![version](https://img.shields.io/badge/version-2.0.0-blue)
-![status](https://img.shields.io/badge/status-stable-green)
+![version](https://img.shields.io/badge/version-3.0.0a1-blue)
+![status](https://img.shields.io/badge/status-alpha-orange)
 ![license](https://img.shields.io/badge/license-MIT-green)
 ![python](https://img.shields.io/badge/python-3.10+-blue)
-[![CI](https://github.com/thunderdew-dawn/flstudio-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/thunderdew-dawn/flstudio-mcp/actions/workflows/ci.yml)
-[![CodeQL](https://github.com/thunderdew-dawn/flstudio-mcp/actions/workflows/codeql.yml/badge.svg)](https://github.com/thunderdew-dawn/flstudio-mcp/actions/workflows/codeql.yml)
+[![CI](https://github.com/thunderdew-dawn/fls-pilot/actions/workflows/ci.yml/badge.svg)](https://github.com/thunderdew-dawn/fls-pilot/actions/workflows/ci.yml)
+[![CodeQL](https://github.com/thunderdew-dawn/fls-pilot/actions/workflows/codeql.yml/badge.svg)](https://github.com/thunderdew-dawn/fls-pilot/actions/workflows/codeql.yml)
 ![Windows](https://img.shields.io/badge/Windows-0078D6?style=flat&logo=windows&logoColor=white)
 ![macOS](https://img.shields.io/badge/macOS-000000?style=flat&logo=apple&logoColor=white)
 ![FL Studio](https://img.shields.io/badge/FL%20Studio-2025%2B-orange)
@@ -18,7 +18,13 @@
 
 ## Overview
 
-flstudio-mcp is a Model Context Protocol (MCP) server that lets any MCP client (like Claude Desktop, ChatGPT, or Cursor) drive FL Studio 2025 directly — the mixer, plugins, piano roll, routing, and project — from plain-language requests. Ask for a mix diagnosis, a vocal chain, a chord progression in a particular scale, or a full arrangement, and the LLM assistant carries it out through FL's scripting API and a set of calibrated, safety-checked tools.
+fls-pilot is a Model Context Protocol (MCP) server that lets any MCP client (like Claude Desktop, ChatGPT, or Cursor) drive FL Studio 2025 directly — the mixer, plugins, piano roll, routing, and project — from plain-language requests. Ask for a mix diagnosis, a vocal chain, a chord progression in a particular scale, or a full arrangement, and the LLM assistant carries it out through FL's scripting API and a set of calibrated, safety-checked tools.
+
+> [!IMPORTANT]
+> Version 3.0 is the breaking FL Studio Pilot rename. Use `fls-pilot`,
+> `fls-pilot-daemon`, `fls_pilot`, `FLStudioPilot`, and `FLS_PILOT_*`; old
+> package, command, import, controller, and environment-variable aliases are not
+> retained.
 
 **Key upgrades in v2.0.0:**
 - **Consolidated domain tools:** Dozens of single-purpose functions were folded into higher-level endpoints such as `fl_transport`, `fl_mixer`, `fl_channel`, `fl_effect`, and `fl_batch`. This reduces tool-selection noise and leaves more context for the assistant to reason about the project.
@@ -103,24 +109,24 @@ The server exposes a comprehensive suite of tools across all these phases. For a
 This repository is a materially extended fork of
 [`rosasynthesiz/flstudio-mcp`](https://github.com/rosasynthesiz/flstudio-mcp),
 now maintained at
-[`thunderdew-dawn/flstudio-mcp`](https://github.com/thunderdew-dawn/flstudio-mcp).
-The project keeps the `fl-studio-mcp` package and command names for
-compatibility, while the fork's engineering direction is now explicit:
+[`thunderdew-dawn/fls-pilot`](https://github.com/thunderdew-dawn/fls-pilot).
+The project now uses the `fls-pilot` package and command names as an
+intentional breaking rename, while the fork's engineering direction is explicit:
 rollback-first FL Studio production tooling, documented API-evidence handling,
 live-probe discipline for build-dependent behavior, macOS support, CI safety
 audits, prompt evals, and a committed agent workflow guide.
 
 Breaking-release sequencing and migration gates are tracked in GitHub Project #7
-and [release planning issue #66](https://github.com/thunderdew-dawn/flstudio-mcp/issues/66).
+and [release planning issue #66](https://github.com/thunderdew-dawn/fls-pilot/issues/66).
 
 See [`NOTICE.md`](NOTICE.md) for provenance and attribution.
 
 ## Project Operations
 
-- Roadmap source of truth: [FL Studio MCP Core Roadmap](https://github.com/users/thunderdew-dawn/projects/7)
+- Roadmap source of truth: [FL Studio Pilot Roadmap](https://github.com/users/thunderdew-dawn/projects/7)
 - Public roadmap snapshot: [`docs/generated/ROADMAP.github.md`](docs/generated/ROADMAP.github.md)
-- Release planning: GitHub Project #7 and [issue #66](https://github.com/thunderdew-dawn/flstudio-mcp/issues/66)
-- Issues and support: [GitHub Issues](https://github.com/thunderdew-dawn/flstudio-mcp/issues) and [SUPPORT.md](SUPPORT.md)
+- Release planning: GitHub Project #7 and [issue #66](https://github.com/thunderdew-dawn/fls-pilot/issues/66)
+- Issues and support: [GitHub Issues](https://github.com/thunderdew-dawn/fls-pilot/issues) and [SUPPORT.md](SUPPORT.md)
 - Security policy: [SECURITY.md](SECURITY.md)
 - Generated roadmap/changelog snapshots: `docs/generated/` via the `Sync GitHub Markdown Snapshots` workflow
 
@@ -128,12 +134,12 @@ See [`NOTICE.md`](NOTICE.md) for provenance and attribution.
 
 ```bat
 scripts\install_windows.bat        :: Windows: controller + server + note bridge
-fl-studio-mcp-daemon               :: start the bridge, keep it running
+fls-pilot-daemon               :: start the bridge, keep it running
 ```
 
 ```bash
 ./scripts/install_macos.sh         # macOS: controller + server + note bridge
-.venv/bin/fl-studio-mcp-daemon     # start the bridge, keep it running
+.venv/bin/fls-pilot-daemon     # start the bridge, keep it running
 ```
 
 Wire the two loopMIDI ports in FL (Options > MIDI Settings), arm `MCP_Apply` once in the piano roll, then ask the LLM assistant in plain language:
@@ -144,7 +150,7 @@ Full setup is below.
 
 ## What sets it apart
 
-flstudio-mcp is built as a mixing and production assistant, not only a note sender. It diagnoses and repairs a whole mix, makes decisions from real measured levels rather than guesswork, and is aware of your actual plugin and preset library when it makes suggestions. Every change that touches the project is shown before it is applied, logged, and reversible.
+fls-pilot is built as a mixing and production assistant, not only a note sender. It diagnoses and repairs a whole mix, makes decisions from real measured levels rather than guesswork, and is aware of your actual plugin and preset library when it makes suggestions. Every change that touches the project is shown before it is applied, logged, and reversible.
 
 ## Limitations
 
@@ -174,30 +180,30 @@ These are properties of FL Studio's scripting API, stated plainly:
 
 ### 1. Configure MIDI Ports
 
-* **Windows**: Create two virtual MIDI ports in loopMIDI, named exactly `FLStudioMCP RX` and `FLStudioMCP TX`.
+* **Windows**: Create two virtual MIDI ports in loopMIDI, named exactly `FLStudioPilot RX` and `FLStudioPilot TX`.
 * **macOS**:
   1. Open the **Audio MIDI Setup** app.
   2. Choose **Window > Show MIDI Studio** (or press `Cmd+8`).
   3. Double-click the **IAC Driver** icon.
   4. Tick the **Device is online** checkbox.
   5. Under **Ports** (or **Buses**), add/rename two ports to exactly:
-     * `FLStudioMCP RX`
-     * `FLStudioMCP TX`
+     * `FLStudioPilot RX`
+     * `FLStudioPilot TX`
   6. Click **Apply**.
 
 ### 2. Install the Controller Script & Server
 
 #### Windows:
 ```bat
-git clone https://github.com/thunderdew-dawn/flstudio-mcp
-cd flstudio-mcp
+git clone https://github.com/thunderdew-dawn/fls-pilot
+cd fls-pilot
 scripts\install_windows.bat
 ```
 
 #### macOS:
 ```bash
-git clone https://github.com/thunderdew-dawn/flstudio-mcp
-cd flstudio-mcp
+git clone https://github.com/thunderdew-dawn/fls-pilot
+cd fls-pilot
 chmod +x scripts/install_macos.sh
 ./scripts/install_macos.sh
 ```
@@ -214,39 +220,39 @@ For optional audio/melody analysis extras:
 
 1. Open FL Studio.
 2. Go to **Options > MIDI Settings**:
-   * **Input list**: Click `FLStudioMCP RX`, tick **Enable**, set **Controller type** to `FLStudioMCP`, and set **Port** to `42`.
-   * **Output list**: Click `FLStudioMCP TX`, tick **Enable**, and set **Port** to `42` (MUST match the input port).
-3. Go to **View > Script output**. It should show `[FLStudioMCP] Ready`.
+   * **Input list**: Click `FLStudioPilot RX`, tick **Enable**, set **Controller type** to `FLStudioPilot`, and set **Port** to `42`.
+   * **Output list**: Click `FLStudioPilot TX`, tick **Enable**, and set **Port** to `42` (MUST match the input port).
+3. Go to **View > Script output**. It should show `[FLStudioPilot] Ready`.
 
 ### 4. Connect to your MCP Client
 
 #### Option A: Claude Desktop, Cursor, or other stdio clients
 1. Start the MIDI bridge daemon (recommended so MIDI ports are held by a stable background process):
-   * Windows: Run `fl-studio-mcp-daemon`
-   * macOS: Run `.venv/bin/fl-studio-mcp-daemon`
+   * Windows: Run `fls-pilot-daemon`
+   * macOS: Run `.venv/bin/fls-pilot-daemon`
 2. Configure your client (e.g., Claude Desktop). Add this to your configuration file (Windows: `%APPDATA%\Claude\claude_desktop_config.json`, macOS: `~/Library/Application Support/Claude/claude_desktop_config.json`):
    ```json
    {
      "mcpServers": {
        "fl-studio": {
-         "command": "/path/to/flstudio-mcp/.venv/bin/fl-studio-mcp",
+         "command": "/path/to/fls-pilot/.venv/bin/fls-pilot",
          "env": {
-           "FLSTUDIO_MCP_TRANSPORT": "tcp"
+           "FLS_PILOT_TRANSPORT": "tcp"
          }
        }
      }
    }
    ```
-   *(Note: On Windows, use `fl-studio-mcp` for the command instead of the `.venv` path if installed globally.)*
+   *(Note: On Windows, use `fls-pilot` for the command instead of the `.venv` path if installed globally.)*
 
 #### Option B: ChatGPT Desktop (SSE)
 ChatGPT Desktop does not support local stdio subprocesses and requires a remote/SSE connection:
 1. Start the MIDI bridge daemon in a terminal:
-   * Windows: `fl-studio-mcp-daemon`
-   * macOS: `.venv/bin/fl-studio-mcp-daemon`
+   * Windows: `fls-pilot-daemon`
+   * macOS: `.venv/bin/fls-pilot-daemon`
 2. Start the MCP server with the SSE transport in another terminal:
-   * Windows: `set FLSTUDIO_MCP_TRANSPORT=tcp && fl-studio-mcp --sse --port 8080`
-   * macOS: `export FLSTUDIO_MCP_TRANSPORT=tcp && .venv/bin/fl-studio-mcp --sse --port 8080`
+   * Windows: `set FLS_PILOT_TRANSPORT=tcp && fls-pilot --sse --port 8080`
+   * macOS: `export FLS_PILOT_TRANSPORT=tcp && .venv/bin/fls-pilot --sse --port 8080`
 3. Enable Developer Mode in ChatGPT Desktop (Settings > Developer).
 4. Go to **Settings > Developer > MCP**, click **Add New Server**:
    * **Name**: `FL Studio`
@@ -265,9 +271,9 @@ Verify the connection by asking your AI assistant to run
 
 | Symptom | Fix |
 |---|---|
-| loopMIDI ports not found / not detected | The two ports must be named **exactly** `FLStudioMCP RX` and `FLStudioMCP TX`. Recreate them in loopMIDI and re-run the installer. |
-| No `[FLStudioMCP] Ready` in FL's Script output | The controller isn't registered: set the `FLStudioMCP RX` input's **Controller type** to **FLStudioMCP** in MIDI Settings, confirm `device_FLStudioMCP.py` is in `Settings\Hardware\FLStudioMCP\`, then fully restart FL Studio. |
-| The LLM assistant can't reach FL / transport ping fails | Make sure the daemon is running (`fl-studio-mcp-daemon`); check the transport matches (`FLSTUDIO_MCP_TRANSPORT=tcp` uses the daemon, unset uses direct MIDI); restart your MCP client after editing its config. |
+| loopMIDI ports not found / not detected | The two ports must be named **exactly** `FLStudioPilot RX` and `FLStudioPilot TX`. Recreate them in loopMIDI and re-run the installer. |
+| No `[FLStudioPilot] Ready` in FL's Script output | The controller isn't registered: set the `FLStudioPilot RX` input's **Controller type** to **FLStudioPilot** in MIDI Settings, confirm `device_FLStudioPilot.py` is in `Settings\Hardware\FLStudioPilot\`, then fully restart FL Studio. |
+| The LLM assistant can't reach FL / transport ping fails | Make sure the daemon is running (`fls-pilot-daemon`); check the transport matches (`FLS_PILOT_TRANSPORT=tcp` uses the daemon, unset uses direct MIDI); restart your MCP client after editing its config. |
 | Note-writing does nothing | Run `MCP_Apply` once from the piano roll's scripting menu this session — it arms the note bridge. |
 | Audio tools error or are unavailable | Install the optional extras: `pip install -e ".[audio]"` (or `".[audio,audio-accurate]"`). |
 
@@ -297,8 +303,10 @@ MIT — see [LICENSE](LICENSE).
 
 ## Status & contributing
 
-Stable — the public 2.0.0 release. Fully compatible with Windows and macOS.
+3.0 alpha — breaking `fls-pilot` rename in progress. Fully compatible with
+Windows and macOS after migration to the new package, command, and controller
+names.
 Issues and pull requests:
-[github.com/thunderdew-dawn/flstudio-mcp](https://github.com/thunderdew-dawn/flstudio-mcp).
+[github.com/thunderdew-dawn/fls-pilot](https://github.com/thunderdew-dawn/fls-pilot).
 
-<!-- mcp-name: io.github.thunderdew-dawn/flstudio-mcp -->
+<!-- mcp-name: io.github.thunderdew-dawn/fls-pilot -->

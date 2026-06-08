@@ -1,0 +1,57 @@
+{
+  "date": "2026-06-08",
+  "agent_author": "Codex",
+  "topic": "FL Studio Pilot package, command, controller, and environment rename",
+  "affected_file_api": [
+    "pyproject.toml",
+    "server.json",
+    "src/fls_pilot",
+    "fl_controller/FLStudioPilot/device_FLStudioPilot.py",
+    "FastMCP server metadata",
+    "console scripts",
+    "runtime environment variables"
+  ],
+  "context": "Release 3.0 intentionally renames the maintained project to fls-pilot, meaning FL Studio Pilot. The rename is breaking and does not retain compatibility aliases.",
+  "observation": "The supported distribution, import package, CLI commands, controller script identity, default MIDI port names, and environment-variable prefix now use the FL Studio Pilot naming scheme.",
+  "tested_values": [
+    "fls-pilot",
+    "fls-pilot-daemon",
+    "fls_pilot",
+    "FLStudioPilot",
+    "FLStudioPilot RX",
+    "FLStudioPilot TX",
+    "FLS_PILOT_TRANSPORT",
+    "FLS_PILOT_PORT_TO_FL",
+    "FLS_PILOT_PORT_FROM_FL"
+  ],
+  "result": "A fresh editable install exposes only the new console scripts, imports fls_pilot at version 3.0.0a1, does not resolve fl_studio_mcp, and builds a wheel containing fls_pilot without fl_studio_mcp.",
+  "confidence_level": "implementation_verified",
+  "source_method": [
+    "static rename scan",
+    "fresh scratch virtualenv install",
+    "console script existence check",
+    "importlib import-path check",
+    "wheel contents check",
+    "twine check",
+    "pytest"
+  ],
+  "valid_ranges": "Not applicable; this entry documents project identity and runtime names rather than FL Studio parameter ranges.",
+  "example": "Use FLS_PILOT_TRANSPORT=tcp fls-pilot with the FLStudioPilot controller and FLStudioPilot RX/TX MIDI ports.",
+  "known_pitfalls": [
+    "Local MIDI ports created before the rename may still be named FLStudioMCP RX/TX and must be renamed manually.",
+    "Historical verification evidence may retain old names because it describes the implementation that existed at the time.",
+    "The GitHub repository slug still requires an external owner/admin rename from thunderdew-dawn/flstudio-mcp to thunderdew-dawn/fls-pilot."
+  ],
+  "reproduction_steps": [
+    "Create a fresh virtual environment.",
+    "Install the project with pip install -e .",
+    "Verify import fls_pilot and version 3.0.0a1.",
+    "Verify importlib.util.find_spec('fl_studio_mcp') is None.",
+    "Verify fls-pilot and fls-pilot-daemon exist and old console scripts do not.",
+    "Build the wheel and confirm it contains fls_pilot but not fl_studio_mcp."
+  ],
+  "open_questions": [
+    "The external GitHub repository rename must be completed by an owner/admin at the release gate."
+  ],
+  "next_recommended_action": "After merging the rename PR, perform the GitHub repository rename and ask users to rename local MIDI ports and MCP client configs before running live FL Studio checks."
+}

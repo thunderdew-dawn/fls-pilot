@@ -16,7 +16,7 @@ from pydantic import BaseModel, Field
 
 from ..music.midi_export import write_midi
 
-_EXPORT_DIR = os.path.join(os.path.expanduser("~"), ".flstudio-mcp", "exports")
+_EXPORT_DIR = os.path.join(os.path.expanduser("~"), ".fls-pilot", "exports")
 
 
 class ExportNote(BaseModel):
@@ -49,7 +49,7 @@ def register(mcp: FastMCP) -> None:
         tracks: list[ExportTrack],
         bpm: Annotated[float, Field(gt=0, description="Tempo (BPM).")] = 120.0,
         output_path: Annotated[
-            str | None, Field(description="Output .mid path; defaults to ~/.flstudio-mcp/exports/.")
+            str | None, Field(description="Output .mid path; defaults to ~/.fls-pilot/exports/.")
         ] = None,
         beats_per_bar: Annotated[
             int, Field(ge=1, le=16, description="Time-signature numerator (4 = 4/4).")

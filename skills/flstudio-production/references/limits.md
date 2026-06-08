@@ -1,4 +1,4 @@
-# FLStudioMCP Limits
+# FLStudioPilot Limits
 
 ## Hard Limits
 

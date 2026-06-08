@@ -7,7 +7,7 @@ Exercises BOTH compressors via the real MCP tools, then rolls back:
 Passes in either transport state: PLAYING -> threshold level-matched
 (peak - offset); STOPPED -> preset fallback + note.
 
-    set FLSTUDIO_MCP_TRANSPORT=tcp
+    set FLS_PILOT_TRANSPORT=tcp
     python scripts/test_level_aware.py
 Run once STOPPED (fallback) and once PLAYING (level-matched).
 """
@@ -21,10 +21,10 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from fl_studio_mcp import protocol  # noqa: E402
-from fl_studio_mcp.connection import get_bridge  # noqa: E402
-from fl_studio_mcp.server import build_server  # noqa: E402
-from fl_studio_mcp.tools.mixing import _named_params  # noqa: E402
+from fls_pilot import protocol  # noqa: E402
+from fls_pilot.connection import get_bridge  # noqa: E402
+from fls_pilot.server import build_server  # noqa: E402
+from fls_pilot.tools.mixing import _named_params  # noqa: E402
 
 LIM_TRACK, LIM_SLOT = 9, 4
 PROC_TRACK, PROC_SLOT = 8, 4

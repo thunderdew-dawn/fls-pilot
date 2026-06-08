@@ -13,8 +13,8 @@ from pathlib import Path
 # Add src/ to path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from fl_studio_mcp.music import scales  # noqa: E402
-from fl_studio_mcp.tools import compose as comp_tools  # noqa: E402
+from fls_pilot.music import scales  # noqa: E402
+from fls_pilot.tools import compose as comp_tools  # noqa: E402
 
 _P = _F = 0
 

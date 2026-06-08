@@ -7,7 +7,7 @@ on:
       - pyproject.toml
       - ".github/workflows/release.yml"
       - ".github/workflows/release_dry_run.yml"
-      - "fl_controller/FLStudioMCP/device_FLStudioMCP.py"
+      - "fl_controller/FLStudioPilot/device_FLStudioPilot.py"
       - "scripts/check_release_tag.py"
       - "src/**"
 
@@ -31,4 +31,4 @@ jobs:
           python -m twine check dist/*
 
       - name: Check controller artifact
-        run: test -f fl_controller/FLStudioMCP/device_FLStudioMCP.py
+        run: test -f fl_controller/FLStudioPilot/device_FLStudioPilot.py

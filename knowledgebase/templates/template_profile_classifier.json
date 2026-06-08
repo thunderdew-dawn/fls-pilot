@@ -3,7 +3,7 @@
   "agent_author": "Codex",
   "topic": "Data-driven FL Studio template profile classifier",
   "affected_api": [
-    "src/fl_studio_mcp/project_templates.py",
+    "src/fls_pilot/project_templates.py",
     "knowledgebase/templates/profiles/*.json",
     "Mix Review",
     "Low-End/Stereo Review",

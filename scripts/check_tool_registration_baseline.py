@@ -17,8 +17,8 @@ sys.path.insert(0, str(ROOT / "src"))
 from audit_tool_safety import TOOLS_DIR, audit_file, count_by_status  # noqa: E402
 from fastmcp import FastMCP  # noqa: E402
 
-from fl_studio_mcp import __version__  # noqa: E402
-from fl_studio_mcp import server as server_module  # noqa: E402
+from fls_pilot import __version__  # noqa: E402
+from fls_pilot import server as server_module  # noqa: E402
 
 EXPECTED_REGISTERED_TOOL_COUNT = 87
 EXPECTED_STATIC_TOOL_COUNT = 166
@@ -46,7 +46,7 @@ class RegistrationCall:
 
 
 def _build_server_function() -> ast.FunctionDef:
-    server_path = ROOT / "src" / "fl_studio_mcp" / "server.py"
+    server_path = ROOT / "src" / "fls_pilot" / "server.py"
     tree = ast.parse(server_path.read_text(encoding="utf-8"))
     for node in tree.body:
         if isinstance(node, ast.FunctionDef) and node.name == "build_server":
@@ -75,7 +75,7 @@ def _registration_calls() -> list[RegistrationCall]:
 
 def _new_server() -> FastMCP:
     return FastMCP(
-        name="fl-studio-mcp",
+        name="fls-pilot",
         version=__version__,
         instructions=server_module.SERVER_INSTRUCTIONS,
     )

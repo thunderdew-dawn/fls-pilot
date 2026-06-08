@@ -10,7 +10,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
 import pytest  # noqa: E402
 
-from fl_studio_mcp import operations, protocol  # noqa: E402
+from fls_pilot import operations, protocol  # noqa: E402
 
 
 def _restore(prepared: operations.PreparedOperation, before: dict) -> dict:

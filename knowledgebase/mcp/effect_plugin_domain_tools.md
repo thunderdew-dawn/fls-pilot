@@ -3,7 +3,7 @@
 - **Date**: 2026-06-04
 - **Agent/Author**: Codex
 - **Topic**: Consolidated `fl_effect` and `fl_plugin` MCP wrappers
-- **Affected File/API**: `src/fl_studio_mcp/tools/effect.py`, `src/fl_studio_mcp/tools/plugin_domain.py`, `src/fl_studio_mcp/operations.py`, effect-slot, native EQ, and plugin-parameter protocol commands
+- **Affected File/API**: `src/fls_pilot/tools/effect.py`, `src/fls_pilot/tools/plugin_domain.py`, `src/fls_pilot/operations.py`, effect-slot, native EQ, and plugin-parameter protocol commands
 - **Context**: v1.2 slice 09 introduced the effect/plugin domain tools additively for parity testing and lower tool-selection overhead. In the current v2.0 public surface, legacy effect, native EQ, and plugin-parameter aliases covered by `fl_effect` and `fl_plugin` are retired.
 - **Observation**: `fl_effect(action, params)` validates effect-slot and native EQ actions through the internal operation registry. `fl_plugin(action, params)` validates already-loaded plugin list/parameter actions through the registry and resolves string parameter names to concrete integer indices before dispatch. Persistent writes route through `safety.safe_write`.
 - **Tested Values**: Effect `get_slot`, `get_eq`, `set_slot_mix`, `set_eq_band`, invalid action, invalid slot mix; plugin `list`, `list_params`, `get_param`, `set_param`, invalid action, invalid parameter value, and explicit plugin-loading rejection.

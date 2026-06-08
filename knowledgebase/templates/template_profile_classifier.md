@@ -3,7 +3,7 @@
 - **Date:** 2026-06-07
 - **Agent/Author:** Codex
 - **Topic:** Data-driven classifier for FL Studio standard template profiles.
-- **Affected File/API:** `src/fl_studio_mcp/project_templates.py`, `knowledgebase/templates/profiles/*.json`, Mix Review, Low-End/Stereo Review, Routing Review/Cleanup, Project Health / Preflight, Project Organizer.
+- **Affected File/API:** `src/fls_pilot/project_templates.py`, `knowledgebase/templates/profiles/*.json`, Mix Review, Low-End/Stereo Review, Routing Review/Cleanup, Project Health / Preflight, Project Organizer.
 - **Context:** The user captured 12 additional FL Studio standard template profiles after the initial `Electro` profile. Product tools must preserve those stem/mono/stereo template structures and avoid false cleanup or mix-improvement findings.
 - **Observation:** Compact template profiles contain enough mixer, routing, channel-routing, role, reserved-range, control-route, and tool-policy data to classify the standard template topology without hard-coded per-template logic. Some templates are structurally identical from available readbacks.
 - **Tested Values:** Profiles validated and classifier-tested: `breakbeat`, `chillout`, `chillout_ambient`, `drum_and_bass`, `dubstep`, `edm_house`, `electro`, `electro_template`, `funk`, `hiphop_trap`, `jazz`, `metal`, `rock`, `trap`.

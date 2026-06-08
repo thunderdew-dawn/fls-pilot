@@ -17,13 +17,13 @@ import sys
 import time
 from pathlib import Path
 
-os.environ.setdefault("FLSTUDIO_MCP_TRANSPORT", "tcp")
+os.environ.setdefault("FLS_PILOT_TRANSPORT", "tcp")
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "src"))
 
-from fl_studio_mcp.server import build_server  # noqa: E402
-from fl_studio_mcp.tools import (  # noqa: E402
+from fls_pilot.server import build_server  # noqa: E402
+from fls_pilot.tools import (  # noqa: E402
     chains,
     mix_doctor,
     mixer,

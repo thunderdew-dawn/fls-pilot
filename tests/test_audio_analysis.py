@@ -19,7 +19,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 import numpy as np  # noqa: E402
 import soundfile as sf  # noqa: E402
 
-from fl_studio_mcp.tools.audio import audio_analyze  # noqa: E402
+from fls_pilot.tools.audio import audio_analyze  # noqa: E402
 
 SR = 22050
 _P = _F = 0

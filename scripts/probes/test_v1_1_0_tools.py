@@ -4,16 +4,16 @@ Creates a mess in FL Studio, verifies the tools detect it, fixes it, and rolls b
 
 import time
 
-from fl_studio_mcp import safety
-from fl_studio_mcp.connection import get_bridge
-from fl_studio_mcp.protocol import (
+from fls_pilot import safety
+from fls_pilot.connection import get_bridge
+from fls_pilot.protocol import (
     CMD_CHANNEL_SET_NAME,
     CMD_CHANNEL_SET_TARGET,
     CMD_CHANNEL_SET_VOLUME,
 )
 
 # Import tools modules
-from fl_studio_mcp.tools import channels, mixer_core, project_doctor, project_organizer, routing
+from fls_pilot.tools import channels, mixer_core, project_doctor, project_organizer, routing
 
 
 class DummyMCP:

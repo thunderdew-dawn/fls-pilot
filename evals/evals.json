@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "suite": "flstudio-production-tool-surface",
-  "description": "Ten prompt-level evals covering FLStudioMCP domain-tool selection, rollback discipline, API limits, and user-facing reporting.",
+  "description": "Ten prompt-level evals covering FLStudioPilot domain-tool selection, rollback discipline, API limits, and user-facing reporting.",
   "evals": [
     {
       "id": "bridge_preflight_and_transport",

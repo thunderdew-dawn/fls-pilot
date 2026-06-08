@@ -3,7 +3,7 @@
   "agent_author": "Codex",
   "topic": "v1.2 legacy low-level MCP alias removal",
   "affected_file_api": [
-    "src/fl_studio_mcp/server.py",
+    "src/fls_pilot/server.py",
     "scripts/check_tool_registration_baseline.py",
     "domain MCP tools"
   ],

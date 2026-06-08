@@ -15,8 +15,8 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from fl_studio_mcp.music import mix_doctor as md  # noqa: E402
-from fl_studio_mcp.tools import mix_doctor as mix_tool  # noqa: E402
+from fls_pilot.music import mix_doctor as md  # noqa: E402
+from fls_pilot.tools import mix_doctor as mix_tool  # noqa: E402
 
 _P = _F = 0
 

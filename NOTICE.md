@@ -1,14 +1,12 @@
 # Project Provenance
 
-`flstudio-mcp` is a maintained fork of
+`fls-pilot` is a maintained fork of
 [`rosasynthesiz/flstudio-mcp`](https://github.com/rosasynthesiz/flstudio-mcp).
-The original project name and Python package name are retained
-for compatibility with existing MCP client configurations, installer scripts,
-and downstream references. (Command names were originally retained but have been
-consolidated and renamed as of v2.0.0).
+The 3.0 line intentionally adopts the `fls-pilot` project, package, command,
+and import names as a breaking rename with no compatibility aliases.
 
 The current maintained repository is
-[`thunderdew-dawn/flstudio-mcp`](https://github.com/thunderdew-dawn/flstudio-mcp).
+[`thunderdew-dawn/fls-pilot`](https://github.com/thunderdew-dawn/fls-pilot).
 
 ## What This Fork Adds
 

@@ -1,6 +1,6 @@
 import time
 
-from fl_studio_mcp.connection import get_bridge
+from fls_pilot.connection import get_bridge
 
 
 def test_live_api():

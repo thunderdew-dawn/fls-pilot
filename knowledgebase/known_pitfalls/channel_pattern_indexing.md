@@ -3,7 +3,7 @@
 **Date:** 2026-06-06  
 **Agent/Author:** Antigravity  
 **Topic:** FL Studio Channel and Pattern Index Synchronization  
-**Affected File/API:** `fl_studio_mcp.protocol.CMD_CHANNEL_ROUTING_SUMMARY`, `channel_list`, `pattern_list`  
+**Affected File/API:** `fls_pilot.protocol.CMD_CHANNEL_ROUTING_SUMMARY`, `channel_list`, `pattern_list`
 **Confidence Level:** `implementation_verified`
 
 ## Context

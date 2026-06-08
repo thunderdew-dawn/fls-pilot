@@ -16,9 +16,9 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from fl_studio_mcp import safety  # noqa: E402
-from fl_studio_mcp.connection import FLBridge  # noqa: E402
-from fl_studio_mcp.protocol import (  # noqa: E402
+from fls_pilot import safety  # noqa: E402
+from fls_pilot.connection import FLBridge  # noqa: E402
+from fls_pilot.protocol import (  # noqa: E402
     CMD_MIXER_GET_TRACK,
     CMD_MIXER_SET_MUTE,
     CMD_MIXER_SET_PAN,

@@ -38,7 +38,7 @@
   "source_method": [
     "scripts/probes/test_product_workflow_naming_live.py",
     "scratch/product_workflow_naming_live_2026_06_07.json",
-    "FLSTUDIO_MCP_TRANSPORT=tcp",
+    "FLS_PILOT_TRANSPORT=tcp",
     "TCP daemon port 9787"
   ],
   "valid_ranges": "No new FL parameter ranges were introduced. The write smoke used the existing mixer fader dB path and rollback safety layer.",
@@ -50,7 +50,7 @@
   "reproduction_steps": [
     "Ensure FL Studio and the TCP daemon are running.",
     "Confirm the controller reports channels-v38.",
-    "Run FLSTUDIO_MCP_TRANSPORT=tcp .venv/bin/python scripts/probes/test_product_workflow_naming_live.py."
+    "Run FLS_PILOT_TRANSPORT=tcp .venv/bin/python scripts/probes/test_product_workflow_naming_live.py."
   ],
   "open_questions": [],
   "next_recommended_action": "Treat the naming pass as live-smoked on macOS. The next feature slice can start with the read-only Low-End/Stereo Safety Assistant."

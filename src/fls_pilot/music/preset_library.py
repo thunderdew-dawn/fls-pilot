@@ -15,8 +15,8 @@ import os
 import re
 from pathlib import Path
 
-_ENV_FL = "FLSTUDIO_MCP_PRESETS"
-_ENV_SERUM = "FLSTUDIO_MCP_SERUM_PRESETS"
+_ENV_FL = "FLS_PILOT_PRESETS"
+_ENV_SERUM = "FLS_PILOT_SERUM_PRESETS"
 
 # Small synonym map so a description like "vintage bass" matches Serum-style
 # short names ("BA ...", "Analog ..."). Rough -- the LLM assistant refines the final pick.

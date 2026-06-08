@@ -14,12 +14,12 @@ import time
 from pathlib import Path
 
 # Force the TCP transport so we go through the daemon
-os.environ.setdefault("FLSTUDIO_MCP_TRANSPORT", "tcp")
+os.environ.setdefault("FLS_PILOT_TRANSPORT", "tcp")
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from fl_studio_mcp import safety  # noqa: E402
-from fl_studio_mcp.connection import get_bridge  # noqa: E402
+from fls_pilot import safety  # noqa: E402
+from fls_pilot.connection import get_bridge  # noqa: E402
 
 
 def main() -> int:
@@ -220,7 +220,7 @@ def main() -> int:
     peaks = b.call("mixer_get_peaks", {"track": 0})
     print("Master peaks raw:", peaks)
 
-    from fl_studio_mcp.music import levels
+    from fls_pilot.music import levels
 
     res_levels = levels.measure_track_level(b, 0, samples=5, interval_ms=50)
     print("Master measured level info:", res_levels)

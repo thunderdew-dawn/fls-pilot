@@ -3,9 +3,9 @@
   "agent_author": "Codex",
   "topic": "Consolidated fl_pattern and fl_playlist MCP wrappers",
   "affected_file_api": [
-    "src/fl_studio_mcp/tools/pattern.py",
-    "src/fl_studio_mcp/tools/playlist.py",
-    "src/fl_studio_mcp/operations.py",
+    "src/fls_pilot/tools/pattern.py",
+    "src/fls_pilot/tools/playlist.py",
+    "src/fls_pilot/operations.py",
     "pattern protocol commands",
     "playlist track protocol commands"
   ],

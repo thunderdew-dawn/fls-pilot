@@ -3,8 +3,8 @@
 - **Date**: 2026-06-07
 - **Agent/Author**: Codex
 - **Topic**: `fl://agent-briefing` read-only MCP resource
-- **Affected File/API**: `src/fl_studio_mcp/tools/resources.py`, `tests/test_agent_briefing_resource.py`, `tests/test_resources.py`, docs and skill orientation references
-- **Context**: Agents need a compact, current, safety-first entrypoint before choosing FLStudioMCP tools.
+- **Affected File/API**: `src/fls_pilot/tools/resources.py`, `tests/test_agent_briefing_resource.py`, `tests/test_resources.py`, docs and skill orientation references
+- **Context**: Agents need a compact, current, safety-first entrypoint before choosing FLStudioPilot tools.
 - **Observation**: `fl://agent-briefing` returns a compact orientation payload with startup guidance, safe bridge/status summary or error, current domain tools, workflow categories, token-saving strategy, safety rules, and stop rules. It avoids broad list reads and does not add controller commands or write behavior.
 - **Tested Values**: Resource registration/read through the real FastMCP server path; compact-size check under 5 KB; current domain-tool names present; removed alias names absent; bridge-down-safe behavior covered by the existing resource safe-call pattern.
 - **Result**: The resource is read-only, compact, and safe to read when the FL bridge is unavailable. It guides agents toward current domain/workflow tools and Knowledgebase-first behavior without changing FL Studio state.

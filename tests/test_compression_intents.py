@@ -5,7 +5,7 @@ Unit tests are pure. The intent tests build the real FastMCP server and call
 the registered tools in-process on track 9 slot 4 (Drums Fruity Limiter), then
 roll everything back and assert the COMP params return to their defaults.
 
-    set FLSTUDIO_MCP_TRANSPORT=tcp
+    set FLS_PILOT_TRANSPORT=tcp
     python scripts/test_compression_intents.py [track] [slot]
 """
 
@@ -18,9 +18,9 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from fl_studio_mcp.connection import get_bridge  # noqa: E402
-from fl_studio_mcp.music import limiter_curves as lc  # noqa: E402
-from fl_studio_mcp.server import build_server  # noqa: E402
+from fls_pilot.connection import get_bridge  # noqa: E402
+from fls_pilot.music import limiter_curves as lc  # noqa: E402
+from fls_pilot.server import build_server  # noqa: E402
 
 TRACK = int(sys.argv[1]) if len(sys.argv) > 1 else 9
 SLOT = int(sys.argv[2]) if len(sys.argv) > 2 else 4

@@ -38,7 +38,7 @@ from .protocol import (
     CMD_PLUGIN_GET_PARAM,
 )
 
-_DIR = Path.home() / ".flstudio-mcp"
+_DIR = Path.home() / ".fls-pilot"
 _PATH = _DIR / "changelog.jsonl"
 _MAX = 50
 _SCHEMA_VERSION = 1

@@ -1,11 +1,11 @@
-# name=FLStudioMCP
-# url=https://github.com/rosasynthesiz/flstudio-mcp
+# name=FLStudioPilot
+# url=https://github.com/thunderdew-dawn/fls-pilot
 # receiveFrom=
 # supportedDevices=
-"""FLStudioMCP controller script -- v0.2 MIDI-only transport.
+"""FLStudioPilot controller script -- v0.2 MIDI-only transport.
 
 Lives at:
-    Documents/Image-Line/FL Studio/Settings/Hardware/FLStudioMCP/device_FLStudioMCP.py
+    Documents/Image-Line/FL Studio/Settings/Hardware/FLStudioPilot/device_FLStudioPilot.py
 
 v0.1 tried to use a file-based JSON queue. That doesn't work: FL's
 controller-script Python sandbox blocks every form of file write (open(),
@@ -14,16 +14,16 @@ message). This v0.2 rewrite uses MIDI SysEx for both directions.
 
 To activate in FL:
   1. Create two loopMIDI ports (Windows) or two IAC Driver buses (macOS):
-        FLStudioMCP RX   -- the MCP server's OUTPUT, FL's INPUT
-        FLStudioMCP TX   -- FL's OUTPUT,           the MCP server's INPUT
+        FLStudioPilot RX   -- the MCP server's OUTPUT, FL's INPUT
+        FLStudioPilot TX   -- FL's OUTPUT,           the MCP server's INPUT
   2. Options > MIDI Settings:
-        Input  list -> enable "FLStudioMCP RX", Controller type = FLStudioMCP,
+        Input  list -> enable "FLStudioPilot RX", Controller type = FLStudioPilot,
                        Port = some number (e.g. 42).
-        Output list -> enable "FLStudioMCP TX", Port = SAME number (42).
+        Output list -> enable "FLStudioPilot TX", Port = SAME number (42).
   3. The matching port number is how FL's `device.midiOutSysex(...)` routes
      to the right output. Without it, our responses go nowhere.
 
-Wire format: see src/fl_studio_mcp/protocol.py.
+Wire format: see src/fls_pilot/protocol.py.
 
 Dependencies inside FL Studio:
   - json, base64, binascii (all available -- _json, _codecs, binascii are
@@ -65,7 +65,7 @@ except Exception:
 
 
 # ---------------------------------------------------------------------------
-# Protocol constants -- MUST stay in sync with src/fl_studio_mcp/protocol.py
+# Protocol constants -- MUST stay in sync with src/fls_pilot/protocol.py
 # ---------------------------------------------------------------------------
 
 PROTOCOL_VERSION = 2
@@ -113,11 +113,11 @@ def OnInit():
         _send_sysex_fn = getattr(device, "midiOutSysEx", None)
 
     print(
-        "[FLStudioMCP] Ready. FL " + str(_fl_version) + ", protocol v" + str(PROTOCOL_VERSION) + "."
+        "[FLStudioPilot] Ready. FL " + str(_fl_version) + ", protocol v" + str(PROTOCOL_VERSION) + "."
     )
     if _send_sysex_fn is None:
         print(
-            "[FLStudioMCP] WARNING: device.midiOutSysex not available -- "
+            "[FLStudioPilot] WARNING: device.midiOutSysex not available -- "
             "responses cannot be sent back to the MCP server."
         )
     # Enable track metering
@@ -129,7 +129,7 @@ def OnInit():
 
 
 def OnDeInit():
-    print("[FLStudioMCP] Shutting down.")
+    print("[FLStudioPilot] Shutting down.")
     return
 
 
@@ -209,7 +209,7 @@ def OnRefresh(flags):
 
 
 # ---------------------------------------------------------------------------
-# SysEx encode / decode -- mirrors src/fl_studio_mcp/protocol.py
+# SysEx encode / decode -- mirrors src/fls_pilot/protocol.py
 # ---------------------------------------------------------------------------
 
 
@@ -260,7 +260,7 @@ def _send_message(direction, request_id, payload):
     try:
         _send_sysex_fn(framed)
     except Exception as e:
-        print(f"[FLStudioMCP] midiOutSysex failed: {e}")
+        print(f"[FLStudioPilot] midiOutSysex failed: {e}")
 
 
 def _emit_heartbeat():

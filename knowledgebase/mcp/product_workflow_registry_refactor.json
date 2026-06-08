@@ -3,10 +3,10 @@
   "agent_author": "Codex",
   "topic": "Product workflow writes prepared through the operation registry",
   "affected_file_api": [
-    "src/fl_studio_mcp/tools/routing.py",
-    "src/fl_studio_mcp/tools/mix_doctor.py",
-    "src/fl_studio_mcp/operations.py",
-    "src/fl_studio_mcp/tools/batch.py",
+    "src/fls_pilot/tools/routing.py",
+    "src/fls_pilot/tools/mix_doctor.py",
+    "src/fls_pilot/operations.py",
+    "src/fls_pilot/tools/batch.py",
     "safety.safe_write",
     "safety.safe_write_group"
   ],

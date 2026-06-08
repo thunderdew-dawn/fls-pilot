@@ -6,7 +6,7 @@ Phase 1. Read-only -- changes nothing in FL Studio.
 
     python scripts/test_phase1a.py
 
-Prerequisites: FL Studio open, FLStudioMCP controller loaded, loopMIDI RX/TX
+Prerequisites: FL Studio open, FLStudioPilot controller loaded, loopMIDI RX/TX
 ports up. Run with NO other process holding the TX port (stop the daemon
 first), since this opens the bridge directly.
 """
@@ -19,7 +19,7 @@ from pathlib import Path
 # Allow running from a checkout without installing.
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from fl_studio_mcp.connection import (  # noqa: E402
+from fls_pilot.connection import (  # noqa: E402
     FLBridge,
     FLCommandFailed,
     FLNotRunning,
@@ -27,7 +27,7 @@ from fl_studio_mcp.connection import (  # noqa: E402
     FLTimeout,
     fetch_all_pages,
 )
-from fl_studio_mcp.protocol import (  # noqa: E402
+from fls_pilot.protocol import (  # noqa: E402
     CMD_CHANNEL_GET,
     CMD_CHANNEL_LIST,
     CMD_GET_PROJECT_STATE,

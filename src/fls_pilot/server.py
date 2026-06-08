@@ -1,17 +1,17 @@
-"""FastMCP entry point for the FL Studio MCP server.
+"""FastMCP entry point for the FL Studio Pilot server.
 
 Run with::
 
-    python -m fl_studio_mcp.server
+    python -m fls_pilot.server
 
 or, after ``pip install -e .``, with::
 
-    fl-studio-mcp
+    fls-pilot
 
 To see what MIDI ports the host OS exposes (useful when troubleshooting the
 loopMIDI / IAC Driver setup)::
 
-    fl-studio-mcp --list-ports
+    fls-pilot --list-ports
 """
 
 from __future__ import annotations
@@ -55,7 +55,7 @@ from .tools import resources as resource_defs
 from .tools import routing as routing_tools
 from .tools import transport as transport_tools
 
-logger = logging.getLogger("fl_studio_mcp")
+logger = logging.getLogger("fls_pilot")
 
 _LEGACY_LOW_LEVEL_TOOLS = {
     # Transport one-off aliases. Use fl_transport(action, params).
@@ -156,21 +156,21 @@ _LEGACY_LOW_LEVEL_TOOLS = {
 
 
 SERVER_INSTRUCTIONS = """\
-FL Studio MCP server -- control FL Studio from an AI assistant.
+FL Studio Pilot server -- control FL Studio from an AI assistant.
 
 REQUIREMENTS
   1. FL Studio 20.7 or newer must be running.
   2. Two virtual MIDI ports must exist (one in each direction):
-       - 'FLStudioMCP RX' (server -> FL)
-       - 'FLStudioMCP TX' (FL -> server)
+       - 'FLStudioPilot RX' (server -> FL)
+       - 'FLStudioPilot TX' (FL -> server)
      Windows: create both in loopMIDI. macOS: enable two buses in IAC Driver
      (Audio MIDI Setup). Linux: use snd-virmidi.
-  3. The FLStudioMCP controller script must be installed under
-     Documents/Image-Line/FL Studio/Settings/Hardware/FLStudioMCP/
+  3. The FLStudioPilot controller script must be installed under
+     Documents/Image-Line/FL Studio/Settings/Hardware/FLStudioPilot/
   4. In FL Studio: Options > MIDI Settings,
-       - Enable 'FLStudioMCP RX' in the Input list, set Controller type to
-         FLStudioMCP, give it a Port number (any value, e.g. 42).
-       - Enable 'FLStudioMCP TX' in the Output list, set Port to the SAME
+       - Enable 'FLStudioPilot RX' in the Input list, set Controller type to
+         FLStudioPilot, give it a Port number (any value, e.g. 42).
+       - Enable 'FLStudioPilot TX' in the Output list, set Port to the SAME
          number. This is how FL routes the script's outgoing SysEx back to
          the MCP server.
   5. Call fl_transport(action="ping") first to verify the bridge is healthy.
@@ -192,7 +192,7 @@ clearly rather than retrying.
 
 def build_server() -> FastMCP:
     mcp = FastMCP(
-        name="fl-studio-mcp",
+        name="fls-pilot",
         version=__version__,
         instructions=SERVER_INSTRUCTIONS,
     )
@@ -234,7 +234,7 @@ def _print_ports() -> int:
     ports = list_ports()
     expected_out = port_to_fl_name()
     expected_in = port_from_fl_name()
-    print("Expected port names (override via FLSTUDIO_MCP_PORT_TO_FL / _FROM_FL):")
+    print("Expected port names (override via FLS_PILOT_PORT_TO_FL / _FROM_FL):")
     print(f"  server output (commands -> FL):  {expected_out!r}")
     print(f"  server input  (responses <- FL): {expected_in!r}")
     print()
@@ -252,14 +252,14 @@ def _print_ports() -> int:
 
 def main() -> None:
     logging.basicConfig(
-        level=os.environ.get("FLSTUDIO_MCP_LOG", "INFO").upper(),
+        level=os.environ.get("FLS_PILOT_LOG", "INFO").upper(),
         format="%(asctime)s %(levelname)s %(name)s: %(message)s",
     )
     if "--list-ports" in sys.argv:
         sys.exit(_print_ports())
 
     logger.info(
-        "fl-studio-mcp %s; ports: out=%r, in=%r",
+        "fls-pilot %s; ports: out=%r, in=%r",
         __version__,
         port_to_fl_name(),
         port_from_fl_name(),
@@ -267,14 +267,14 @@ def main() -> None:
     server = build_server()
 
     # Transport selection: stdio (default, Cursor/Claude) or sse (ChatGPT).
-    # --sse flag or FLSTUDIO_MCP_SERVER_TRANSPORT=sse switches to SSE/HTTP.
-    transport = os.environ.get("FLSTUDIO_MCP_SERVER_TRANSPORT", "stdio").lower()
+    # --sse flag or FLS_PILOT_SERVER_TRANSPORT=sse switches to SSE/HTTP.
+    transport = os.environ.get("FLS_PILOT_SERVER_TRANSPORT", "stdio").lower()
     if "--sse" in sys.argv:
         transport = "sse"
 
     if transport == "sse":
-        sse_host = os.environ.get("FLSTUDIO_MCP_SSE_HOST", "127.0.0.1")
-        sse_port = int(os.environ.get("FLSTUDIO_MCP_SSE_PORT", "8080"))
+        sse_host = os.environ.get("FLS_PILOT_SSE_HOST", "127.0.0.1")
+        sse_port = int(os.environ.get("FLS_PILOT_SSE_PORT", "8080"))
         # Allow --port N from CLI
         if "--port" in sys.argv:
             try:

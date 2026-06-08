@@ -3,7 +3,7 @@
   "agent_author": "Codex",
   "topic": "Verified grouped write safety for rollback-backed MCP writes",
   "affected_file_api": [
-    "src/fl_studio_mcp/safety.py",
+    "src/fls_pilot/safety.py",
     "safety.safe_write_group"
   ],
   "context": "v1.2 roadmap slice 04 strengthened grouped writes before exposing generic batch write tools.",

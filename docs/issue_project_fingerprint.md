@@ -9,8 +9,8 @@ without recreating duplicate projects or re-inferring the migration layout.
 ## Canonical Project
 
 - Owner: `thunderdew-dawn`
-- Repository: `thunderdew-dawn/flstudio-mcp`
-- Project: `FL Studio MCP Core Roadmap`
+- Repository: `thunderdew-dawn/fls-pilot`
+- Project: `FL Studio Pilot Roadmap`
 - Project number: `7`
 - Project ID: `PVT_kwHOC9dBM84BZ7oT`
 - URL: <https://github.com/users/thunderdew-dawn/projects/7>
@@ -18,12 +18,8 @@ without recreating duplicate projects or re-inferring the migration layout.
 
 ## Secondary Project
 
-- Project: `FL Studio MCP Roadmap`
-- Project number: `6`
-- Project ID: `PVT_kwHOC9dBM84BZ7nZ`
-- URL: <https://github.com/users/thunderdew-dawn/projects/6>
-- Status: secondary/legacy roadmap view
-- Rule: do not create a third duplicate roadmap project
+No secondary ProjectV2 is currently active. Project #7 is canonical; do not
+create duplicate roadmap projects.
 
 ## Canonical Fields
 

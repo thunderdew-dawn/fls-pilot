@@ -3,7 +3,7 @@
 - **Date**: 2026-06-04
 - **Agent/Author**: Codex
 - **Topic**: Consolidated `fl_piano_roll` MCP wrapper
-- **Affected File/API**: `src/fl_studio_mcp/tools/pianoroll.py`, `src/fl_studio_mcp/safety.py`, `CMD_ENSURE_PIANO_ROLL`, `CMD_GENERAL_UNDO`, generated Piano Roll `.pyscript` helpers
+- **Affected File/API**: `src/fls_pilot/tools/pianoroll.py`, `src/fls_pilot/safety.py`, `CMD_ENSURE_PIANO_ROLL`, `CMD_GENERAL_UNDO`, generated Piano Roll `.pyscript` helpers
 - **Context**: v1.2 slice 10 introduced the Piano Roll domain tool additively for parity testing and lower tool-selection overhead. In the current v2.0 public surface, legacy Piano Roll aliases covered by `fl_piano_roll` are retired.
 - **Observation**: `fl_piano_roll(action, params)` consolidates existing undo-backed note writes, chord writes, clear, quantize, transpose, duplicate, velocity ramp, marker helpers, and explicit readback-limit reports. Generated-script writes route through `safety.safe_piano_roll_write`, which logs FL Studio undo as the restore action.
 - **Tested Values**: `write_notes`, `transpose`, `add_marker`, invalid action, invalid note payload, invalid velocity range, `get_notes`, and `probe_return_channel`.

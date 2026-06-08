@@ -1,4 +1,4 @@
-# FL Studio MCP Knowledgebase
+# FL Studio Pilot Knowledgebase
 
 The purpose of this knowledgebase is to document machine-readable knowledge and
 human insights about the FL Studio API and FL Studio production workflows. It is

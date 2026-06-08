@@ -8,7 +8,7 @@ import pytest
 # Ensure src is in path to import tools
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from fl_studio_mcp.tools.internal_eq import (
+from fls_pilot.tools.internal_eq import (
     _verify_normalized,
     set_internal_mixer_eq_frequency_hz,
     set_internal_mixer_eq_gain_db,

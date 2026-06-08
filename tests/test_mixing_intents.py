@@ -5,7 +5,7 @@ Unit tests are pure (no FL). The intent tests build the real FastMCP server
 and call the registered tools (fl_apply_eq_intent, fl_plugin_get_params,
 fl_rollback_last_change) in-process -- the same path an MCP client uses.
 
-    set FLSTUDIO_MCP_TRANSPORT=tcp
+    set FLS_PILOT_TRANSPORT=tcp
     python scripts/test_mixing_intents.py
 
 Target: mixer track 2, slot 0 (Fruity Parametric EQ 2 on VOX). Restores the
@@ -21,14 +21,14 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from fl_studio_mcp import protocol  # noqa: E402
-from fl_studio_mcp.connection import get_bridge  # noqa: E402
-from fl_studio_mcp.music import eq_curves as eq  # noqa: E402
-from fl_studio_mcp.music.eq_curves import (  # noqa: E402
+from fls_pilot import protocol  # noqa: E402
+from fls_pilot.connection import get_bridge  # noqa: E402
+from fls_pilot.music import eq_curves as eq  # noqa: E402
+from fls_pilot.music.eq_curves import (  # noqa: E402
     eq2_band_param_index,
     norm_to_db,
 )
-from fl_studio_mcp.server import build_server  # noqa: E402
+from fls_pilot.server import build_server  # noqa: E402
 
 # Target a track/slot holding a Fruity Parametric EQ 2. Override on the CLI:
 #   python scripts/test_mixing_intents.py <track> <slot>

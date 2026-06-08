@@ -1,4 +1,4 @@
-"""Project Organizer tools for FL Studio MCP.
+"""Project Organizer tools for FL Studio Pilot.
 
 Handles broad project standardization, naming conventions, color coding,
 and structural cleanup.

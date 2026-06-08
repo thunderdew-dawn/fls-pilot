@@ -1,4 +1,4 @@
-"""Shared protocol constants for the FL Studio MCP bridge.
+"""Shared protocol constants for the FL Studio Pilot bridge.
 
 v0.2: All-MIDI transport. The earlier file-queue design assumed the FL
 controller script could write JSON files, but FL's controller-script Python
@@ -49,31 +49,31 @@ HEARTBEAT_INTERVAL_SECONDS = 0.5
 # ---------------------------------------------------------------------------
 # These names must match what the user creates in loopMIDI (Windows) or in
 # the IAC Driver (macOS Audio MIDI Setup). The names are case-insensitive
-# and matched as substrings, so e.g. "FLStudioMCP RX 0" from Windows also
-# matches "FLStudioMCP RX".
+# and matched as substrings, so e.g. "FLStudioPilot RX 0" from Windows also
+# matches "FLStudioPilot RX".
 
 # Port that carries commands FROM the MCP server TO FL Studio.
 # Server opens this as OUTPUT. FL opens this as INPUT.
-DEFAULT_PORT_TO_FL = "FLStudioMCP RX"
+DEFAULT_PORT_TO_FL = "FLStudioPilot RX"
 
 # Port that carries responses + heartbeats FROM FL Studio TO the MCP server.
 # Server opens this as INPUT. FL opens this as OUTPUT.
-DEFAULT_PORT_FROM_FL = "FLStudioMCP TX"
+DEFAULT_PORT_FROM_FL = "FLStudioPilot TX"
 
 
 def port_to_fl_name() -> str:
-    return os.environ.get("FLSTUDIO_MCP_PORT_TO_FL", DEFAULT_PORT_TO_FL)
+    return os.environ.get("FLS_PILOT_PORT_TO_FL", DEFAULT_PORT_TO_FL)
 
 
 def port_from_fl_name() -> str:
-    return os.environ.get("FLSTUDIO_MCP_PORT_FROM_FL", DEFAULT_PORT_FROM_FL)
+    return os.environ.get("FLS_PILOT_PORT_FROM_FL", DEFAULT_PORT_FROM_FL)
 
 
 # ---------------------------------------------------------------------------
 # Command catalogue
 # ---------------------------------------------------------------------------
 # Unchanged from v0.1 so the existing tool layer keeps working. New commands
-# get appended here AND in fl_controller/FLStudioMCP/device_FLStudioMCP.py.
+# get appended here AND in fl_controller/FLStudioPilot/device_FLStudioPilot.py.
 
 # Transport
 CMD_PING = "ping"

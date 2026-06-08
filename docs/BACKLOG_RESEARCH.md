@@ -2,9 +2,9 @@
 
 This file stores long-term research, including sister-project consolidation notes, official API expansion backlog, and experimental ideas.
 
-## Sister Project Consolidation — geezoria/FLStudioMCP
+## Sister Project Consolidation — geezoria/FLStudioPilot
 
-Reference: <https://github.com/geezoria/FLStudioMCP>. The sister project is a
+Reference: <https://github.com/geezoria/FLStudioPilot>. The sister project is a
 useful feature-discovery source, but not a design to copy wholesale. It exposes
 a very broad 160+ tool surface, including TCP transport, step sequencer writes,
 playlist/arrangement tools, automation recording, piano-roll transforms,

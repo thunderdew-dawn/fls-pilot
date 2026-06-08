@@ -3,7 +3,7 @@
 - **Date**: 2026-06-04
 - **Agent/Author**: Codex
 - **Topic**: Consolidated `fl_transport` MCP wrapper
-- **Affected File/API**: `src/fl_studio_mcp/tools/transport.py`, `src/fl_studio_mcp/operations.py`, transport protocol commands
+- **Affected File/API**: `src/fls_pilot/tools/transport.py`, `src/fls_pilot/operations.py`, transport protocol commands
 - **Context**: v1.2 slice 05 added an additive domain tool beside legacy transport tools for parity testing and lower tool-selection overhead. Slice 14 retired the legacy transport aliases from public registration.
 - **Observation**: `fl_transport(action, params)` validates transport actions through the internal operation registry where applicable, dispatches read-only and transient commands directly to the bridge, dispatches persistent writes through `safety.safe_write`, and handles `ping` as the consolidated bridge-health action.
 - **Tested Values**: Unit-tested `ping`, `get_tempo`, `set_tempo` with `bpm=128`, `play`, unknown action, and out-of-range `bpm=1000` against a fake bridge.

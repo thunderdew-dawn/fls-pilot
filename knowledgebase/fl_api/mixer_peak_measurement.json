@@ -12,7 +12,7 @@
   ],
   "result": "Pre-fader peak estimate should be calculated as measured['peak_db'] - track_info['vol_db'] for tools that need raw signal level rather than post-fader output level.",
   "confidence_level": "implementation_verified",
-  "source_method": "User-provided patch in src/fl_studio_mcp/tools/mixing.py plus paired Markdown knowledgebase note.",
+  "source_method": "User-provided patch in src/fls_pilot/tools/mixing.py plus paired Markdown knowledgebase note.",
   "open_questions": "None.",
   "next_recommended_action": "Ensure future tools that derive thresholds or raw signal levels account for the post-fader nature of the level measurement API.",
   "behavior": "post_fader",

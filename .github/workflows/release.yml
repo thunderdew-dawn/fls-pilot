@@ -52,7 +52,7 @@ jobs:
           files: |
             dist/*.whl
             dist/*.tar.gz
-            fl_controller/FLStudioMCP/device_FLStudioMCP.py
+            fl_controller/FLStudioPilot/device_FLStudioPilot.py
           draft: false
           prerelease: ${{ steps.release_meta.outputs.prerelease }}
         env:

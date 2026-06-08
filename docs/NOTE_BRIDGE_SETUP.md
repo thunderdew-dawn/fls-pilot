@@ -1,4 +1,4 @@
-# flstudio-mcp — Note bridge: how it works + the ONE setup step
+# fls-pilot — Note bridge: how it works + the ONE setup step
 
 **Version:** 0.3.0 · **Env:** FL Studio 25.2.5, Windows · **Date:** 2026-05-25
 

@@ -3,7 +3,7 @@
 - **Date:** 2026-06-06
 - **Agent/Author:** Codex
 - **Topic:** Product workflow tools now attach source-qualified Knowledgebase policy metadata.
-- **Affected File/API:** `src/fl_studio_mcp/kb_policy.py`, `src/fl_studio_mcp/music/mix_doctor.py`, `src/fl_studio_mcp/tools/mix_doctor.py`, `src/fl_studio_mcp/tools/project_doctor.py`, `src/fl_studio_mcp/tools/routing.py`, `src/fl_studio_mcp/tools/project_organizer.py`, `src/fl_studio_mcp/tools/chains.py`.
+- **Affected File/API:** `src/fls_pilot/kb_policy.py`, `src/fls_pilot/music/mix_doctor.py`, `src/fls_pilot/tools/mix_doctor.py`, `src/fls_pilot/tools/project_doctor.py`, `src/fls_pilot/tools/routing.py`, `src/fls_pilot/tools/project_organizer.py`, `src/fls_pilot/tools/chains.py`.
 - **Context:** Updated mixing, mastering, production, and performance Knowledgebase entries should improve existing tools without creating unsafe new FL Studio write paths.
 - **Observation:** Product tools benefit from KB rules as policy metadata and conservative diagnosis wording. KB entries must not be interpreted as executable operations.
 - **Tested Values:** Mix Review synthetic clipping/headroom, missing high-pass, gain-stage, watch, balance snapshots, and user-facing compact KB output shape; Knowledgebase policy lookup for `master_peak_boundary`, `mix_doctor_insert_headroom_context`, and `mix_doctor_existing_plugin_only`.

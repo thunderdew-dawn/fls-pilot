@@ -5,7 +5,7 @@
 - **Date**: 2026-06-04
 - **Agent/Author**: Antigravity (Claude Sonnet Thinking)
 - **Topic**: Consolidated `fl_mixer` domain tool — v1.2 Phase 3 Slice 06
-- **Affected File/API**: `src/fl_studio_mcp/tools/mixer.py`
+- **Affected File/API**: `src/fls_pilot/tools/mixer.py`
 - **Confidence Level**: `implementation_verified`
 - **Source/Method**: Code implementation, static audit, unit tests
 - **Related**: `knowledgebase/mcp/transport_domain_tool.md`

@@ -5,7 +5,7 @@ Adds a send between two UNUSED Insert tracks (9 -> 1) so nothing audible
 changes, asserts the write lands and the default ->Master send is untouched,
 then rolls back and confirms the project returns to its exact prior routing.
 
-    set FLSTUDIO_MCP_TRANSPORT=tcp
+    set FLS_PILOT_TRANSPORT=tcp
     python scripts/test_route_write.py [src] [dst]
 """
 
@@ -17,9 +17,9 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from fl_studio_mcp import protocol  # noqa: E402
-from fl_studio_mcp.connection import get_bridge  # noqa: E402
-from fl_studio_mcp.server import build_server  # noqa: E402
+from fls_pilot import protocol  # noqa: E402
+from fls_pilot.connection import get_bridge  # noqa: E402
+from fls_pilot.server import build_server  # noqa: E402
 
 SRC = int(sys.argv[1]) if len(sys.argv) > 1 else 9
 DST = int(sys.argv[2]) if len(sys.argv) > 2 else 1

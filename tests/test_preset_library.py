@@ -14,7 +14,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from fl_studio_mcp.music import preset_library as pre  # noqa: E402
+from fls_pilot.music import preset_library as pre  # noqa: E402
 
 _P = _F = 0
 
@@ -43,8 +43,8 @@ def main() -> int:
     touch(serum / "Lead" / "BA Growl.serumpreset")
     touch(serum / "Lead" / "LD Saw.serumpreset")
 
-    os.environ["FLSTUDIO_MCP_PRESETS"] = str(fl)
-    os.environ["FLSTUDIO_MCP_SERUM_PRESETS"] = str(serum)
+    os.environ["FLS_PILOT_PRESETS"] = str(fl)
+    os.environ["FLS_PILOT_SERUM_PRESETS"] = str(serum)
 
     # summary
     s = pre.list_presets()
@@ -84,8 +84,8 @@ def main() -> int:
     check("'LD Saw' not matched for 'vintage bass'", "LD Saw" not in m, str(m))
 
     # real machine read (best-effort -- only if FL/Serum present; clear env first)
-    del os.environ["FLSTUDIO_MCP_PRESETS"]
-    del os.environ["FLSTUDIO_MCP_SERUM_PRESETS"]
+    del os.environ["FLS_PILOT_PRESETS"]
+    del os.environ["FLS_PILOT_SERUM_PRESETS"]
     real = pre.list_presets()
     print(
         "\nREAL read: found=%s | plugins_with_presets=%d | serum=%s"

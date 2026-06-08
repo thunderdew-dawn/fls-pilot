@@ -7,7 +7,7 @@ Run this BEFORE wiring up the MCP Client to confirm the file-queue bridge works:
 
 Prerequisites:
     1. FL Studio is open.
-    2. The FLStudioMCP controller script is installed and selected.
+    2. The FLStudioPilot controller script is installed and selected.
 
 The script will:
     - Ping the controller
@@ -28,14 +28,14 @@ from pathlib import Path
 # Allow running from a checkout without installing.
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from fl_studio_mcp.connection import (  # noqa: E402
+from fls_pilot.connection import (  # noqa: E402
     FLBridge,
     FLCommandFailed,
     FLNotRunning,
     FLPortMissing,
     FLTimeout,
 )
-from fl_studio_mcp.protocol import (  # noqa: E402
+from fls_pilot.protocol import (  # noqa: E402
     CMD_GET_PLAY_STATE,
     CMD_GET_SONG_POS,
     CMD_GET_TEMPO,
@@ -64,7 +64,7 @@ def step(label: str, fn):
 
 
 def main() -> int:
-    from fl_studio_mcp.protocol import port_from_fl_name, port_to_fl_name
+    from fls_pilot.protocol import port_from_fl_name, port_to_fl_name
 
     bridge = FLBridge()
     print(f"Port to FL:   {port_to_fl_name()}")

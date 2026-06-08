@@ -3,7 +3,7 @@
 - **Date**: 2026-06-04
 - **Agent/Author**: Codex
 - **Topic**: Consolidated `fl_pattern` and `fl_playlist` MCP wrappers
-- **Affected File/API**: `src/fl_studio_mcp/tools/pattern.py`, `src/fl_studio_mcp/tools/playlist.py`, `src/fl_studio_mcp/operations.py`, pattern and playlist-track protocol commands
+- **Affected File/API**: `src/fls_pilot/tools/pattern.py`, `src/fls_pilot/tools/playlist.py`, `src/fls_pilot/operations.py`, pattern and playlist-track protocol commands
 - **Context**: v1.2 slice 08 introduced the pattern/playlist domain tools additively for parity testing and lower tool-selection overhead. In the current v2.0 public surface, legacy pattern/playlist aliases covered by `fl_pattern` and `fl_playlist` are retired.
 - **Observation**: `fl_pattern(action, params)` and `fl_playlist(action, params)` validate through the internal operation registry. Read-only actions use registry-built protocol payloads. Persistent writes route through `safety.safe_write`.
 - **Tested Values**: Pattern `list`, `get`, `rename`, `select`, invalid `delete`, invalid `set_length`; playlist `list`, `get`, `set_mute`, `set_name`, invalid `clip_delete`, invalid `set_mute` state.

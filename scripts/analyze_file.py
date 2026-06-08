@@ -13,7 +13,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from fl_studio_mcp.tools.audio import audio_analyze  # noqa: E402
+from fls_pilot.tools.audio import audio_analyze  # noqa: E402
 
 
 def main() -> int:

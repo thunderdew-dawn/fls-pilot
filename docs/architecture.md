@@ -41,11 +41,11 @@ we can carry JSON-shaped commands and responses.
 MCP Client (Claude / Cursor / ChatGPT)
     |  stdio
     v
-fl-studio-mcp (Python, our code)
+fls-pilot (Python, our code)
     |  mido + python-rtmidi
     |
-    |  out: SysEx "FLStudioMCP RX" port
-    |  in:  SysEx "FLStudioMCP TX" port
+    |  out: SysEx "FLStudioPilot RX" port
+    |  in:  SysEx "FLStudioPilot TX" port
     v
 loopMIDI (Windows) / IAC Driver (macOS) -- virtual MIDI loopback
     |
@@ -53,7 +53,7 @@ loopMIDI (Windows) / IAC Driver (macOS) -- virtual MIDI loopback
 FL Studio MIDI engine
     |  routes by Port number
     v
-device_FLStudioMCP.py
+device_FLStudioPilot.py
     OnMidiMsg() receives requests
     device.midiOutSysex() emits responses
     transport / mixer / channels / patterns / plugins API calls
@@ -120,9 +120,9 @@ to the OUTPUT device that has the SAME Port number as the script's input
 device.
 
 So the setup is:
-- `FLStudioMCP RX` is an Input device with Controller type FLStudioMCP and
+- `FLStudioPilot RX` is an Input device with Controller type FLStudioPilot and
   Port = 42.
-- `FLStudioMCP TX` is an Output device with Port = 42.
+- `FLStudioPilot TX` is an Output device with Port = 42.
 
 The numbers must match. We picked 42 in the docs; any number 0-255 works as
 long as both sides use it.

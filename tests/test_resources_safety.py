@@ -3,8 +3,8 @@ from __future__ import annotations
 import asyncio
 from unittest.mock import patch
 
-from fl_studio_mcp.server import build_server
-from fl_studio_mcp.tools.resources import _summary
+from fls_pilot.server import build_server
+from fls_pilot.tools.resources import _summary
 
 
 def test_resource_truncation_hints_use_domain_tools() -> None:
@@ -46,7 +46,7 @@ def _text(resource_result) -> str:
     return str(resource_result)
 
 
-@patch("fl_studio_mcp.tools.resources.get_bridge")
+@patch("fls_pilot.tools.resources.get_bridge")
 def test_bridge_failure_handling(mock_get_bridge) -> None:
     """Ensure all resources degrade gracefully when bridge is down."""
 

@@ -8,7 +8,7 @@
 # also blocked, the job-file bridge is dead and we need a different transport.
 #
 # Reports its result by WRITING NOTES (the only output channel we have):
-#   READ OK   -> ONE note at the pitch read from ~/.flstudio-mcp/probe.json
+#   READ OK   -> ONE note at the pitch read from ~/.fls-pilot/probe.json
 #   READ FAIL -> a chromatic marker C/C#/D (60/61/62) so it's visually obvious
 
 import json
@@ -36,7 +36,7 @@ def _add(score, pitch, time, length, vel=100 / 127.0):
 def _run():
     score = flp.score
     bar = score.PPQ * 4
-    path = os.path.expanduser("~/.flstudio-mcp/probe.json")
+    path = os.path.expanduser("~/.fls-pilot/probe.json")
 
     pitch = None
     read_ok = False

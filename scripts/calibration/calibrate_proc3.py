@@ -10,7 +10,7 @@ discrete Style param and reports Auto Gain / Auto Release. Pure data collection.
 Safety: every swept param is snapshotted via the safety layer FIRST and restored
 in a finally block, so Pro-C is left exactly as set.
 
-    set FLSTUDIO_MCP_TRANSPORT=tcp
+    set FLS_PILOT_TRANSPORT=tcp
     python scripts/calibrate_proc3.py [track] [slot]   # default auto-detect / 8,4
 """
 
@@ -22,8 +22,8 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
-from fl_studio_mcp import protocol, safety  # noqa: E402
-from fl_studio_mcp.connection import get_bridge  # noqa: E402
+from fls_pilot import protocol, safety  # noqa: E402
+from fls_pilot.connection import get_bridge  # noqa: E402
 
 STEPS = [round(i * 0.05, 4) for i in range(21)]
 MATCH = ("pro-c", "pro c", "fabfilter")

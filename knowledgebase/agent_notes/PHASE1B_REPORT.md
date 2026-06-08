@@ -1,4 +1,4 @@
-# flstudio-mcp — Phase 1B Report (plugin parameter control)
+# fls-pilot — Phase 1B Report (plugin parameter control)
 
 **Version:** 0.3.0 · **Env:** FL Studio Producer Edition v25.2.5 [build 5319], MIDI scripting v40, Windows, Python 3.12, loopMIDI · **Date:** 2026-05-24
 
@@ -52,7 +52,7 @@ two cases are always distinguishable.)
 
 ## 2. Wire commands (controller) + FL API arg order
 
-Added to `device_FLStudioMCP.py` (the `plugins` module is mixer-track scoped:
+Added to `device_FLStudioPilot.py` (the `plugins` module is mixer-track scoped:
 `index` = mixer track, `slot` = effect slot 0-9):
 
 - `plugin_list(track)` → filled slots: `isValid(track,slot)` + `getPluginName(track,slot)`.
@@ -71,7 +71,7 @@ Added to `device_FLStudioMCP.py` (the `plugins` module is mixer-track scoped:
 
 ---
 
-## 3. MCP tools (`src/fl_studio_mcp/tools/plugin.py`)
+## 3. MCP tools (`src/fls_pilot/tools/plugin.py`)
 
 - `fl_plugin_list(track)` — filled slots + plugin names.
 - `fl_plugin_get_params(track, slot)` — every named param (auto-loops all pages
@@ -102,7 +102,7 @@ per-plugin curves we don't have.
 rollback entry. New snapshot scope **`plugin_param:TRACK:SLOT:PARAM`** in
 `take_snapshot()` reads the one param via `plugin_get_param`, and `build_restore`
 replays the original value. So every param write is undo-able via
-`fl_rollback_last_change` and recorded in `~/.flstudio-mcp/changelog.jsonl`.
+`fl_rollback_last_change` and recorded in `~/.fls-pilot/changelog.jsonl`.
 
 ---
 

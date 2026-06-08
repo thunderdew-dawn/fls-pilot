@@ -110,7 +110,7 @@ def analyze_bands(path):
 #   pyin  -- librosa, light, instant, lower accuracy (ships in [audio]).
 #   crepe -- torchcrepe deep model: ~500MB (torch), slower on CPU, but much
 #            higher accuracy AND meaningful confidence (ships in
-#            [audio-accurate]). Engine resolves: arg -> $FLSTUDIO_MCP_PITCH_ENGINE
+#            [audio-accurate]). Engine resolves: arg -> $FLS_PILOT_PITCH_ENGINE
 #            -> "auto" (= crepe if torch+torchcrepe import, else pyin).
 
 
@@ -127,7 +127,7 @@ def _crepe_available() -> bool:
 def resolve_pitch_engine(engine=None) -> str:
     """Pick 'crepe' or 'pyin' from arg / env / availability."""
     if not engine:
-        engine = os.environ.get("FLSTUDIO_MCP_PITCH_ENGINE", "auto")
+        engine = os.environ.get("FLS_PILOT_PITCH_ENGINE", "auto")
     engine = str(engine).lower()
     if engine == "auto":
         return "crepe" if _crepe_available() else "pyin"
@@ -244,7 +244,7 @@ def audio_extract_melody(
 
     engine: "crepe" (accurate, needs [audio-accurate]), "pyin" (light), or
     "auto"/None (crepe if installed, else pyin; also reads
-    $FLSTUDIO_MCP_PITCH_ENGINE). min_conf defaults per engine (crepe 0.8,
+    $FLS_PILOT_PITCH_ENGINE). min_conf defaults per engine (crepe 0.8,
     pyin 0.0).
 
     Returns ALL detected notes, each with voiced_prob + a `kept` flag
@@ -368,7 +368,7 @@ def register(mcp: FastMCP) -> None:
             Field(
                 description=(
                     "Pitch engine: 'crepe' (needs [audio-accurate]), 'pyin' (light), "
-                    "or 'auto' (crepe if installed). Overrides $FLSTUDIO_MCP_PITCH_ENGINE."
+                    "or 'auto' (crepe if installed). Overrides $FLS_PILOT_PITCH_ENGINE."
                 )
             ),
         ] = None,

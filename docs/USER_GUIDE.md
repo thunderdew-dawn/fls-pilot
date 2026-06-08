@@ -1,13 +1,13 @@
 # User Guide: Value, Prompts, and Tool Reference
 
-This guide explains what flstudio-mcp is useful for, how a user talks to it
+This guide explains what fls-pilot is useful for, how a user talks to it
 through an AI assistant, and what every exposed MCP tool does.
 
 Most users should ask in plain language. The assistant leverages safety classes, explicit product boundaries, and the current 87-tool public catalog. It proposes a plan when needed, and applies approved changes through the rollback-first safety layer. Users can also name a specific `fl_*` tool directly when they want precise control.
 
 ## Why This App Exists
 
-flstudio-mcp turns FL Studio into a controllable production workspace for any
+fls-pilot turns FL Studio into a controllable production workspace for any
 MCP-compatible AI assistant. Its value is not just remote control; it combines
 live FL Studio context, music-production judgement, and reversible edits.
 
