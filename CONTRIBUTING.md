@@ -9,7 +9,8 @@ and platform support.
 This repository is the maintained `thunderdew-dawn/flstudio-mcp` fork of
 `rosasynthesiz/flstudio-mcp`. The package and command names remain stable for
 compatibility, but contributions should follow this fork's rollback-first
-safety layer, API-evidence discipline, and roadmap in `ROADMAP.md`.
+safety layer, API-evidence discipline, and GitHub roadmap project. `ROADMAP.md`
+is a readable snapshot, not the planning source of truth for open work.
 
 ## Code of Conduct
 
