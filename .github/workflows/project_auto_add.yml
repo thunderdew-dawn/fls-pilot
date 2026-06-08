@@ -57,10 +57,13 @@ jobs:
 
           labels="$(gh issue view "${{ steps.issue.outputs.number }}" --repo "${{ github.repository }}" --json labels --jq '[.labels[].name] | join(",")')"
           issue_state="$(gh issue view "${{ steps.issue.outputs.number }}" --repo "${{ github.repository }}" --json state,stateReason --jq '.state + ":" + (.stateReason // "")')"
+          current_lane="$(printf '%s' "$item_json" | jq -r --argjson n "${{ steps.issue.outputs.number }}" '.items[] | select(.content.number == $n) | ."roadmap Lane" // ""' | head -n 1)"
+          current_status="$(printf '%s' "$item_json" | jq -r --argjson n "${{ steps.issue.outputs.number }}" '.items[] | select(.content.number == $n) | .status // ""' | head -n 1)"
 
           option() {
             case "$1:$2" in
               Status:Todo) echo f75ad846 ;;
+              Status:Next) echo 83fb84bd ;;
               Status:"In progress") echo 47fc9ee4 ;;
               Status:Done) echo 98236657 ;;
               Lane:Now) echo 7f415c4e ;;
@@ -124,9 +127,21 @@ jobs:
             fi
           }
 
-          if [[ "$issue_state" == CLOSED:* ]]; then lane=Done; status=Done
-          elif [[ "$labels" == *status:blocked* ]]; then lane=Blocked; status=Todo
-          else lane=Later; status=Todo
+          if [[ "$issue_state" == CLOSED:* ]]; then
+            lane=Done
+            status=Done
+          elif [[ "$labels" == *status:blocked* ]]; then
+            lane=Blocked
+            status="${current_status:-Todo}"
+          else
+            case "$current_lane" in
+              Now|Next|Later) lane="$current_lane" ;;
+              *) lane=Later ;;
+            esac
+            case "$current_status" in
+              Next|"In progress") status="$current_status" ;;
+              *) status=Todo ;;
+            esac
           fi
 
           set_field() {

@@ -32,7 +32,7 @@ without recreating duplicate projects or re-inferring the migration layout.
 
 | Field | ID | Expected options |
 |---|---|---|
-| `Status` | `PVTSSF_lAHOC9dBM84BZ7oTzhU2zz8` | `Todo`, `In progress`, `Done` |
+| `Status` | `PVTSSF_lAHOC9dBM84BZ7oTzhU2zz8` | `Todo`, `Next`, `In progress`, `Done` |
 | `Roadmap Lane` | `PVTSSF_lAHOC9dBM84BZ7oTzhU6yKQ` | `Now`, `Next`, `Later`, `Blocked`, `Done` |
 | `Priority` | `PVTSSF_lAHOC9dBM84BZ7oTzhU6yKU` | `P0`, `P1`, `P2`, `P3` |
 | `Area` | `PVTSSF_lAHOC9dBM84BZ7oTzhU6yKY` | `Safety`, `Workflow`, `Docs`, `GitHub`, `KB`, `UX`, `API` |
@@ -58,7 +58,8 @@ Initial lane assignment after the extension-review triage:
 
 ### Status
 
-- `Todo`: `38`
+- `Todo`: `36`
+- `Next`: `2`
 - `In progress`: `1`
 - `Done`: `7`
 

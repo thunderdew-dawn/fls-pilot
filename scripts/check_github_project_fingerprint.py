@@ -11,6 +11,7 @@ PROJECT = "7"
 EXPECTED = {
     "items": {"min": 3, "max": 48, "count": 46},
     "lanes": {"Now": 3, "Next": 3, "Later": 33, "Done": 7},
+    "statuses": {"Todo": 36, "Next": 2, "In progress": 1, "Done": 7},
     "priorities": {"P0": 3, "P1": 6, "P2": 25, "P3": 12},
 }
 
@@ -51,6 +52,7 @@ def main() -> int:
     observed = {
         "items": {"min": min(numbers), "max": max(numbers), "count": len(numbers)},
         "lanes": _count([item.get("roadmap Lane", "") for item in items]),
+        "statuses": _count([item.get("status", "") for item in items]),
         "priorities": _count([item.get("priority", "") for item in items]),
     }
     if observed != EXPECTED:
