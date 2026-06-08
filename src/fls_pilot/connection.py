@@ -150,14 +150,14 @@ class FLBridge:
                 f"No OUTPUT MIDI port matching {self._port_to_fl_pattern!r}. "
                 f"Available: {out_names}. "
                 "Create the port in loopMIDI (Windows) or IAC Driver (macOS), "
-                "or set FLSTUDIO_MCP_PORT_TO_FL to an existing port name."
+                "or set FLS_PILOT_PORT_TO_FL to an existing port name."
             )
         if in_match is None:
             raise FLPortMissing(
                 f"No INPUT MIDI port matching {self._port_from_fl_pattern!r}. "
                 f"Available: {in_names}. "
                 "Create the port in loopMIDI (Windows) or IAC Driver (macOS), "
-                "or set FLSTUDIO_MCP_PORT_FROM_FL to an existing port name."
+                "or set FLS_PILOT_PORT_FROM_FL to an existing port name."
             )
         logger.info("Opening MIDI ports: out=%r, in=%r", out_match, in_match)
         self._out_port = mido.open_output(out_match)
@@ -205,11 +205,11 @@ class FLBridge:
             raise FLNotRunning(
                 "FL Studio controller is not responding. Verify:\n"
                 "  1. FL Studio is open.\n"
-                "  2. FLStudioMCP is selected as the Controller type for the "
+                "  2. FLStudioPilot is selected as the Controller type for the "
                 "loopMIDI input port in Options > MIDI Settings.\n"
                 "  3. The OUTPUT loopMIDI port has the same Port number as "
                 "the INPUT port so the script can route SysEx back to the server.\n"
-                "  4. View > Script output shows '[FLStudioMCP] Ready'."
+                "  4. View > Script output shows '[FLStudioPilot] Ready'."
             )
 
     # -- request / response --------------------------------------------------
@@ -332,7 +332,7 @@ class FLBridge:
 
 # ---------------------------------------------------------------------------
 # TCP bridge -- talks to the standalone MIDI daemon instead of doing MIDI
-# itself. Used when FLSTUDIO_MCP_TRANSPORT=tcp so the MCP server works even
+# itself. Used when FLS_PILOT_TRANSPORT=tcp so the MCP server works even
 # under MCP clients that launch their servers in a MIDI-restricted context
 # (e.g. sandboxed builds of MCP clients like Claude Desktop). See daemon.py.
 # ---------------------------------------------------------------------------
@@ -356,8 +356,8 @@ class TCPBridge:
         *,
         default_timeout: float = DEFAULT_TIMEOUT_SECONDS,
     ):
-        self.host = host or os.environ.get("FLSTUDIO_MCP_TCP_HOST", DEFAULT_TCP_HOST)
-        self.port = int(port or os.environ.get("FLSTUDIO_MCP_TCP_PORT", DEFAULT_TCP_PORT))
+        self.host = host or os.environ.get("FLS_PILOT_TCP_HOST", DEFAULT_TCP_HOST)
+        self.port = int(port or os.environ.get("FLS_PILOT_TCP_PORT", DEFAULT_TCP_PORT))
         self.default_timeout = default_timeout
         self._lock = threading.Lock()
 
@@ -379,8 +379,8 @@ class TCPBridge:
 
     def _daemon_unreachable(self, exc: Exception) -> FLPortMissing:
         return FLPortMissing(
-            f"Cannot reach the fl-studio-mcp daemon at {self.host}:{self.port}. "
-            "Start it (run `fl-studio-mcp-daemon` in a normal terminal / on login) "
+            f"Cannot reach the fls-pilot daemon at {self.host}:{self.port}. "
+            "Start it (run `fls-pilot-daemon` in a normal terminal / on login) "
             f"so MIDI works regardless of which app launched the MCP server. ({exc})"
         )
 
@@ -487,14 +487,14 @@ _bridge: FLBridge | TCPBridge | None = None
 def get_bridge() -> FLBridge | TCPBridge:
     """Return the process-wide bridge.
 
-    ``FLSTUDIO_MCP_TRANSPORT=tcp`` selects the daemon-backed :class:`TCPBridge`
+    ``FLS_PILOT_TRANSPORT=tcp`` selects the daemon-backed :class:`TCPBridge`
     (universal: works under any MCP client); anything else uses the in-process
     :class:`FLBridge` (needs no daemon, but the launching client must have MIDI
     access).
     """
     global _bridge
     if _bridge is None:
-        transport = os.environ.get("FLSTUDIO_MCP_TRANSPORT", "direct").lower()
+        transport = os.environ.get("FLS_PILOT_TRANSPORT", "direct").lower()
         if transport == "tcp":
             _bridge = TCPBridge()
         else:

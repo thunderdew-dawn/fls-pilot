@@ -1,4 +1,4 @@
-# FLStudioMCP Workflows
+# FLStudioPilot Workflows
 
 ## Live Write Smoke
 

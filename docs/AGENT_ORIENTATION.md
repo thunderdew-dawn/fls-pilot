@@ -1,6 +1,6 @@
 # Agent Orientation
 
-Compact startup path for LLM agents using FLStudioMCP with FL Studio.
+Compact startup path for LLM agents using FLStudioPilot with FL Studio.
 
 ## Startup Protocol
 

@@ -6,7 +6,7 @@ Agent/Author: Codex
 
 Topic: Verified grouped write safety for rollback-backed MCP writes.
 
-Affected File/API: `src/fl_studio_mcp/safety.py`; `safety.safe_write_group`.
+Affected File/API: `src/fls_pilot/safety.py`; `safety.safe_write_group`.
 
 Context: v1.2 roadmap slice 04 strengthened grouped writes before exposing any
 generic batch write tool.

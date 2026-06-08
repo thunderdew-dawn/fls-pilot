@@ -5,9 +5,9 @@
   "confidence_level": "implementation_verified",
   "affected_file_api": [
     "fl_review_low_end_stereo",
-    "src/fl_studio_mcp/music/mix_doctor.py",
-    "src/fl_studio_mcp/tools/mix_doctor.py",
-    "fl_controller/FLStudioMCP/device_FLStudioMCP.py",
+    "src/fls_pilot/music/mix_doctor.py",
+    "src/fls_pilot/tools/mix_doctor.py",
+    "fl_controller/FLStudioPilot/device_FLStudioPilot.py",
     "mixer_list_tracks.stereo_sep"
   ],
   "context": "The updated mixing Knowledgebase contains low-end mono-compatibility guidance. The MCP tool surface needed a dedicated read-only report for bass/sub, mono compatibility, stereo-width metadata, and Master headroom without adding FL write paths.",
@@ -23,7 +23,7 @@
   "result": "Offline tests confirm conservative findings for off-center low-end, widened low-end metadata, hot low-end, Master headroom, and low-end layering. Stopped snapshots skip hot peak rules when levels_valid is false. The tool output omits full per-row KB rule objects and keeps compact metadata.",
   "source_method": [
     ".venv/bin/python tests/test_mix_doctor.py",
-    ".venv/bin/python -m py_compile src/fl_studio_mcp/music/mix_doctor.py src/fl_studio_mcp/tools/mix_doctor.py fl_controller/FLStudioMCP/device_FLStudioMCP.py tests/test_mix_doctor.py"
+    ".venv/bin/python -m py_compile src/fls_pilot/music/mix_doctor.py src/fls_pilot/tools/mix_doctor.py fl_controller/FLStudioPilot/device_FLStudioPilot.py tests/test_mix_doctor.py"
   ],
   "valid_ranges": {
     "pan": "-1..+1 FL mixer pan readback",

@@ -8,8 +8,8 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from fl_studio_mcp import protocol  # noqa: E402
-from fl_studio_mcp.tools import project_doctor as pd  # noqa: E402
+from fls_pilot import protocol  # noqa: E402
+from fls_pilot.tools import project_doctor as pd  # noqa: E402
 
 _P = _F = 0
 

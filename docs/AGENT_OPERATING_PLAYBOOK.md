@@ -61,7 +61,7 @@ agent chats are execution surfaces, not durable planning storage.
 ### Local Agent Prompt
 
 ```text
-Work on GitHub issue #<number> in thunderdew-dawn/flstudio-mcp.
+Work on GitHub issue #<number> in thunderdew-dawn/fls-pilot.
 
 Rules:
 - Read AGENTS.md, docs/ENGINEERING_STANDARDS.md, ROADMAP.md, and the issue.
@@ -281,7 +281,7 @@ vulnerability reporting.
 ### Security Agent Prompt
 
 ```text
-Review the GitHub security alert/PR for thunderdew-dawn/flstudio-mcp.
+Review the GitHub security alert/PR for thunderdew-dawn/fls-pilot.
 
 Rules:
 - Do not expose secrets, private paths, or vulnerability details in public text.
@@ -397,7 +397,7 @@ Human actions:
 Release agent prompt:
 
 ```text
-Prepare release <version> for thunderdew-dawn/flstudio-mcp.
+Prepare release <version> for thunderdew-dawn/fls-pilot.
 
 Rules:
 - Inspect pyproject.toml, README.md, docs/generated/, .github/workflows/release.yml,
@@ -645,13 +645,13 @@ Completion criteria:
 ## Recommended GitHub Commands
 
 ```bash
-gh issue view <number> --repo thunderdew-dawn/flstudio-mcp
+gh issue view <number> --repo thunderdew-dawn/fls-pilot
 gh project item-list 7 --owner thunderdew-dawn --limit 100 --format json
 python3 scripts/check_github_project_fingerprint.py
-gh run list --repo thunderdew-dawn/flstudio-mcp --limit 10
-gh workflow run project_fingerprint.yml --repo thunderdew-dawn/flstudio-mcp --ref main
-gh workflow run roadmap_changelog_sync.yml --repo thunderdew-dawn/flstudio-mcp --ref main -f write_canonical=false
-gh workflow run release_dry_run.yml --repo thunderdew-dawn/flstudio-mcp --ref main
+gh run list --repo thunderdew-dawn/fls-pilot --limit 10
+gh workflow run project_fingerprint.yml --repo thunderdew-dawn/fls-pilot --ref main
+gh workflow run roadmap_changelog_sync.yml --repo thunderdew-dawn/fls-pilot --ref main -f write_canonical=false
+gh workflow run release_dry_run.yml --repo thunderdew-dawn/fls-pilot --ref main
 ```
 
 ## Stop Conditions

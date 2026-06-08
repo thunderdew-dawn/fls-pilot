@@ -2,7 +2,7 @@
 
 - **Date:** 2026-06-06
 - **Agent/Author:** Codex
-- **Topic:** Mastering guidance and limits for FL Studio MCP assistants.
+- **Topic:** Mastering guidance and limits for FL Studio Pilot assistants.
 - **Affected File/API:** Export readiness, Mix Review, Reference Match, plugin-chain planning, `fl_plugin`, `fl_effect`, manual FL Cloud Mastering guidance.
 - **Context:** Users may ask the assistant to master a track, but the current project safety rules prohibit render automation and plugin loading, and FL Cloud Mastering is a UI/file workflow.
 - **Observation:** Image-Line describes mastering as final polish after the mix, with loudness target selection, tonal/reference comparison, and blind A/B comparison in FL Cloud Mastering. Maximus is documented as a multiband maximizer/compressor/limiter suited to final-stage mastering or per-track use, but actual parameter writes require loaded plugins and verified parameter mappings.

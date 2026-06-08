@@ -4,15 +4,28 @@
 from __future__ import annotations
 
 import json
+import os
 import subprocess
 from collections import Counter
 from typing import Any
 
 OWNER = "thunderdew-dawn"
-REPO = "thunderdew-dawn/flstudio-mcp"
 PROJECT = "7"
 REQUIRED_RELEASE_ITEMS = {59, 60, 61, 62, 63, 64, 65, 66}
 REQUIRED_PROJECT_FIELDS = ("status", "roadmap Lane", "priority", "area", "type", "safety")
+
+
+def _current_repo() -> str:
+    if repo := os.environ.get("GITHUB_REPOSITORY"):
+        return repo
+    result = subprocess.run(
+        ["gh", "repo", "view", "--json", "nameWithOwner", "--jq", ".nameWithOwner"],
+        check=True,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+    )
+    return result.stdout.strip()
 
 
 def _gh_json(*args: str) -> Any:
@@ -46,7 +59,7 @@ def _source_issues() -> list[dict[str, Any]]:
         "issue",
         "list",
         "--repo",
-        REPO,
+        _current_repo(),
         "--state",
         "all",
         "--label",

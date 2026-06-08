@@ -19,8 +19,8 @@ from pathlib import Path
 from typing import Any
 
 ROOT = Path(__file__).resolve().parents[1]
-TOOLS_DIR = ROOT / "src" / "fl_studio_mcp" / "tools"
-PROTOCOL = ROOT / "src" / "fl_studio_mcp" / "protocol.py"
+TOOLS_DIR = ROOT / "src" / "fls_pilot" / "tools"
+PROTOCOL = ROOT / "src" / "fls_pilot" / "protocol.py"
 
 
 WRITE_CONSTANTS = {

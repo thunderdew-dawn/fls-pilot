@@ -6,7 +6,7 @@ Writes one note via the bridge with ZERO manual setup. Expect:
   - if NOT armed this session -> note won't appear, 'setup' note explains the
     one manual step (run MCP Apply once).
 
-    set FLSTUDIO_MCP_TRANSPORT=tcp
+    set FLS_PILOT_TRANSPORT=tcp
     python scripts/test_autoopen.py
 """
 
@@ -18,7 +18,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from fl_studio_mcp.connection import get_bridge  # noqa: E402
+from fls_pilot.connection import get_bridge  # noqa: E402
 
 _PITCH = int(sys.argv[1]) if len(sys.argv) > 1 else 60
 NOTE = [{"pitch": _PITCH, "time_bars": 0.0, "length_bars": 1.0, "velocity": 0.787}]

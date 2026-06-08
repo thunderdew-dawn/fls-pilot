@@ -181,7 +181,7 @@ def register(mcp: FastMCP) -> None:
 
     @mcp.resource("fl://agent-briefing")
     def agent_briefing() -> dict:
-        """Compact safety-first orientation for FLStudioMCP agents."""
+        """Compact safety-first orientation for FLStudioPilot agents."""
 
         return {
             "purpose": "Start here before choosing tools or touching FL Studio state.",

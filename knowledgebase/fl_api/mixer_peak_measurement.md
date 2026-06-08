@@ -18,7 +18,7 @@ To obtain the true **Pre-Fader** peak of the incoming signal, the current volume
 Calculation: `pre_fader_peak = measured["peak_db"] - vol_db`
 
 ## Source/Method
-User provided a patch in `src/fl_studio_mcp/tools/mixing.py` that fixes a bug in automatic threshold calculation by implementing this offset using `protocol.CMD_MIXER_GET_TRACK`.
+User provided a patch in `src/fls_pilot/tools/mixing.py` that fixes a bug in automatic threshold calculation by implementing this offset using `protocol.CMD_MIXER_GET_TRACK`.
 
 ## Reproduction Steps
 1. Measure a track's peak level using `levels.measure_track_level` with fader at 0 dB.

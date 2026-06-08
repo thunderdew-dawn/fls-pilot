@@ -21,12 +21,12 @@ import os
 import sys
 from pathlib import Path
 
-os.environ.setdefault("FLSTUDIO_MCP_TRANSPORT", "tcp")
+os.environ.setdefault("FLS_PILOT_TRANSPORT", "tcp")
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from fl_studio_mcp import protocol, safety  # noqa: E402
-from fl_studio_mcp.connection import get_bridge  # noqa: E402
+from fls_pilot import protocol, safety  # noqa: E402
+from fls_pilot.connection import get_bridge  # noqa: E402
 
 
 def _parse_trims(spec: str) -> list[tuple[int, float]]:

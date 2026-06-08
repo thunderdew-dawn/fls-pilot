@@ -19,20 +19,20 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
 import contextlib
 
-from fl_studio_mcp.connection import get_bridge, reset_bridge  # noqa: E402
-from fl_studio_mcp.music import mix_doctor as md  # noqa: E402
+from fls_pilot.connection import get_bridge, reset_bridge  # noqa: E402
+from fls_pilot.music import mix_doctor as md  # noqa: E402
 
 SEV_TAG = {"high": "[HIGH]", "medium": "[MED ]", "low": "[LOW ]"}
 
 
 def connect():
     order = (
-        [os.environ["FLSTUDIO_MCP_TRANSPORT"]]
-        if os.environ.get("FLSTUDIO_MCP_TRANSPORT")
+        [os.environ["FLS_PILOT_TRANSPORT"]]
+        if os.environ.get("FLS_PILOT_TRANSPORT")
         else ["tcp", "direct"]
     )
     for t in order:
-        os.environ["FLSTUDIO_MCP_TRANSPORT"] = t
+        os.environ["FLS_PILOT_TRANSPORT"] = t
         reset_bridge()
         try:
             b = get_bridge()

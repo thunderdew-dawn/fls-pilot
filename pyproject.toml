@@ -3,8 +3,8 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "fl-studio-mcp"
-version = "2.0.0"
+name = "fls-pilot"
+version = "3.0.0a1"
 description = "Control FL Studio with any MCP-compatible LLM: mixing, composition, and mix diagnosis through natural language."
 readme = "README.md"
 license = { text = "MIT" }
@@ -17,7 +17,7 @@ maintainers = [
 requires-python = ">=3.10"
 keywords = ["mcp", "fl-studio", "music-production", "ai", "claude", "fruityloops"]
 classifiers = [
-    "Development Status :: 5 - Production/Stable",
+    "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
     "Intended Audience :: End Users/Desktop",
     "License :: OSI Approved :: MIT License",
@@ -63,17 +63,17 @@ audio-accurate = [
 ]
 
 [project.scripts]
-fl-studio-mcp = "fl_studio_mcp.server:main"
-fl-studio-mcp-daemon = "fl_studio_mcp.daemon:main"
+fls-pilot = "fls_pilot.server:main"
+fls-pilot-daemon = "fls_pilot.daemon:main"
 
 [project.urls]
-Homepage = "https://github.com/thunderdew-dawn/flstudio-mcp"
-Repository = "https://github.com/thunderdew-dawn/flstudio-mcp"
-Issues = "https://github.com/thunderdew-dawn/flstudio-mcp/issues"
+Homepage = "https://github.com/thunderdew-dawn/fls-pilot"
+Repository = "https://github.com/thunderdew-dawn/fls-pilot"
+Issues = "https://github.com/thunderdew-dawn/fls-pilot/issues"
 Upstream = "https://github.com/rosasynthesiz/flstudio-mcp"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/fl_studio_mcp"]
+packages = ["src/fls_pilot"]
 
 [tool.ruff]
 line-length = 100
@@ -102,4 +102,3 @@ addopts = """
   --ignore=scripts/probes/test_priority12_live.py
 """
 norecursedirs = ["scratch", ".venv", ".git", ".pytest_cache", ".ruff_cache"]
-

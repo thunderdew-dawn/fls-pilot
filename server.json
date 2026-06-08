@@ -1,17 +1,17 @@
 {
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
-  "name": "io.github.thunderdew-dawn/flstudio-mcp",
+  "name": "io.github.thunderdew-dawn/fls-pilot",
   "description": "Control FL Studio with any LLM: in-DAW mixing, diagnosis, routing, and composition.",
   "repository": {
-    "url": "https://github.com/thunderdew-dawn/flstudio-mcp",
+    "url": "https://github.com/thunderdew-dawn/fls-pilot",
     "source": "github"
   },
-  "version": "2.0.0",
+  "version": "3.0.0a1",
   "packages": [
     {
       "registryType": "pypi",
-      "identifier": "fl-studio-mcp",
-      "version": "2.0.0",
+      "identifier": "fls-pilot",
+      "version": "3.0.0a1",
       "transport": {
         "type": "stdio"
       }

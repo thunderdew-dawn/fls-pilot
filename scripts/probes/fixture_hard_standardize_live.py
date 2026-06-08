@@ -22,12 +22,12 @@ import sys
 from dataclasses import dataclass
 from pathlib import Path
 
-os.environ.setdefault("FLSTUDIO_MCP_TRANSPORT", "tcp")
+os.environ.setdefault("FLS_PILOT_TRANSPORT", "tcp")
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from fl_studio_mcp import protocol, safety  # noqa: E402
-from fl_studio_mcp.connection import fetch_all_pages, get_bridge  # noqa: E402
+from fls_pilot import protocol, safety  # noqa: E402
+from fls_pilot.connection import fetch_all_pages, get_bridge  # noqa: E402
 
 
 @dataclass(frozen=True)

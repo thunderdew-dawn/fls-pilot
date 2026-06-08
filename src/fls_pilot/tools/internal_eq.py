@@ -5,7 +5,7 @@ from pathlib import Path
 
 from fastmcp import FastMCP
 
-from fl_studio_mcp.connection import get_bridge
+from fls_pilot.connection import get_bridge
 
 KB_ROOT = Path("knowledgebase")
 

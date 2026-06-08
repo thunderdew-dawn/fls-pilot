@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://fl-studio-mcp.local/schemas/template_profile.schema.json",
+  "$id": "https://fls-pilot.local/schemas/template_profile.schema.json",
   "title": "FL Studio Template Profile",
   "description": "Compact read-only profile for an FL Studio project template topology.",
   "type": "object",

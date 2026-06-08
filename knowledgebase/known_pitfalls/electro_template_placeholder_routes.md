@@ -3,7 +3,7 @@
 - **Date:** 2026-06-07
 - **Agent/Author:** Codex
 - **Topic:** Electro template placeholder routing causes false Mix Review and cleanup findings.
-- **Affected File/API:** `src/fl_studio_mcp/music/mix_doctor.py`, `src/fl_studio_mcp/tools/routing.py`, `fl_review_mix`, `fl_review_low_end_stereo`, `fl_detect_cleanup_candidates`, Project Health / Preflight.
+- **Affected File/API:** `src/fls_pilot/music/mix_doctor.py`, `src/fls_pilot/tools/routing.py`, `fl_review_mix`, `fl_review_low_end_stereo`, `fl_detect_cleanup_candidates`, Project Health / Preflight.
 - **Context:** The live `Electro` template reserves many default-named inserts by routing them to `Instruments ► Mix` before they contain audio, plugins, or direct Channel Rack targets.
 - **Observation:** Existing generic heuristics treat non-Master outgoing routes as evidence that a mixer track is used, while cleanup detection treats default name plus no plugin/incoming route as unused. In this template, both interpretations can be wrong for tracks 22-115.
 - **Tested Values:** `Insert 22`-`Insert 115` route to track 120 `Instruments ► Mix` at level `0.8` and were reported as 95 unused mixer tracks by cleanup detection. Mix Doctor returned 111 low findings, dominated by `missing_hpf` suggestions for these routed placeholders.

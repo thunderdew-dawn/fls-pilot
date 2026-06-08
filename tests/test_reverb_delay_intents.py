@@ -5,7 +5,7 @@ Unit tests are pure. The intent tests build the real FastMCP server and call
 the registered tools in-process (same path an MCP client uses), then roll
 everything back and assert both plugins' full param dumps match pre-state.
 
-    set FLSTUDIO_MCP_TRANSPORT=tcp
+    set FLS_PILOT_TRANSPORT=tcp
     python scripts/test_reverb_delay_intents.py [track]   # default 2
 
 Auto-detects the reverb + delay slots by name on the target track.
@@ -20,10 +20,10 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from fl_studio_mcp import protocol  # noqa: E402
-from fl_studio_mcp.connection import get_bridge  # noqa: E402
-from fl_studio_mcp.music import reverb_delay_curves as rd  # noqa: E402
-from fl_studio_mcp.server import build_server  # noqa: E402
+from fls_pilot import protocol  # noqa: E402
+from fls_pilot.connection import get_bridge  # noqa: E402
+from fls_pilot.music import reverb_delay_curves as rd  # noqa: E402
+from fls_pilot.server import build_server  # noqa: E402
 
 TRACK = int(sys.argv[1]) if len(sys.argv) > 1 else 2
 _P = _F = 0

@@ -13,15 +13,15 @@ from pathlib import Path
 # Add src/ to path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from fl_studio_mcp import protocol, safety  # noqa: E402
-from fl_studio_mcp.pyscript_gen import (  # noqa: E402
+from fls_pilot import protocol, safety  # noqa: E402
+from fls_pilot.pyscript_gen import (  # noqa: E402
     render_apply_script,
     render_quantize_script,
     render_transpose_script,
     write_marker_add_script,
     write_marker_clear_script,
 )
-from fl_studio_mcp.tools import pianoroll as pr_tools  # noqa: E402
+from fls_pilot.tools import pianoroll as pr_tools  # noqa: E402
 
 _P = _F = 0
 
@@ -174,7 +174,7 @@ def main() -> int:
     fl_piano_get_notes = mcp.tools["fl_piano_get_notes"]
 
     bridge = FakeBridge()
-    from fl_studio_mcp import connection
+    from fls_pilot import connection
 
     orig_get_bridge = connection.get_bridge
     connection.get_bridge = lambda: bridge

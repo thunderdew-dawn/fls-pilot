@@ -3,9 +3,9 @@
   "agent_author": "Codex",
   "topic": "fl_batch MCP wrapper for read-only batches and persistent write batches",
   "affected_file_api": [
-    "src/fl_studio_mcp/tools/batch.py",
-    "src/fl_studio_mcp/server.py",
-    "src/fl_studio_mcp/operations.py",
+    "src/fls_pilot/tools/batch.py",
+    "src/fls_pilot/server.py",
+    "src/fls_pilot/operations.py",
     "safety.safe_write_group",
     "operation-registry protocol commands"
   ],

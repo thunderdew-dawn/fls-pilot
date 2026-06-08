@@ -11,8 +11,8 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from fl_studio_mcp.tools.bulk import resolve_targets  # noqa: E402
-from fl_studio_mcp.tools.color import (  # noqa: E402
+from fls_pilot.tools.bulk import resolve_targets  # noqa: E402
+from fls_pilot.tools.color import (  # noqa: E402
     COLOR_NAMES,
     _resolve_channels,
     parse_color,

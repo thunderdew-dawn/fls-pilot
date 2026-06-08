@@ -1,8 +1,8 @@
-"""fl-studio-mcp -- MCP server that controls FL Studio via a MIDI SysEx bridge."""
+"""fls-pilot -- MCP server that controls FL Studio via a MIDI SysEx bridge."""
 
 from __future__ import annotations
 
-__version__ = "2.0.0"
+__version__ = "3.0.0a1"
 
 from .connection import (
     FLBridge,

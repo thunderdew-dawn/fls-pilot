@@ -3,7 +3,7 @@
 - **Date**: 2026-06-05
 - **Agent/Author**: Codex
 - **Topic**: `fl_batch` MCP wrapper for read-only batches and persistent write batches
-- **Affected File/API**: `src/fl_studio_mcp/tools/batch.py`, `src/fl_studio_mcp/server.py`, `src/fl_studio_mcp/operations.py`, `safety.safe_write_group`, operation-registry protocol commands
+- **Affected File/API**: `src/fls_pilot/tools/batch.py`, `src/fls_pilot/server.py`, `src/fls_pilot/operations.py`, `safety.safe_write_group`, operation-registry protocol commands
 - **Context**: v1.2 slices 11 and 12 expose one public `fl_batch` surface for strict operation-registry batches.
 - **Observation**: `fl_batch(operations, continue_on_error=False)` validates every operation through the internal operation registry before any bridge calls. It accepts only registry IDs shaped as `{domain, action, params?}` from read-only or persistent-write whitelists. Read-only batches execute registry-built read commands directly. Persistent write batches must be homogeneous, reject `continue_on_error`, and execute through `safety.safe_write_group` as one named rollback unit.
 - **Tested Values**: Successful read-only batch with `transport.get_tempo`, `mixer.get`, and `channel.get_selected`; 51-operation max rejection; raw `command` and `script_text` rejection; mixed read/write rejection; runtime read failure with and without `continue_on_error`; successful persistent write batch with two `mixer.set_mute` operations; invalid write validation with no bridge calls; write `continue_on_error` rejection; rollback of a successful write batch; persistent write dry-run plan; partial write failure with immediate group rollback.

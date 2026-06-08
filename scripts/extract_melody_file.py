@@ -15,7 +15,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
 import contextlib
 
-from fl_studio_mcp.tools.audio import audio_extract_melody  # noqa: E402
+from fls_pilot.tools.audio import audio_extract_melody  # noqa: E402
 
 
 def main() -> int:

@@ -5,7 +5,7 @@ Builds the real server and reads each fl:// resource in-process (same path
 an MCP client uses). Prints byte size per resource -- the big lists (mixer/channels)
 must stay small.
 
-    set FLSTUDIO_MCP_TRANSPORT=tcp
+    set FLS_PILOT_TRANSPORT=tcp
     python scripts/test_resources.py
 """
 
@@ -17,7 +17,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from fl_studio_mcp.server import build_server  # noqa: E402
+from fls_pilot.server import build_server  # noqa: E402
 
 URIS = [
     "fl://agent-briefing",

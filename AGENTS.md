@@ -50,7 +50,7 @@ slice plans only in local chat.
   registration style.
 - For implementation work, explicitly inspect the relevant parts of
   `ROADMAP.md`, `docs/API_CAPABILITY_AUDIT.md`,
-  `src/fl_studio_mcp/safety.py`, `src/fl_studio_mcp/protocol.py`, the FL
+  `src/fls_pilot/safety.py`, `src/fls_pilot/protocol.py`, the FL
   controller script, existing tool modules, and focused tests/scripts before
   editing.
 - For non-trivial implementation slices, produce a short implementation plan

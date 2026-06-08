@@ -3,8 +3,8 @@
   "agent_author": "Codex",
   "topic": "Electro template placeholder routes cause false findings",
   "affected_file_api": [
-    "src/fl_studio_mcp/music/mix_doctor.py",
-    "src/fl_studio_mcp/tools/routing.py",
+    "src/fls_pilot/music/mix_doctor.py",
+    "src/fls_pilot/tools/routing.py",
     "fl_review_mix",
     "fl_detect_cleanup_candidates",
     "Project Health / Preflight"

@@ -6,7 +6,7 @@ the MCP server: it calls the real module-level resolve_param_index() helper and
 drives safety.safe_write / rollback_last_change exactly the way the
 fl_plugin_set_param tool does internally.
 
-    set FLSTUDIO_MCP_TRANSPORT=tcp        # route through the running daemon
+    set FLS_PILOT_TRANSPORT=tcp        # route through the running daemon
     python scripts/test_phase1b_tools.py
 
 Prereqs: FL open, controller reloaded WITH the plugin_get_param handler,
@@ -21,9 +21,9 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from fl_studio_mcp import protocol, safety  # noqa: E402
-from fl_studio_mcp.connection import get_bridge  # noqa: E402
-from fl_studio_mcp.tools.plugin import (  # noqa: E402
+from fls_pilot import protocol, safety  # noqa: E402
+from fls_pilot.connection import get_bridge  # noqa: E402
+from fls_pilot.tools.plugin import (  # noqa: E402
     ParamNotFound,
     resolve_param_index,
 )

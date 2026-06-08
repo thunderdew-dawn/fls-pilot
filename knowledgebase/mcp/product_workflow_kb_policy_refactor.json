@@ -3,13 +3,13 @@
   "agent_author": "Codex",
   "topic": "Product workflow tools attach source-qualified Knowledgebase policy metadata",
   "affected_file_api": [
-    "src/fl_studio_mcp/kb_policy.py",
-    "src/fl_studio_mcp/music/mix_doctor.py",
-    "src/fl_studio_mcp/tools/mix_doctor.py",
-    "src/fl_studio_mcp/tools/project_doctor.py",
-    "src/fl_studio_mcp/tools/routing.py",
-    "src/fl_studio_mcp/tools/project_organizer.py",
-    "src/fl_studio_mcp/tools/chains.py"
+    "src/fls_pilot/kb_policy.py",
+    "src/fls_pilot/music/mix_doctor.py",
+    "src/fls_pilot/tools/mix_doctor.py",
+    "src/fls_pilot/tools/project_doctor.py",
+    "src/fls_pilot/tools/routing.py",
+    "src/fls_pilot/tools/project_organizer.py",
+    "src/fls_pilot/tools/chains.py"
   ],
   "context": "Updated mixing, mastering, production, and performance Knowledgebase entries should improve existing tools without creating unsafe new FL Studio write paths.",
   "observation": "Product tools benefit from KB rules as policy metadata and conservative diagnosis wording. KB entries must not be interpreted as executable operations.",

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import asyncio
 
-from fl_studio_mcp.server import build_server
+from fls_pilot.server import build_server
 
 
 def _text(resource_result) -> str:

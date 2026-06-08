@@ -57,7 +57,15 @@ def _category(labels: set[str]) -> str:
     return "Other Changes"
 
 
-def render(repo: str, token: str) -> str:
+def _display_url(url: str | None, repo: str, display_repo: str | None) -> str:
+    if not url:
+        return "None"
+    if not display_repo or display_repo == repo:
+        return url
+    return url.replace(f"https://github.com/{repo}/", f"https://github.com/{display_repo}/")
+
+
+def render(repo: str, token: str, display_repo: str | None = None) -> str:
     generated = dt.datetime.now(dt.timezone.utc).replace(microsecond=0).isoformat()
     releases = _list(f"/repos/{repo}/releases", token)
     pulls = [
@@ -73,7 +81,7 @@ def render(repo: str, token: str) -> str:
         "<!-- GENERATED FILE. Source of truth: GitHub Releases, tags, PRs, and labels. -->",
         "",
         f"Generated: {generated}",
-        f"Repository: `{repo}`",
+        f"Repository: `{display_repo or repo}`",
         "",
         "## Releases",
         "",
@@ -88,7 +96,7 @@ def render(repo: str, token: str) -> str:
                 f"### {release.get('tag_name', release.get('name', 'untagged'))}{prerelease}",
                 "",
                 f"- Published: {release.get('published_at') or 'draft/unpublished'}",
-                f"- URL: {release.get('html_url')}",
+                f"- URL: {_display_url(release.get('html_url'), repo, display_repo)}",
                 "",
             ]
         )
@@ -103,7 +111,8 @@ def render(repo: str, token: str) -> str:
         for category in sorted(by_category):
             lines.extend([f"### {category}", ""])
             for pr in by_category[category]:
-                lines.append(f"- #{pr['number']} [{pr['title']}]({pr['html_url']})")
+                url = _display_url(pr.get("html_url"), repo, display_repo)
+                lines.append(f"- #{pr['number']} [{pr['title']}]({url})")
             lines.append("")
 
     return "\n".join(lines).rstrip() + "\n"
@@ -112,6 +121,7 @@ def render(repo: str, token: str) -> str:
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--repo", default=os.environ.get("GITHUB_REPOSITORY"))
+    parser.add_argument("--display-repo", default=os.environ.get("SNAPSHOT_DISPLAY_REPOSITORY"))
     parser.add_argument("--output", default="-")
     args = parser.parse_args()
 
@@ -123,7 +133,7 @@ def main() -> int:
         print("--repo or GITHUB_REPOSITORY is required", file=sys.stderr)
         return 2
 
-    text = render(args.repo, token)
+    text = render(args.repo, token, args.display_repo)
     if args.output == "-":
         print(text, end="")
     else:

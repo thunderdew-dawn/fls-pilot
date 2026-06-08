@@ -1,4 +1,4 @@
-# flstudio-mcp — Phase 1A Report (read + write + safety)
+# fls-pilot — Phase 1A Report (read + write + safety)
 
 **Version:** 0.3.0 · **Env:** FL Studio Producer Edition v25.2.5 [build 5319], MIDI scripting v40, Windows, Python 3.12, loopMIDI · **Date:** 2026-05-24
 
@@ -16,15 +16,15 @@ MCP client → (stdio) → MCP server → ┬─ direct: in-process FLBridge ─
 ```
 
 - **Why two transports.** The MCP server can run MIDI in-process (`FLBridge`,
-  default `FLSTUDIO_MCP_TRANSPORT=direct`). But the **Microsoft Store / MSIX
+  default `FLS_PILOT_TRANSPORT=direct`). But the **Microsoft Store / MSIX
   build of the MCP client launches its child MCP-server process in a context
   where the Windows MIDI subsystem delivers no input data** — the loopMIDI
   ports enumerate and open without error, but zero MIDI arrives. Proven by
   A/B: a normally-launched Python process receives every heartbeat; the
   Client-spawned one (same code, same session, same port, both
   non-AppContainer) receives nothing.
-- **Fix = `TCPBridge` + a daemon.** With `FLSTUDIO_MCP_TRANSPORT=tcp`, the MCP
-  server does **no MIDI** — it talks to a standalone **`fl-studio-mcp-daemon`**
+- **Fix = `TCPBridge` + a daemon.** With `FLS_PILOT_TRANSPORT=tcp`, the MCP
+  server does **no MIDI** — it talks to a standalone **`fls-pilot-daemon`**
   (a normal process the user runs) over `127.0.0.1:9787`; the daemon owns all
   loopMIDI I/O. TCP is unaffected by the MSIX launch context (same reason
   socket-based MCPs like AbletonMCP "just work"). This makes the bridge work
@@ -88,7 +88,7 @@ norm → db:  db   = 20 * log10(norm / 0.8)   (guard norm>0)
 expected `0.8*10**(-6/20) = 0.4009`, **actual = 0.4009** (within 0.001). ✅
 A 1.0-unity bug would have given 0.5012 — it did not.
 
-### Safety layer (`src/fl_studio_mcp/safety.py`, server-side)
+### Safety layer (`src/fls_pilot/safety.py`, server-side)
 - `safe_write()` = **snapshot → log → execute → read back**, returns
   `{before, after}`. Honors dry-run.
 - `take_snapshot(scope)` — `mixer_track:N` / `channel:N` / `mixer_all` /
@@ -97,7 +97,7 @@ A 1.0-unity bug would have given 0.5012 — it did not.
   pre-change `restore` action.
 - `set_dry_run(enabled)` — writes return `{planned}` only, no FL change.
 - Changelog = rolling `deque(50)`, persisted to
-  `~/.flstudio-mcp/changelog.jsonl`.
+  `~/.fls-pilot/changelog.jsonl`.
 - MCP tools wired: read (`fl_get_project_state`, `fl_get_mixer_state`,
   `fl_get_channel_state`), write (`fl_set_mixer_*`, `fl_set_channel_*`), safety
   (`fl_take_snapshot`, `fl_rollback_last_change`, `fl_set_dry_run`).
@@ -133,10 +133,10 @@ path (mixer + channel mute & solo).
 - **Channel-solo in snapshot:** added `solo` to the channel read dict so
   channel-solo rollback is exact (parity with mixer).
 - **Recurring MIDI gotcha:** an FL restart **or a MIDI device hot-plug/unplug**
-  re-enables `FLStudioMCP RX` as an *output* at Port 42, recreating a duplicate
+  re-enables `FLStudioPilot RX` as an *output* at Port 42, recreating a duplicate
   output on the controller's port. `device.midiOutSysex` then routes heartbeats
   to RX instead of TX and the bridge sees nothing (`alive:false`). Workaround:
-  keep `FLStudioMCP RX` output disabled. **Permanent fix (recommended):** give
+  keep `FLStudioPilot RX` output disabled. **Permanent fix (recommended):** give
   the RX output a *different* Port number (e.g. 43) so it can never collide.
 - **Daemon lifecycle:** for distribution, the daemon must auto-start (Windows
   Startup / tray) so non-technical users don't run it manually. Not yet built.

@@ -109,7 +109,7 @@ This file stores historical verification evidence, including dated live/offline 
     upstream attribution, compatibility-preserving package names, and explicit
     rollback-first fork direction.
   - Result: public-facing source metadata now distinguishes this maintained
-    fork from upstream without breaking the existing `fl-studio-mcp` package or
+    fork from upstream without breaking the existing `flstudio-mcp` package or
     command names.
 - 2026-06-02: `AGENTS.md` repository workflow guide updated and approved for
   commit.

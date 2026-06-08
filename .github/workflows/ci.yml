@@ -29,7 +29,7 @@ jobs:
         run: python -m compileall src tests/test_bridge_mock.py scripts/audit_tool_safety.py scripts/audit_anti_vibe.py scripts/check_tool_registration_baseline.py scripts/check_github_project_fingerprint.py scripts/check_release_tag.py
 
       - name: Lint hard Python errors
-        run: ruff check --select E9,F src fl_controller/FLStudioMCP/device_FLStudioMCP.py scripts/audit_tool_safety.py tests/test_bridge_mock.py scripts/audit_anti_vibe.py scripts/check_tool_registration_baseline.py scripts/check_github_project_fingerprint.py scripts/check_release_tag.py
+        run: ruff check --select E9,F src fl_controller/FLStudioPilot/device_FLStudioPilot.py scripts/audit_tool_safety.py tests/test_bridge_mock.py scripts/audit_anti_vibe.py scripts/check_tool_registration_baseline.py scripts/check_github_project_fingerprint.py scripts/check_release_tag.py
 
       - name: Audit anti-vibe coding
         run: python scripts/audit_anti_vibe.py

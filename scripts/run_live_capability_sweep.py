@@ -7,7 +7,7 @@ documented-API false-positive probes.
 
 Pre-req:
 - FL Studio open with the fixture project copy loaded.
-- fl-studio-mcp daemon running (TCP).
+- fls-pilot daemon running (TCP).
 """
 
 from __future__ import annotations
@@ -17,7 +17,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-os.environ.setdefault("FLSTUDIO_MCP_TRANSPORT", "tcp")
+os.environ.setdefault("FLS_PILOT_TRANSPORT", "tcp")
 
 ROOT = Path(__file__).resolve().parents[1]
 

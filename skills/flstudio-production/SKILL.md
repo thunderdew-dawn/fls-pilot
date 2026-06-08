@@ -1,11 +1,11 @@
 ---
 name: flstudio-production
-description: Use this skill when the user wants an AI assistant to control FL Studio through FLStudioMCP, diagnose or organize a project, write Piano Roll notes, edit mixer/channel/pattern/playlist state, configure already-loaded plugins, export MIDI, or troubleshoot the FL bridge. Always prefer rollback-safe MCP tools over manual instructions when a tool exists.
+description: Use this skill when the user wants an AI assistant to control FL Studio through FLStudioPilot, diagnose or organize a project, write Piano Roll notes, edit mixer/channel/pattern/playlist state, configure already-loaded plugins, export MIDI, or troubleshoot the FL bridge. Always prefer rollback-safe MCP tools over manual instructions when a tool exists.
 ---
 
 # FL Studio Production
 
-Use the FLStudioMCP tool surface as a rollback-first production assistant.
+Use the FLStudioPilot tool surface as a rollback-first production assistant.
 
 ## Start Every Session
 

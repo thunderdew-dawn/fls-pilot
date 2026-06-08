@@ -11,10 +11,10 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from fl_studio_mcp import project_templates as templates  # noqa: E402
-from fl_studio_mcp import protocol  # noqa: E402
-from fl_studio_mcp.music import mix_doctor as md  # noqa: E402
-from fl_studio_mcp.tools import routing  # noqa: E402
+from fls_pilot import project_templates as templates  # noqa: E402
+from fls_pilot import protocol  # noqa: E402
+from fls_pilot.music import mix_doctor as md  # noqa: E402
+from fls_pilot.tools import routing  # noqa: E402
 
 ROOT = Path(__file__).resolve().parents[1]
 PROFILE_FILES = sorted((ROOT / "knowledgebase" / "templates" / "profiles").glob("*.json"))

@@ -3,7 +3,7 @@
 - **Date:** 2026-06-06
 - **Agent/Author:** Codex
 - **Topic:** Source-qualified policy rules used by Mix Review diagnosis, Low-End/Stereo Safety, gain staging, and gated fix planning.
-- **Affected File/API:** `src/fl_studio_mcp/music/mix_doctor.py`, `src/fl_studio_mcp/tools/mix_doctor.py`, `fl_review_low_end_stereo`, `fl_apply_mix_adjustment`.
+- **Affected File/API:** `src/fls_pilot/music/mix_doctor.py`, `src/fls_pilot/tools/mix_doctor.py`, `fl_review_low_end_stereo`, `fl_apply_mix_adjustment`.
 - **Context:** Mix Review uses measured mixer state, peak watch data, loaded plugin names, and EQ parameter readback to produce read-only findings plus one-at-a-time rollback-backed trim proposals.
 - **Observation:** Updated mixing and mastering Knowledgebase entries distinguish Master/output clipping from insert-track headroom risk, prefer source or bus trims before Master trims, keep plugin loading/mastering/render actions manual, and treat low-frequency stereo as a compatibility risk rather than an absolute creative failure.
 - **Tested Values:** Existing offline Mix Review tests use synthetic snapshots for clipping, headroom, missing high-pass, ungrouped tracks, EQ clash, trim planning, watch maxima, gain staging, low-end pan, mixer stereo separation metadata, low-end layer count, and Master headroom.

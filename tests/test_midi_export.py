@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Test MIDI export: build a 3-track (drums/bass/lead) arrangement -> .mid,
 read it back with mido + assert it's a valid type-1 multi-track file. Leaves a
-REAL importable file at ~/.flstudio-mcp/exports/test_arrangement.mid (no FL).
+REAL importable file at ~/.fls-pilot/exports/test_arrangement.mid (no FL).
 
     python scripts/test_midi_export.py
 """
@@ -16,7 +16,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
 import mido  # noqa: E402
 
-from fl_studio_mcp.music.midi_export import write_midi  # noqa: E402
+from fls_pilot.music.midi_export import write_midi  # noqa: E402
 
 _P = _F = 0
 
@@ -62,7 +62,7 @@ def main() -> int:
     tracks = [drums, bass, lead]
     total_notes = sum(len(t["notes"]) for t in tracks)
 
-    path = os.path.join(os.path.expanduser("~"), ".flstudio-mcp", "exports", "test_arrangement.mid")
+    path = os.path.join(os.path.expanduser("~"), ".fls-pilot", "exports", "test_arrangement.mid")
     write_midi(tracks, 120.0, path, beats_per_bar=4)
     print("wrote:", path, "(%d bytes)\n" % os.path.getsize(path))
 

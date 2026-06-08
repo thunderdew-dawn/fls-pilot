@@ -13,8 +13,8 @@ from fastmcp import FastMCP
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from fl_studio_mcp import protocol, safety  # noqa: E402
-from fl_studio_mcp.tools import mixer as mixer_tools  # noqa: E402
+from fls_pilot import protocol, safety  # noqa: E402
+from fls_pilot.tools import mixer as mixer_tools  # noqa: E402
 
 # ---------------------------------------------------------------------------
 # Minimal fake bridge

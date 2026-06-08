@@ -7,7 +7,7 @@ Union[int,str] coercion of `param` and the result assembly, not just the
 underlying helper. Non-destructive: it sets Reeverb 'Dry level' then rolls
 back to the original.
 
-    set FLSTUDIO_MCP_TRANSPORT=tcp
+    set FLS_PILOT_TRANSPORT=tcp
     python scripts/test_phase1b_mcp.py
 """
 
@@ -19,7 +19,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from fl_studio_mcp.server import build_server  # noqa: E402
+from fls_pilot.server import build_server  # noqa: E402
 
 
 def unwrap(result):

@@ -6,7 +6,7 @@ readable snapshots backed by the configured GitHub-to-Markdown workflow.
 
 ## Current Structure
 
-- Canonical project: [FL Studio MCP Core Roadmap](https://github.com/users/thunderdew-dawn/projects/7).
+- Canonical project: [FL Studio Pilot Roadmap](https://github.com/users/thunderdew-dawn/projects/7).
 - Fingerprint: [`issue_project_fingerprint.md`](issue_project_fingerprint.md)
   records the expected project IDs, fields, required release-train items, and
   semantic invariant checks.

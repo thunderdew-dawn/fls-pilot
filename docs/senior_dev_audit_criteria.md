@@ -1,4 +1,4 @@
-# Senior Developer Audit Criteria: FL Studio MCP
+# Senior Developer Audit Criteria: FL Studio Pilot
 
 This repository is not intended to merely function. It is intended to demonstrate the level of engineering discipline expected from experienced software engineers working with unsafe host APIs, AI-generated code, and difficult-to-test environments.
 

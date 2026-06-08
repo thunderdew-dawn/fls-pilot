@@ -14,7 +14,7 @@ CREATES patterns/markers -- SAVE your project or use a throwaway one first.
 Also: open the Piano roll and run 'MCP_Apply' once from its Scripting menu so
 Ctrl+Alt+Y targets the note bridge.
 
-    set FLSTUDIO_MCP_TRANSPORT=tcp
+    set FLS_PILOT_TRANSPORT=tcp
     python scripts/test_arrange_mechanic.py
 """
 
@@ -26,8 +26,8 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from fl_studio_mcp import protocol  # noqa: E402
-from fl_studio_mcp.connection import get_bridge  # noqa: E402
+from fls_pilot import protocol  # noqa: E402
+from fls_pilot.connection import get_bridge  # noqa: E402
 
 C_MAJOR = [
     {"pitch": p, "time_bars": 0.0, "length_bars": 1.0, "velocity": 0.787} for p in (60, 64, 67)

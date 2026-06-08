@@ -38,4 +38,4 @@ ENV/
 htmlcov/
 
 # Bridge runtime data (don't commit the queue)
-flstudio_mcp_bridge/
+fls_pilot_bridge/

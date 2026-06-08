@@ -18,7 +18,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 import numpy as np  # noqa: E402
 import soundfile as sf  # noqa: E402
 
-from fl_studio_mcp.tools.audio import audio_extract_melody  # noqa: E402
+from fls_pilot.tools.audio import audio_extract_melody  # noqa: E402
 
 SR = 22050
 SCALE = [60, 62, 64, 65, 67, 69, 71, 72]  # C major scale C4..C5

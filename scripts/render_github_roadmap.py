@@ -55,17 +55,24 @@ def _milestone(issue: dict) -> str:
     return str(milestone.get("title") or "No milestone")
 
 
-def _render_issue(issue: dict) -> str:
+def _display_url(url: str, repo: str, display_repo: str | None) -> str:
+    if not display_repo or display_repo == repo:
+        return url
+    return url.replace(f"https://github.com/{repo}/", f"https://github.com/{display_repo}/")
+
+
+def _render_issue(issue: dict, repo: str, display_repo: str | None) -> str:
     labels = _labels(issue)
     priority = _priority(labels)
     safety = ", ".join(
         sorted(labels & {"read-only", "write-safe-required", "api-dependent", "transient"})
     )
     suffix = f" - {safety}" if safety else ""
-    return f"- [{priority}] #{issue['number']} [{issue['title']}]({issue['html_url']}){suffix}"
+    url = _display_url(str(issue["html_url"]), repo, display_repo)
+    return f"- [{priority}] #{issue['number']} [{issue['title']}]({url}){suffix}"
 
 
-def render(repo: str, token: str) -> str:
+def render(repo: str, token: str, display_repo: str | None = None) -> str:
     all_issues = [
         issue for issue in _list_issues(repo, token) if "github-source-of-truth" in _labels(issue)
     ]
@@ -80,7 +87,7 @@ def render(repo: str, token: str) -> str:
         "<!-- GENERATED FILE. Source of truth: GitHub Issues/Milestones/Project #7. -->",
         "",
         f"Generated: {generated}",
-        f"Repository: `{repo}`",
+        f"Repository: `{display_repo or repo}`",
         "",
         "## Open Roadmap",
         "",
@@ -90,14 +97,15 @@ def render(repo: str, token: str) -> str:
         group = [issue for issue in open_issues if _milestone(issue) == milestone]
         lines.extend([f"### {milestone}", ""])
         for issue in sorted(group, key=lambda item: (_priority(_labels(item)), int(item["number"]))):
-            lines.append(_render_issue(issue))
+            lines.append(_render_issue(issue, repo, display_repo))
         lines.append("")
 
     if closed_issues:
         lines.extend(["## Closed / Not Planned", ""])
         for issue in closed_issues:
             reason = issue.get("state_reason") or "closed"
-            lines.append(f"- #{issue['number']} [{issue['title']}]({issue['html_url']}) - {reason}")
+            url = _display_url(str(issue["html_url"]), repo, display_repo)
+            lines.append(f"- #{issue['number']} [{issue['title']}]({url}) - {reason}")
         lines.append("")
 
     return "\n".join(lines).rstrip() + "\n"
@@ -106,6 +114,7 @@ def render(repo: str, token: str) -> str:
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--repo", default=os.environ.get("GITHUB_REPOSITORY"))
+    parser.add_argument("--display-repo", default=os.environ.get("SNAPSHOT_DISPLAY_REPOSITORY"))
     parser.add_argument("--output", default="-")
     args = parser.parse_args()
 
@@ -117,7 +126,7 @@ def main() -> int:
         print("--repo or GITHUB_REPOSITORY is required", file=sys.stderr)
         return 2
 
-    text = render(args.repo, token)
+    text = render(args.repo, token, args.display_repo)
     if args.output == "-":
         print(text, end="")
     else:

@@ -1,4 +1,4 @@
-# FL Studio AI Assistant Roadmap
+# FL Studio Pilot Roadmap
 
 ## Purpose
 This file is the readable roadmap snapshot for the branch.

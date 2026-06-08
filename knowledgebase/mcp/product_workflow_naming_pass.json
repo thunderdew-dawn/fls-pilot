@@ -3,9 +3,9 @@
   "agent_author": "Codex",
   "topic": "Public MCP product workflow naming cleanup",
   "affected_file_api": [
-    "src/fl_studio_mcp/tools/mix_doctor.py",
-    "src/fl_studio_mcp/tools/routing.py",
-    "src/fl_studio_mcp/tools/project_doctor.py",
+    "src/fls_pilot/tools/mix_doctor.py",
+    "src/fls_pilot/tools/routing.py",
+    "src/fls_pilot/tools/project_doctor.py",
     "FastMCP public tool registration",
     "docs/USER_GUIDE.md",
     "ROADMAP.md",
@@ -49,7 +49,7 @@
     "Register the MCP tools and inspect the public tool set.",
     "Run focused tests for mix review, project health, routing cleanup, and KB policy references.",
     "Run static safety audits.",
-    "Run FLSTUDIO_MCP_TRANSPORT=tcp .venv/bin/python scripts/probes/test_product_workflow_naming_live.py against a live FL Studio session."
+    "Run FLS_PILOT_TRANSPORT=tcp .venv/bin/python scripts/probes/test_product_workflow_naming_live.py against a live FL Studio session."
   ],
   "open_questions": [
     "Whether future product workflow names should prefer Review, Assistant, Overview, or Cleanup on a case-by-case basis."

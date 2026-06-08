@@ -10,7 +10,7 @@ Safety: Band 1's four params are snapshotted via the safety layer FIRST and
 restored in a finally block at the end, so the EQ is never left swept even if
 the run errors.
 
-    set FLSTUDIO_MCP_TRANSPORT=tcp        # route through the running daemon
+    set FLS_PILOT_TRANSPORT=tcp        # route through the running daemon
     python scripts/calibrate_eq.py
 
 Target: mixer track 2, slot 0 (Fruity Parametric EQ 2 on VOX).
@@ -24,9 +24,9 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
-from fl_studio_mcp import protocol, safety  # noqa: E402
-from fl_studio_mcp.connection import get_bridge  # noqa: E402
-from fl_studio_mcp.tools.plugin import resolve_param_index  # noqa: E402
+from fls_pilot import protocol, safety  # noqa: E402
+from fls_pilot.connection import get_bridge  # noqa: E402
+from fls_pilot.tools.plugin import resolve_param_index  # noqa: E402
 
 TRACK = 2
 SLOT = 0

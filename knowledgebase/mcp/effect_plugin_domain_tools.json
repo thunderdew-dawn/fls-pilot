@@ -3,9 +3,9 @@
   "agent_author": "Codex",
   "topic": "Consolidated fl_effect and fl_plugin MCP wrappers",
   "affected_file_api": [
-    "src/fl_studio_mcp/tools/effect.py",
-    "src/fl_studio_mcp/tools/plugin_domain.py",
-    "src/fl_studio_mcp/operations.py",
+    "src/fls_pilot/tools/effect.py",
+    "src/fls_pilot/tools/plugin_domain.py",
+    "src/fls_pilot/operations.py",
     "CMD_MIXER_GET_SLOT",
     "CMD_MIXER_SET_SLOT_MIX",
     "CMD_MIXER_SET_SLOT_ENABLED",

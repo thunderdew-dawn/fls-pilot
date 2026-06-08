@@ -338,7 +338,7 @@ def _ping_bridge(bridge) -> dict:
         return {
             "alive": False,
             "reason": "No heartbeat received. FL Studio is closed, the "
-            "FLStudioMCP controller is not selected, or the "
+            "FLStudioPilot controller is not selected, or the "
             "loopMIDI / IAC output port number does not match "
             "the input port number in FL's MIDI Settings.",
             **port_info,

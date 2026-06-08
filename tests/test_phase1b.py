@@ -19,8 +19,8 @@ What it does:
     python scripts/test_phase1b.py            # track 2
     python scripts/test_phase1b.py 4          # some other track
 
-Prereqs: FL open, FLStudioMCP controller loaded (with the plugin handlers),
-loopMIDI RX/TX up. Honours FLSTUDIO_MCP_TRANSPORT: set it to "tcp" to route
+Prereqs: FL open, FLStudioPilot controller loaded (with the plugin handlers),
+loopMIDI RX/TX up. Honours FLS_PILOT_TRANSPORT: set it to "tcp" to route
 through a running daemon (no need to stop it); leave it unset for a direct
 FLBridge (needs the TX port free -- stop the daemon first).
 """
@@ -32,7 +32,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from fl_studio_mcp.connection import (  # noqa: E402
+from fls_pilot.connection import (  # noqa: E402
     FLCommandFailed,
     FLNotRunning,
     FLPortMissing,
@@ -40,7 +40,7 @@ from fl_studio_mcp.connection import (  # noqa: E402
     fetch_all_pages,
     get_bridge,
 )
-from fl_studio_mcp.protocol import (  # noqa: E402
+from fls_pilot.protocol import (  # noqa: E402
     CMD_PLUGIN_GET_PARAMS,
     CMD_PLUGIN_LIST,
     CMD_PLUGIN_SET_PARAM,
@@ -76,7 +76,7 @@ def main(argv) -> int:
     if not bridge.is_alive():
         print(
             "Bridge not alive -- check FL open, controller loaded, and "
-            "(if FLSTUDIO_MCP_TRANSPORT=tcp) the daemon is running."
+            "(if FLS_PILOT_TRANSPORT=tcp) the daemon is running."
         )
         return 1
     print("Heartbeat age:", bridge.heartbeat_age())

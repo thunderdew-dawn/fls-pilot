@@ -4,7 +4,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
-from fl_studio_mcp.connection import get_bridge
+from fls_pilot.connection import get_bridge
 
 
 def format_event(bridge, event_id, norm_val):

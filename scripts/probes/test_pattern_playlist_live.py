@@ -13,16 +13,16 @@ import time
 from pathlib import Path
 
 # Force TCP transport
-os.environ.setdefault("FLSTUDIO_MCP_TRANSPORT", "tcp")
+os.environ.setdefault("FLS_PILOT_TRANSPORT", "tcp")
 
 # Add src/ to path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from fl_studio_mcp import (
+from fls_pilot import (
     protocol,  # noqa: E402
     safety,  # noqa: E402
 )
-from fl_studio_mcp.connection import fetch_all_pages, get_bridge  # noqa: E402
+from fls_pilot.connection import fetch_all_pages, get_bridge  # noqa: E402
 
 _P = _F = 0
 
@@ -43,7 +43,7 @@ def main() -> int:
         pong = b.call("ping", {})
     except Exception as e:
         print(f"Error connecting to bridge/daemon: {e}")
-        print("Please ensure the FL Studio MCP daemon is running and FL Studio is open.")
+        print("Please ensure the FL Studio Pilot daemon is running and FL Studio is open.")
         return 1
 
     build_marker = pong.get("build")

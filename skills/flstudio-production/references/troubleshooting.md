@@ -1,4 +1,4 @@
-# FLStudioMCP Troubleshooting
+# FLStudioPilot Troubleshooting
 
 ## Bridge Preflight
 
@@ -12,7 +12,7 @@
 - Bridge not alive: FL is closed, MIDI ports are missing, or the controller is
   not selected in FL MIDI settings.
 - Timeout: controller is loaded but not responding; reload MIDI scripts or
-  reselect the FLStudioMCP controller.
+  reselect the FLStudioPilot controller.
 - Unknown command: FL is running an older controller script; install/reload the
   current script and confirm the `fl_transport(action="ping")` build marker.
 - Piano Roll write reports triggered but notes do not appear: `MCP Apply` was

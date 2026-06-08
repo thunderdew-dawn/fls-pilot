@@ -5,7 +5,7 @@ Drives the bridge directly (no writes): dumps the routing matrix, channel->
 mixer links, and cleanup candidates, so we can eyeball whether the reads are
 accurate and the cleanup flags are sane (not flagging in-use tracks).
 
-    set FLSTUDIO_MCP_TRANSPORT=tcp
+    set FLS_PILOT_TRANSPORT=tcp
     python scripts/test_routing_read.py [track]   # default track 2 for single read
 """
 
@@ -17,9 +17,9 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from fl_studio_mcp import protocol  # noqa: E402
-from fl_studio_mcp.connection import fetch_all_pages, get_bridge  # noqa: E402
-from fl_studio_mcp.tools.routing import detect_cleanup  # noqa: E402
+from fls_pilot import protocol  # noqa: E402
+from fls_pilot.connection import fetch_all_pages, get_bridge  # noqa: E402
+from fls_pilot.tools.routing import detect_cleanup  # noqa: E402
 
 TRACK = int(sys.argv[1]) if len(sys.argv) > 1 else 2
 
