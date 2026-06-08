@@ -1,0 +1,39 @@
+name: API Probe
+description: Request or document a focused FL Studio API probe.
+title: "[API PROBE] "
+labels:
+  - area:api
+  - api-dependent
+  - status:needs-triage
+body:
+  - type: textarea
+    id: question
+    attributes:
+      label: Probe question
+      description: What exact API behavior needs evidence?
+    validations:
+      required: true
+  - type: textarea
+    id: scope
+    attributes:
+      label: Target modules/functions
+      placeholder: channels.*, mixer.*, patterns.*, playlist.*, plugins.*, arrangement.*, general.*
+    validations:
+      required: true
+  - type: dropdown
+    id: safety
+    attributes:
+      label: Probe safety mode
+      options:
+        - read-only
+        - rollback-safe temporary write
+        - probe-only design needed
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Evidence to capture
+      description: Include target selection, indexing, readback timing, rollback result, FL build, and controller marker.
+    validations:
+      required: true

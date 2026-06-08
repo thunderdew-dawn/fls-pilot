@@ -55,3 +55,17 @@ Project #7 has these roadmap fields populated for issues #3 through #48:
 - GitHub Projects require an auth token with project scopes. Keep Issues and
   Milestones as the durable source data and treat the Project as a planning
   view.
+
+## Operations Workflows
+
+- `Project Automation`: adds issues to Project #7 and mirrors labels into
+  project fields. It uses `PROJECTS_TOKEN` when configured, with `GITHUB_TOKEN`
+  as a fallback.
+- `Project Fingerprint`: verifies Project #7 item, lane, and priority counts
+  against [`issue_project_fingerprint.md`](issue_project_fingerprint.md).
+- `Sync GitHub Markdown Snapshots`: renders GitHub-backed roadmap/changelog
+  snapshots into `docs/generated/`; a manual input can also refresh
+  `ROADMAP.md` and `docs/CHANGELOG.md`.
+- `CodeQL`: runs weekly and on pushes/PRs for Python security analysis.
+- `Release Dry Run`: builds and validates distributions without publishing a
+  release.

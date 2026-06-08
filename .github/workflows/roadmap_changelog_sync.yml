@@ -1,0 +1,64 @@
+name: Sync GitHub Markdown Snapshots
+
+on:
+  workflow_dispatch:
+    inputs:
+      write_canonical:
+        description: Also write ROADMAP.md and docs/CHANGELOG.md.
+        required: false
+        default: "false"
+  schedule:
+    - cron: "17 4 * * 1"
+
+permissions:
+  contents: write
+  issues: read
+  pull-requests: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ secrets.PROJECTS_TOKEN || github.token }}
+      GITHUB_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Render generated snapshots
+        run: |
+          python scripts/render_github_roadmap.py --repo "$GITHUB_REPOSITORY" --output docs/generated/ROADMAP.github.md
+          python scripts/render_github_changelog.py --repo "$GITHUB_REPOSITORY" --output docs/generated/CHANGELOG.github.md
+
+      - name: Optionally render canonical snapshots
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.write_canonical == 'true' }}
+        run: |
+          python scripts/render_github_roadmap.py --repo "$GITHUB_REPOSITORY" --output ROADMAP.md
+          python scripts/render_github_changelog.py --repo "$GITHUB_REPOSITORY" --output docs/CHANGELOG.md
+
+      - name: Create or update snapshot pull request
+        run: |
+          set -euo pipefail
+          branch="automation/github-markdown-snapshots"
+          if git diff --quiet -- ROADMAP.md docs/CHANGELOG.md docs/generated/ROADMAP.github.md docs/generated/CHANGELOG.github.md; then
+            echo "No generated markdown changes."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git checkout -B "$branch"
+          git add ROADMAP.md docs/CHANGELOG.md docs/generated/ROADMAP.github.md docs/generated/CHANGELOG.github.md
+          git commit -m "docs: sync GitHub markdown snapshots"
+          git push --force-with-lease origin "$branch"
+          existing="$(gh pr list --head "$branch" --json number --jq '.[0].number // empty')"
+          if [ -n "$existing" ]; then
+            gh pr edit "$existing" --title "docs: sync GitHub markdown snapshots" \
+              --body "Automated GitHub issue/release snapshot refresh."
+          else
+            gh pr create --head "$branch" --base main \
+              --title "docs: sync GitHub markdown snapshots" \
+              --body "Automated GitHub issue/release snapshot refresh."
+          fi

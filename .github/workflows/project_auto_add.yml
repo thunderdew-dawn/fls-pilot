@@ -1,0 +1,141 @@
+name: Project Automation
+
+on:
+  issues:
+    types:
+      - opened
+      - reopened
+      - labeled
+      - unlabeled
+      - milestoned
+      - demilestoned
+  workflow_dispatch:
+    inputs:
+      issue_number:
+        description: Issue number to sync into Project #7.
+        required: true
+
+permissions:
+  issues: read
+  contents: read
+
+jobs:
+  sync-project-item:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ secrets.PROJECTS_TOKEN || github.token }}
+      OWNER: thunderdew-dawn
+      PROJECT_NUMBER: "7"
+      PROJECT_ID: PVT_kwHOC9dBM84BZ7oT
+      FIELD_STATUS: PVTSSF_lAHOC9dBM84BZ7oTzhU2zz8
+      FIELD_LANE: PVTSSF_lAHOC9dBM84BZ7oTzhU6yKQ
+      FIELD_PRIORITY: PVTSSF_lAHOC9dBM84BZ7oTzhU6yKU
+      FIELD_AREA: PVTSSF_lAHOC9dBM84BZ7oTzhU6yKY
+      FIELD_TYPE: PVTSSF_lAHOC9dBM84BZ7oTzhU6yME
+      FIELD_SAFETY: PVTSSF_lAHOC9dBM84BZ7oTzhU6yM8
+    steps:
+      - name: Resolve issue
+        id: issue
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "number=${{ inputs.issue_number }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "number=${{ github.event.issue.number }}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Add to canonical project and sync fields
+        run: |
+          set -euo pipefail
+          issue_url="https://github.com/${{ github.repository }}/issues/${{ steps.issue.outputs.number }}"
+          gh project item-add "$PROJECT_NUMBER" --owner "$OWNER" --url "$issue_url" >/dev/null || true
+          item_json="$(gh project item-list "$PROJECT_NUMBER" --owner "$OWNER" --limit 100 --format json)"
+          item_id="$(printf '%s' "$item_json" | jq -r --argjson n "${{ steps.issue.outputs.number }}" '.items[] | select(.content.number == $n) | .id' | head -n 1)"
+          if [ -z "$item_id" ] || [ "$item_id" = "null" ]; then
+            echo "Issue was not found in Project #$PROJECT_NUMBER. PROJECTS_TOKEN may need project scopes."
+            exit 1
+          fi
+
+          labels="$(gh issue view "${{ steps.issue.outputs.number }}" --repo "${{ github.repository }}" --json labels --jq '[.labels[].name] | join(",")')"
+          issue_state="$(gh issue view "${{ steps.issue.outputs.number }}" --repo "${{ github.repository }}" --json state,stateReason --jq '.state + ":" + (.stateReason // "")')"
+
+          option() {
+            case "$1:$2" in
+              Status:Todo) echo f75ad846 ;;
+              Status:"In progress") echo 47fc9ee4 ;;
+              Status:Done) echo 98236657 ;;
+              Lane:Now) echo 7f415c4e ;;
+              Lane:Next) echo 6ffed332 ;;
+              Lane:Later) echo 6e5e0493 ;;
+              Lane:Blocked) echo 330d15d6 ;;
+              Lane:Done) echo 1a411ca7 ;;
+              Priority:P0) echo 2dac939a ;;
+              Priority:P1) echo 1657cabe ;;
+              Priority:P2) echo 61845d9e ;;
+              Priority:P3) echo 219fede1 ;;
+              Area:Safety) echo be6784fb ;;
+              Area:Workflow) echo 8f7bdcb9 ;;
+              Area:Docs) echo 9b311b1c ;;
+              Area:GitHub) echo 0d9e2d7b ;;
+              Area:KB) echo abd4a1f6 ;;
+              Area:UX) echo 30d313a4 ;;
+              Area:API) echo 46381fd6 ;;
+              Type:Roadmap) echo 9c1edeb8 ;;
+              Type:Workflow) echo c684f944 ;;
+              Type:Doctor) echo e3f4309b ;;
+              Type:Report) echo 84420f4c ;;
+              Type:"GitHub Sync") echo e0999e36 ;;
+              Safety:"Read-only") echo 57bcac4a ;;
+              Safety:"Write-safe required") echo f23f52d2 ;;
+              Safety:"API-dependent") echo e711b481 ;;
+              Safety:"Mixed/manual") echo 2b314937 ;;
+            esac
+          }
+
+          choose_priority() {
+            if [[ "$labels" == *priority:p0* ]]; then echo P0
+            elif [[ "$labels" == *priority:p1* ]]; then echo P1
+            elif [[ "$labels" == *priority:p3* ]]; then echo P3
+            else echo P2
+            fi
+          }
+          choose_area() {
+            if [[ "$labels" == *area:safety* ]]; then echo Safety
+            elif [[ "$labels" == *area:github* ]]; then echo GitHub
+            elif [[ "$labels" == *area:kb* ]]; then echo KB
+            elif [[ "$labels" == *area:ux* ]]; then echo UX
+            elif [[ "$labels" == *area:api* ]]; then echo API
+            elif [[ "$labels" == *area:docs* ]]; then echo Docs
+            else echo Workflow
+            fi
+          }
+          choose_type() {
+            if [[ "$labels" == *type:doctor* ]]; then echo Doctor
+            elif [[ "$labels" == *type:report* ]]; then echo Report
+            elif [[ "$labels" == *type:github-sync* ]]; then echo "GitHub Sync"
+            elif [[ "$labels" == *type:roadmap* ]]; then echo Roadmap
+            else echo Workflow
+            fi
+          }
+          choose_safety() {
+            if [[ "$labels" == *read-only* ]]; then echo "Read-only"
+            elif [[ "$labels" == *write-safe-required* ]]; then echo "Write-safe required"
+            elif [[ "$labels" == *api-dependent* ]]; then echo "API-dependent"
+            else echo "Mixed/manual"
+            fi
+          }
+
+          if [[ "$issue_state" == CLOSED:* ]]; then lane=Done; status=Done
+          elif [[ "$labels" == *status:blocked* ]]; then lane=Blocked; status=Todo
+          else lane=Later; status=Todo
+          fi
+
+          set_field() {
+            gh project item-edit --id "$item_id" --project-id "$PROJECT_ID" \
+              --field-id "$1" --single-select-option-id "$2" >/dev/null
+          }
+          set_field "$FIELD_STATUS" "$(option Status "$status")"
+          set_field "$FIELD_LANE" "$(option Lane "$lane")"
+          set_field "$FIELD_PRIORITY" "$(option Priority "$(choose_priority)")"
+          set_field "$FIELD_AREA" "$(option Area "$(choose_area)")"
+          set_field "$FIELD_TYPE" "$(option Type "$(choose_type)")"
+          set_field "$FIELD_SAFETY" "$(option Safety "$(choose_safety)")"

@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Roadmap project
+    url: https://github.com/users/thunderdew-dawn/projects/7
+    about: Use the canonical roadmap project for planning status and priorities.
+  - name: User guide
+    url: https://github.com/thunderdew-dawn/flstudio-mcp/blob/main/docs/USER_GUIDE.md
+    about: Review supported workflows, safety classes, and API limits.

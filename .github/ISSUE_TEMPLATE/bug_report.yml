@@ -1,0 +1,80 @@
+name: Bug Report
+description: Report a reproducible problem with the FL Studio MCP server.
+title: "[BUG] "
+labels:
+  - bug
+  - status:needs-triage
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Include the smallest reproduction you can. For live FL issues, start with `fl_transport(action="ping")` and the controller build marker.
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: What happened, and what did you expect?
+    validations:
+      required: true
+  - type: input
+    id: os
+    attributes:
+      label: Operating system
+      placeholder: macOS 15.5 / Windows 11
+    validations:
+      required: true
+  - type: input
+    id: fl-version
+    attributes:
+      label: FL Studio version and build
+      placeholder: FL Studio Producer Edition v25.2.5 build 5055
+    validations:
+      required: true
+  - type: input
+    id: python
+    attributes:
+      label: Python version
+      placeholder: "3.12.4"
+    validations:
+      required: true
+  - type: input
+    id: controller-marker
+    attributes:
+      label: Controller build marker
+      placeholder: channels-v39
+    validations:
+      required: false
+  - type: dropdown
+    id: bridge
+    attributes:
+      label: Bridge connection type
+      options:
+        - TCP daemon
+        - Direct MIDI/SysEx
+        - Unknown
+    validations:
+      required: true
+  - type: textarea
+    id: ping
+    attributes:
+      label: Ping/status evidence
+      description: Paste `fl_transport(action="ping")`, `fl://status`, or daemon output.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Start daemon...
+        2. Open FL Studio...
+        3. Call...
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs and output
+      description: Paste relevant terminal, daemon, MCP, or FL script-output logs.
+    validations:
+      required: false

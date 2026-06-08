@@ -1,0 +1,48 @@
+name: Feature Request
+description: Propose a safe product or workflow improvement.
+title: "[FEATURE] "
+labels:
+  - enhancement
+  - status:needs-triage
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What repeated user pain does this solve?
+    validations:
+      required: true
+  - type: textarea
+    id: outcome
+    attributes:
+      label: Desired outcome
+      description: What should a user be able to ask in plain language?
+    validations:
+      required: true
+  - type: dropdown
+    id: safety
+    attributes:
+      label: Safety class
+      options:
+        - read-only
+        - transient
+        - write-safe
+        - dry-run-only
+        - api-dependent
+        - unknown
+    validations:
+      required: true
+  - type: textarea
+    id: api
+    attributes:
+      label: FL Studio API evidence
+      description: Existing tool, docs, live probe, or known limitation.
+    validations:
+      required: false
+  - type: textarea
+    id: risks
+    attributes:
+      label: Risks and unsupported boundaries
+      description: Mention plugin loading, render/save/open automation, playlist clip editing, or rollback limits if relevant.
+    validations:
+      required: false

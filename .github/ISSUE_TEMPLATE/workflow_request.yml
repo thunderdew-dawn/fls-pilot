@@ -1,0 +1,40 @@
+name: Workflow Request
+description: Propose a producer workflow, recipe, or agent tool combination.
+title: "[WORKFLOW] "
+labels:
+  - type:workflow
+  - area:workflow
+  - status:needs-triage
+body:
+  - type: textarea
+    id: workflow
+    attributes:
+      label: Desired workflow
+      description: Describe the musical or technical workflow.
+    validations:
+      required: true
+  - type: textarea
+    id: limitation
+    attributes:
+      label: Current limitation
+      description: Why is this hard with the current tools?
+    validations:
+      required: true
+  - type: textarea
+    id: proposed-path
+    attributes:
+      label: Proposed safe tool path
+      description: Which read-only, transient, or write-safe steps should be involved?
+    validations:
+      required: false
+  - type: dropdown
+    id: mutation
+    attributes:
+      label: Does this need persistent FL writes?
+      options:
+        - No, read-only is enough
+        - Maybe, but dry-run first
+        - Yes, rollback-safe writes are required
+        - Unknown
+    validations:
+      required: true

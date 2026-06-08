@@ -6,6 +6,8 @@
 ![status](https://img.shields.io/badge/status-stable-green)
 ![license](https://img.shields.io/badge/license-MIT-green)
 ![python](https://img.shields.io/badge/python-3.10+-blue)
+[![CI](https://github.com/thunderdew-dawn/flstudio-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/thunderdew-dawn/flstudio-mcp/actions/workflows/ci.yml)
+[![CodeQL](https://github.com/thunderdew-dawn/flstudio-mcp/actions/workflows/codeql.yml/badge.svg)](https://github.com/thunderdew-dawn/flstudio-mcp/actions/workflows/codeql.yml)
 ![Windows](https://img.shields.io/badge/Windows-0078D6?style=flat&logo=windows&logoColor=white)
 ![macOS](https://img.shields.io/badge/macOS-000000?style=flat&logo=apple&logoColor=white)
 ![FL Studio](https://img.shields.io/badge/FL%20Studio-2025%2B-orange)
@@ -109,6 +111,13 @@ live-probe discipline for build-dependent behavior, macOS support, CI safety
 audits, prompt evals, and a committed agent workflow guide.
 
 See [`NOTICE.md`](NOTICE.md) for provenance and attribution.
+
+## Project Operations
+
+- Roadmap source of truth: [FL Studio MCP Core Roadmap](https://github.com/users/thunderdew-dawn/projects/7)
+- Issues and support: [GitHub Issues](https://github.com/thunderdew-dawn/flstudio-mcp/issues) and [SUPPORT.md](SUPPORT.md)
+- Security policy: [SECURITY.md](SECURITY.md)
+- Generated roadmap/changelog snapshots: `docs/generated/` via the `Sync GitHub Markdown Snapshots` workflow
 
 ## Quickstart
 

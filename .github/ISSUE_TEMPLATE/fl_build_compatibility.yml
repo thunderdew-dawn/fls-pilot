@@ -1,0 +1,50 @@
+name: FL Build Compatibility
+description: Report behavior tied to a specific FL Studio/controller build.
+title: "[COMPAT] "
+labels:
+  - compatibility
+  - area:api
+  - status:needs-triage
+body:
+  - type: input
+    id: fl-version
+    attributes:
+      label: FL Studio version and build
+      placeholder: FL Studio Producer Edition v25.2.5 build 5055
+    validations:
+      required: true
+  - type: input
+    id: controller-marker
+    attributes:
+      label: Controller build marker
+      placeholder: channels-v39
+    validations:
+      required: true
+  - type: input
+    id: os
+    attributes:
+      label: Operating system
+      placeholder: macOS 15.5 / Windows 11
+    validations:
+      required: true
+  - type: textarea
+    id: issue
+    attributes:
+      label: Compatibility issue
+      description: Which feature changed, failed, or behaved differently?
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Evidence
+      description: Include ping, readback, rollback result, and logs if available.
+    validations:
+      required: true
+  - type: textarea
+    id: previous
+    attributes:
+      label: Previous working version
+      description: If known, include FL build and controller marker.
+    validations:
+      required: false
