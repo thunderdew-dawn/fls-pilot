@@ -514,6 +514,59 @@ def rule_missing_hpf(tracks):
     return out
 
 
+def rule_missing_compressor(tracks):
+    """HEURISTIC: vocal, bass, or drum tracks usually need dynamic control.
+    Suggest a compressor if missing. Low confidence -- just a reminder."""
+    out = []
+    template_matched = _template_matched(tracks)
+    
+    comp_keywords = ["comp", "limit", "max", "ott", "dynamics", "level", "cla", "c1", "c2", "c4"]
+    
+    for t in _audible(tracks):
+        # We can reuse the same suppression tags or template judgement rules
+        if _template_policy_suppresses(t, "suppress_missing_compressor"):
+            continue
+        if _is_template_judgement_excluded(t):
+            continue
+        if template_matched and not _has_level_evidence(t):
+            continue
+            
+        nm = (t.get("name") or "").lower()
+        needs_comp = False
+        if any(k in nm for k in FAMILIES["vocals"]):
+            needs_comp = True
+        elif any(k in nm for k in FAMILIES["bass"]):
+            needs_comp = True
+        elif any(k in nm for k in FAMILIES["drums"]):
+            needs_comp = True
+        elif "master" in nm or "premaster" in nm or "mix" in nm:
+            needs_comp = True
+            
+        if not needs_comp:
+            continue
+            
+        has_comp = any(any(k in (p.get("name") or "").lower() for k in comp_keywords) for p in t.get("plugins", []))
+        if not has_comp:
+            names = [p.get("name") for p in t.get("plugins", [])] or ["(no plugins)"]
+            out.append(
+                finding(
+                    "missing_compressor",
+                    "low",
+                    t["name"],
+                    "no dynamics plugin in chain ({})".format(", ".join(names)),
+                    "{} is a naturally dynamic track (vocal/bass/drums/bus) but has no compressor in its chain -- consider adding one (heuristic).".format(t["name"]),
+                    {
+                        "intent": "user_action_required",
+                        "args": {},
+                        "desc": "consider adding a compressor/limiter to {}".format(t["name"]),
+                    },
+                    ("mix_doctor_existing_plugin_only",),
+                )
+            )
+    return out
+
+
+
 def _imbalance(tracks, key, label, thresh, floor=None):
     vals = [(t, t.get(key)) for t in _audible(tracks) if t.get(key) is not None]
     if len(vals) < 3:
@@ -687,6 +740,7 @@ def diagnose(snapshot):
         findings += _imbalance(tracks, "vol_db", "fader", FADER_IMBALANCE_DB, floor=0.0)
 
     findings += rule_missing_hpf(tracks)
+    findings += rule_missing_compressor(tracks)
     findings += rule_ungrouped(tracks)
     findings += rule_eq_clash(tracks)
 
