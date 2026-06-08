@@ -69,3 +69,9 @@ Project #7 has these roadmap fields populated for issues #3 through #48:
 - `CodeQL`: runs weekly and on pushes/PRs for Python security analysis.
 - `Release Dry Run`: builds and validates distributions without publishing a
   release.
+
+## Agent Operating Playbook
+
+Use [`AGENT_OPERATING_PLAYBOOK.md`](AGENT_OPERATING_PLAYBOOK.md) for concrete
+human/agent workflows: local IDE implementation, roadmap slice planning,
+bug-fix execution, security alert handling, and accepted feature planning.
