@@ -88,7 +88,8 @@ core, setup doctor, and first user-value beta are complete.
 - GitHub user Projects require an auth token with project scopes. Project
   Automation intentionally no-ops when `PROJECTS_TOKEN` is absent because
   `GITHUB_TOKEN` cannot edit the maintainer's user Project #7.
-- Release sequencing is documented in [`RELEASE_STRATEGY.md`](RELEASE_STRATEGY.md).
+- Release sequencing is tracked in GitHub Project #7 and release planning issue
+  #66.
 
 ## Operations Workflows
 
