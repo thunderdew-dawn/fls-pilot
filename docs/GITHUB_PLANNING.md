@@ -2,7 +2,7 @@
 
 GitHub Issues and Milestones are the planning source of truth for open roadmap
 work after the 2026-06-08 migration. Markdown roadmap and changelog files remain
-readable snapshots until automated GitHub-to-Markdown generation is implemented.
+readable snapshots backed by the configured GitHub-to-Markdown workflow.
 
 ## Current Structure
 
@@ -43,11 +43,13 @@ Project #7 has these roadmap fields populated for issues #3 through #48:
   through #48 are closed as `not planned` and document explicit product/safety
   boundaries.
 - Project #7 is configured with all migrated issues and the project fields
-  listed above. Initial lanes are `Now` for #3, #9, and #10; `Next` for #4,
-  #5, and #6; `Later` for open backlog items; and `Done` for rejected
-  not-planned items.
-- GitHub-to-Markdown generation for `ROADMAP.md` and `docs/CHANGELOG.md` is
-  tracked in issue #10.
+  listed above. Expected lanes after issue #9 completion are `Now` for #3 and
+  #10; `Next` for #4, #5, and #6; `Later` for open backlog items; and `Done`
+  for completed migration issue #9 plus rejected not-planned items.
+- GitHub-to-Markdown snapshot generation is implemented by `Sync GitHub
+  Markdown Snapshots`. It always renders `docs/generated/` and can refresh
+  `ROADMAP.md` and `docs/CHANGELOG.md` through the manual `write_canonical`
+  input.
 - GitHub Projects require an auth token with project scopes. Keep Issues and
   Milestones as the durable source data and treat the Project as a planning
   view.

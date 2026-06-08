@@ -43,25 +43,26 @@ without recreating duplicate projects or re-inferring the migration layout.
 
 ### Roadmap Lane
 
-- `Now`: `3`
+- `Now`: `2`
 - `Next`: `3`
 - `Later`: `33`
 - `Blocked`: `0`
-- `Done`: `7`
+- `Done`: `8`
 
-Initial lane assignment after the extension-review triage:
+Expected lane assignment after the GitHub source-of-truth migration:
 
-- `Now`: `#3`, `#9`, `#10`
+- `Now`: `#3`, `#10`
 - `Next`: `#4`, `#5`, `#6`
 - `Later`: open backlog issues except the `Now` and `Next` items
-- `Done`: rejected/not-planned issues `#42` through `#48`
+- `Done`: completed migration issue `#9` and rejected/not-planned issues `#42`
+  through `#48`
 
 ### Status
 
 - `Todo`: `36`
 - `Next`: `2`
-- `In progress`: `1`
-- `Done`: `7`
+- `In progress`: `0`
+- `Done`: `8`
 
 ### Priority
 
@@ -84,9 +85,8 @@ Initial lane assignment after the extension-review triage:
 
 - GitHub Issues and Milestones are the durable planning source of truth.
 - Project #7 is the canonical planning view.
-- Project #6 is retained only as a secondary/legacy view.
-- `ROADMAP.md` and `docs/CHANGELOG.md` remain readable snapshots until issue
-  #10 implements GitHub-to-Markdown generation.
+- `ROADMAP.md`, `docs/CHANGELOG.md`, and `docs/generated/` are readable
+  snapshots backed by the GitHub-to-Markdown snapshot workflow.
 - Safety evidence still belongs in `docs/API_CAPABILITY_AUDIT.md`,
   `docs/VERIFICATION_HISTORY.md`, and `knowledgebase/`; GitHub planning does
   not replace verified API evidence.
