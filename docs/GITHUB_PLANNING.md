@@ -11,6 +11,8 @@ readable snapshots until automated GitHub-to-Markdown generation is implemented.
   It also contains the migrated issues, but Project #7 is the canonical roadmap
   view because it has the richer planning fields. Do not create a third
   duplicate project.
+- Fingerprint: [`issue_project_fingerprint.md`](issue_project_fingerprint.md)
+  records the expected project IDs, fields, item range, and count checks.
 - Label `github-source-of-truth` marks migrated planning issues.
 - Priority labels: `priority:p0`, `priority:p1`, `priority:p2`, `priority:p3`.
 - Area labels: `area:safety`, `area:workflow`, `area:docs`, `area:github`,
