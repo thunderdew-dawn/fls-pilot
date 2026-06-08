@@ -15,8 +15,8 @@ without recreating duplicate projects or re-inferring the migration layout.
 - Project ID: `PVT_kwHOC9dBM84BZ7oT`
 - URL: <https://github.com/users/thunderdew-dawn/projects/7>
 - Visibility: private
-- Expected item count: `32`
-- Expected migrated issue range: `#3` through `#34`
+- Expected item count: `46`
+- Expected issue range: `#3` through `#48`
 - Expected field count at verification time: `23`
 
 ## Secondary Project
@@ -45,30 +45,39 @@ without recreating duplicate projects or re-inferring the migration layout.
 
 - `Now`: `3`
 - `Next`: `3`
-- `Later`: `26`
+- `Later`: `33`
 - `Blocked`: `0`
-- `Done`: `0`
+- `Done`: `7`
 
-Initial lane assignment:
+Initial lane assignment after the extension-review triage:
 
 - `Now`: `#3`, `#9`, `#10`
 - `Next`: `#4`, `#5`, `#6`
-- `Later`: all remaining migrated issues
+- `Later`: open backlog issues except the `Now` and `Next` items
+- `Done`: rejected/not-planned issues `#42` through `#48`
+
+### Status
+
+- `Todo`: `38`
+- `In progress`: `1`
+- `Done`: `7`
 
 ### Priority
 
 - `P0`: `3`
-- `P1`: `5`
-- `P2`: `13`
-- `P3`: `11`
+- `P1`: `6`
+- `P2`: `25`
+- `P3`: `12`
 
 ## Milestones
 
 - `GitHub Roadmap Migration`
 - `Setup Reliability & Reporting`
+- `API-backed Quick Wins`
 - `v2.1 Jam-to-Project`
 - `Product Workflows`
 - `Experimental/API-dependent`
+- `Rejected / Not Planned`
 
 ## Source-of-Truth Rules
 

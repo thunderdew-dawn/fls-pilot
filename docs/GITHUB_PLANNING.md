@@ -23,7 +23,7 @@ readable snapshots until automated GitHub-to-Markdown generation is implemented.
 
 ## Project Fields
 
-Project #7 has these roadmap fields populated for issues #3 through #34:
+Project #7 has these roadmap fields populated for issues #3 through #48:
 
 - `Roadmap Lane`: `Now`, `Next`, `Later`, `Blocked`, `Done`.
 - `Priority`: `P0`, `P1`, `P2`, `P3`.
@@ -43,9 +43,13 @@ Project #7 has these roadmap fields populated for issues #3 through #34:
 ## Migration Notes
 
 - Open items from `ROADMAP.md` were migrated to GitHub issues #3 through #34.
+- Extension review follow-up issues were added as #35 through #48. Issues #42
+  through #48 are closed as `not planned` and document explicit product/safety
+  boundaries.
 - Project #7 is configured with all migrated issues and the project fields
   listed above. Initial lanes are `Now` for #3, #9, and #10; `Next` for #4,
-  #5, and #6; and `Later` for the remaining migrated items.
+  #5, and #6; `Later` for open backlog items; and `Done` for rejected
+  not-planned items.
 - GitHub-to-Markdown generation for `ROADMAP.md` and `docs/CHANGELOG.md` is
   tracked in issue #10.
 - GitHub Projects require an auth token with project scopes. Keep Issues and
