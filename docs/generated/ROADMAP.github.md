@@ -2,7 +2,7 @@
 
 <!-- GENERATED FILE. Source of truth: GitHub Issues/Milestones/Project #7. -->
 
-Generated: 2026-06-08T13:20:41+00:00
+Generated: 2026-06-08T19:35:48+00:00
 Repository: `thunderdew-dawn/flstudio-mcp`
 
 ## Open Roadmap
@@ -39,14 +39,11 @@ Repository: `thunderdew-dawn/flstudio-mcp`
 - [P0] #60 [P0: Rename impact inventory for fls-pilot](https://github.com/thunderdew-dawn/flstudio-mcp/issues/60) - read-only
 - [P0] #61 [P0: Enforce no-alias policy for fls-pilot rename](https://github.com/thunderdew-dawn/flstudio-mcp/issues/61)
 
-### M1 Security Baseline & Repo Hardening
-
-- [P0] #62 [P0: Enable security baseline and branch protection for main](https://github.com/thunderdew-dawn/flstudio-mcp/issues/62)
-
 ### M2 Stability Core: Rollback, Evidence, API Boundaries
 
 - [P0] #56 [P0: Default Safe UX — scan, propose, risk-rate, apply one reversible change, read back, stop](https://github.com/thunderdew-dawn/flstudio-mcp/issues/56) - write-safe-required
 - [P0] #63 [P0: Define write-safety contract for all persistent FL Studio changes](https://github.com/thunderdew-dawn/flstudio-mcp/issues/63) - write-safe-required
+- [P1] #4 [P1: Unified before/after report for planned and applied changes](https://github.com/thunderdew-dawn/flstudio-mcp/issues/4) - write-safe-required
 
 ### M3 Setup Reliability & First-Run Experience
 
@@ -55,6 +52,7 @@ Repository: `thunderdew-dawn/flstudio-mcp`
 
 ### M4 User Value Pack 1: Mix Review / Preflight / Organizer
 
+- [P1] #39 [P1: Markdown change report export for AI edits](https://github.com/thunderdew-dawn/flstudio-mcp/issues/39) - read-only
 - [P1] #65 [P1: User Value Pack 1 - Mix Review / Preflight / Organizer proposal mode](https://github.com/thunderdew-dawn/flstudio-mcp/issues/65) - read-only, write-safe-required
 
 ### M5 Release Readiness / 3.0
@@ -85,14 +83,12 @@ Repository: `thunderdew-dawn/flstudio-mcp`
 
 ### Setup Reliability & Reporting
 
-- [P0] #3 [P0: FL Studio MCP Doctor read-only setup diagnosis](https://github.com/thunderdew-dawn/flstudio-mcp/issues/3) - read-only
-- [P1] #4 [P1: Unified before/after report for planned and applied changes](https://github.com/thunderdew-dawn/flstudio-mcp/issues/4) - write-safe-required
-- [P1] #39 [P1: Markdown change report export for AI edits](https://github.com/thunderdew-dawn/flstudio-mcp/issues/39) - read-only
 - [P2] #7 [P2: Read-only mini-dashboard over MCP resources](https://github.com/thunderdew-dawn/flstudio-mcp/issues/7) - read-only
 - [P2] #11 [P2: Evaluate optional fl_safety domain tool](https://github.com/thunderdew-dawn/flstudio-mcp/issues/11) - write-safe-required
 
 ## Closed / Not Planned
 
+- #3 [P0: FL Studio MCP Doctor read-only setup diagnosis](https://github.com/thunderdew-dawn/flstudio-mcp/issues/3) - not_planned
 - #9 [P0: GitHub as roadmap source of truth migration](https://github.com/thunderdew-dawn/flstudio-mcp/issues/9) - completed
 - #42 [Rejected: full FLP project snapshot and restore automation](https://github.com/thunderdew-dawn/flstudio-mcp/issues/42) - not_planned
 - #43 [Rejected: playlist clip editing, splitting, merging, and overlap tools](https://github.com/thunderdew-dawn/flstudio-mcp/issues/43) - not_planned
@@ -101,3 +97,4 @@ Repository: `thunderdew-dawn/flstudio-mcp`
 - #46 [Rejected: destructive delete-empty pattern track clip channel cleanup](https://github.com/thunderdew-dawn/flstudio-mcp/issues/46) - not_planned
 - #47 [Rejected: mixer insert track automation semantics](https://github.com/thunderdew-dawn/flstudio-mcp/issues/47) - not_planned
 - #48 [Rejected: automatic Audio Clip Stretch Pro Normalize source-path and new-clip watcher](https://github.com/thunderdew-dawn/flstudio-mcp/issues/48) - not_planned
+- #62 [P0: Enable security baseline and branch protection for main](https://github.com/thunderdew-dawn/flstudio-mcp/issues/62) - completed

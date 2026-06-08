@@ -74,26 +74,8 @@ Verified live against FL Studio via TCP bridge on macOS, including guided cleanu
 
 ## Active Roadmap
 
-### Release Train Snapshot — 2026-06-08
-
-GitHub Issues and Milestones are the planning source of truth. Current release
-sequencing:
-
-- `v2.0.1-maintenance`: GitHub governance, automation, docs, and release-process
-  hardening only.
-- `v3.0.0-alpha.1`: breaking rename to `fls-pilot` / `fls_pilot`, with no old
-  aliases retained.
-- `v3.0.0-alpha.2`: safety-core validation for persistent FL Studio writes.
-- `v3.0.0-beta.1`: read-only setup doctor and safe first-run path.
-- `v3.0.0-beta.2`: Mix Review, Preflight, and Organizer proposal-mode user
-  value pack.
-- `v3.0.0-rc.1`: release freeze, docs, migration notes, smoke checks, and
-  release notes.
-- `v3.0.0`: stable breaking release under the `fls-pilot` identity.
-- `v3.1.0-alpha.1`: Jam-to-Project alpha after the 3.0 foundation is stable.
-
-See [Release Strategy](docs/RELEASE_STRATEGY.md) for tag/version policy and
-release gates.
+GitHub Issues, Milestones, and Project #7 are the planning source of truth for
+release sequencing, package naming, versioning, and release gates.
 
 ### P0 — Safety and Evidence
 - Keep safety primitives current
