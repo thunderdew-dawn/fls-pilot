@@ -222,8 +222,8 @@ Focus:
 1. Open a Bug Report issue.
 2. Include FL Studio build, controller marker, OS, Python version, bridge type,
    ping/status evidence, repro steps, and logs.
-3. Set labels such as `bug`, `area:*`, `read-only`, `write-safe-required`, or
-   `api-dependent`.
+3. Set labels such as `type:fix`, `area:*`, `read-only`,
+   `write-safe-required`, or `api-dependent`.
 
 ### Triage Prompt
 

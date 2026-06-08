@@ -2,7 +2,7 @@
 
 <!-- GENERATED FILE. Source of truth: GitHub Issues/Milestones/Project #7. -->
 
-Generated: 2026-06-08T09:36:55+00:00
+Generated: 2026-06-08T13:20:41+00:00
 Repository: `thunderdew-dawn/flstudio-mcp`
 
 ## Open Roadmap
@@ -33,6 +33,38 @@ Repository: `thunderdew-dawn/flstudio-mcp`
 - [P0] #8 [P0: Safety and evidence discipline tracker](https://github.com/thunderdew-dawn/flstudio-mcp/issues/8) - write-safe-required
 - [P1] #10 [P1: Generate ROADMAP.md and CHANGELOG.md from GitHub](https://github.com/thunderdew-dawn/flstudio-mcp/issues/10)
 
+### M0 Naming & Governance Freeze
+
+- [P0] #59 [P0: Complete breaking project rename to fls-pilot](https://github.com/thunderdew-dawn/flstudio-mcp/issues/59)
+- [P0] #60 [P0: Rename impact inventory for fls-pilot](https://github.com/thunderdew-dawn/flstudio-mcp/issues/60) - read-only
+- [P0] #61 [P0: Enforce no-alias policy for fls-pilot rename](https://github.com/thunderdew-dawn/flstudio-mcp/issues/61)
+
+### M1 Security Baseline & Repo Hardening
+
+- [P0] #62 [P0: Enable security baseline and branch protection for main](https://github.com/thunderdew-dawn/flstudio-mcp/issues/62)
+
+### M2 Stability Core: Rollback, Evidence, API Boundaries
+
+- [P0] #56 [P0: Default Safe UX — scan, propose, risk-rate, apply one reversible change, read back, stop](https://github.com/thunderdew-dawn/flstudio-mcp/issues/56) - write-safe-required
+- [P0] #63 [P0: Define write-safety contract for all persistent FL Studio changes](https://github.com/thunderdew-dawn/flstudio-mcp/issues/63) - write-safe-required
+
+### M3 Setup Reliability & First-Run Experience
+
+- [P1] #58 [P1: Community adoption pack — demo video, GIFs, issue templates, known-good configs and compatibility matrix](https://github.com/thunderdew-dawn/flstudio-mcp/issues/58)
+- [P1] #64 [P1: Setup Doctor and safe first-run experience](https://github.com/thunderdew-dawn/flstudio-mcp/issues/64) - read-only
+
+### M4 User Value Pack 1: Mix Review / Preflight / Organizer
+
+- [P1] #65 [P1: User Value Pack 1 - Mix Review / Preflight / Organizer proposal mode](https://github.com/thunderdew-dawn/flstudio-mcp/issues/65) - read-only, write-safe-required
+
+### M5 Release Readiness / 3.0
+
+- [P0] #66 [P0: Release 3.0 readiness checklist](https://github.com/thunderdew-dawn/flstudio-mcp/issues/66)
+
+### M6 Jam-to-Project Alpha / 3.1
+
+- [P1] #13 [P1: Jam-to-Project structured cleanup assistant](https://github.com/thunderdew-dawn/flstudio-mcp/issues/13) - write-safe-required
+
 ### Product Workflows
 
 - [P1] #5 [P1: Workflow recipes and README demos for real producer tasks](https://github.com/thunderdew-dawn/flstudio-mcp/issues/5)
@@ -58,10 +90,6 @@ Repository: `thunderdew-dawn/flstudio-mcp`
 - [P1] #39 [P1: Markdown change report export for AI edits](https://github.com/thunderdew-dawn/flstudio-mcp/issues/39) - read-only
 - [P2] #7 [P2: Read-only mini-dashboard over MCP resources](https://github.com/thunderdew-dawn/flstudio-mcp/issues/7) - read-only
 - [P2] #11 [P2: Evaluate optional fl_safety domain tool](https://github.com/thunderdew-dawn/flstudio-mcp/issues/11) - write-safe-required
-
-### v2.1 Jam-to-Project
-
-- [P1] #13 [P1: Jam-to-Project structured cleanup assistant](https://github.com/thunderdew-dawn/flstudio-mcp/issues/13) - write-safe-required
 
 ## Closed / Not Planned
 

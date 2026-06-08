@@ -1,22 +1,21 @@
 #!/usr/bin/env python3
-"""Verify the canonical GitHub Project issue fingerprint via gh CLI."""
+"""Verify semantic invariants for the canonical GitHub Project."""
 
 from __future__ import annotations
 
 import json
 import subprocess
+from collections import Counter
+from typing import Any
 
 OWNER = "thunderdew-dawn"
+REPO = "thunderdew-dawn/flstudio-mcp"
 PROJECT = "7"
-EXPECTED = {
-    "items": {"min": 3, "max": 48, "count": 46},
-    "lanes": {"Now": 2, "Next": 3, "Later": 33, "Done": 8},
-    "statuses": {"Todo": 36, "Next": 2, "Done": 8},
-    "priorities": {"P0": 3, "P1": 6, "P2": 25, "P3": 12},
-}
+REQUIRED_RELEASE_ITEMS = {59, 60, 61, 62, 63, 64, 65, 66}
+REQUIRED_PROJECT_FIELDS = ("status", "roadmap Lane", "priority", "area", "type", "safety")
 
 
-def _gh_json(*args: str) -> dict:
+def _gh_json(*args: str) -> Any:
     result = subprocess.run(
         ["gh", *args],
         check=True,
@@ -27,15 +26,7 @@ def _gh_json(*args: str) -> dict:
     return json.loads(result.stdout)
 
 
-def _count(values: list[str]) -> dict[str, int]:
-    out: dict[str, int] = {}
-    for value in values:
-        if value:
-            out[value] = out.get(value, 0) + 1
-    return out
-
-
-def main() -> int:
+def _project_items() -> list[dict[str, Any]]:
     data = _gh_json(
         "project",
         "item-list",
@@ -43,23 +34,93 @@ def main() -> int:
         "--owner",
         OWNER,
         "--limit",
-        "100",
+        "200",
         "--format",
         "json",
     )
-    items = data.get("items", [])
-    numbers = sorted(int(item["content"]["number"]) for item in items)
-    observed = {
-        "items": {"min": min(numbers), "max": max(numbers), "count": len(numbers)},
-        "lanes": _count([item.get("roadmap Lane", "") for item in items]),
-        "statuses": _count([item.get("status", "") for item in items]),
-        "priorities": _count([item.get("priority", "") for item in items]),
+    return list(data.get("items", []))
+
+
+def _source_issues() -> list[dict[str, Any]]:
+    data = _gh_json(
+        "issue",
+        "list",
+        "--repo",
+        REPO,
+        "--state",
+        "all",
+        "--label",
+        "github-source-of-truth",
+        "--limit",
+        "200",
+        "--json",
+        "number,title,state,stateReason,milestone,labels",
+    )
+    return list(data)
+
+
+def _label_names(issue: dict[str, Any]) -> set[str]:
+    return {str(label.get("name")) for label in issue.get("labels", [])}
+
+
+def _item_number(item: dict[str, Any]) -> int | None:
+    number = item.get("content", {}).get("number")
+    return int(number) if number is not None else None
+
+
+def _field_counts(items: list[dict[str, Any]], field: str) -> dict[str, int]:
+    return dict(Counter(str(item.get(field) or "<empty>") for item in items))
+
+
+def main() -> int:
+    items = _project_items()
+    by_number = {number: item for item in items if (number := _item_number(item)) is not None}
+    source_issues = _source_issues()
+    source_numbers = {int(issue["number"]) for issue in source_issues}
+    errors: list[str] = []
+
+    missing_from_project = sorted(source_numbers - set(by_number))
+    if missing_from_project:
+        errors.append(f"github-source-of-truth issues missing from Project #{PROJECT}: {missing_from_project}")
+
+    missing_release_items = sorted(REQUIRED_RELEASE_ITEMS - set(by_number))
+    if missing_release_items:
+        errors.append(f"required 3.0 release-train issues missing from Project #{PROJECT}: {missing_release_items}")
+
+    for issue in source_issues:
+        number = int(issue["number"])
+        item = by_number.get(number)
+        labels = _label_names(issue)
+        if item is None:
+            continue
+
+        missing_fields = [field for field in REQUIRED_PROJECT_FIELDS if not item.get(field)]
+        if missing_fields:
+            errors.append(f"issue #{number} has empty Project fields: {missing_fields}")
+
+        if issue.get("state") == "CLOSED":
+            if item.get("status") != "Done" or item.get("roadmap Lane") != "Done":
+                errors.append(f"closed issue #{number} is not marked Done/Done in Project #{PROJECT}")
+
+        if issue.get("state") == "OPEN" and "release-blocker" in labels:
+            milestone = issue.get("milestone") or {}
+            if not milestone.get("title"):
+                errors.append(f"open release blocker #{number} has no milestone")
+            if item.get("priority") != "P0":
+                errors.append(f"open release blocker #{number} is not marked P0 in Project #{PROJECT}")
+
+    summary = {
+        "project": PROJECT,
+        "project_items": len(by_number),
+        "github_source_of_truth_issues": len(source_issues),
+        "release_train_items": sorted(REQUIRED_RELEASE_ITEMS),
+        "lanes": _field_counts(items, "roadmap Lane"),
+        "statuses": _field_counts(items, "status"),
+        "priorities": _field_counts(items, "priority"),
+        "errors": errors,
     }
-    if observed != EXPECTED:
-        print(json.dumps({"expected": EXPECTED, "observed": observed}, indent=2))
-        return 1
-    print(json.dumps(observed, indent=2))
-    return 0
+    print(json.dumps(summary, indent=2))
+    return 1 if errors else 0
 
 
 if __name__ == "__main__":

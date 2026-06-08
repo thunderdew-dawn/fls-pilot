@@ -1,19 +1,22 @@
-name: Bug Report
-description: Report a reproducible problem with the FL Studio MCP server.
-title: "[BUG] "
+name: Setup Problem
+description: Report a failed install, first-run, bridge, MIDI, or MCP client setup.
+title: "[SETUP] "
 labels:
-  - type:fix
+  - type:doctor
+  - area:installer
+  - read-only
   - status:needs-triage
 body:
   - type: markdown
     attributes:
       value: |
-        Include the smallest reproduction you can. For live FL issues, start with `fl_transport(action="ping")` and the controller build marker.
+        Run the setup doctor or the closest available read-only diagnostic first. Do not paste secrets or private MCP tokens.
   - type: textarea
-    id: description
+    id: doctor-output
     attributes:
-      label: Description
-      description: What happened, and what did you expect?
+      label: Setup Doctor or diagnostic output
+      description: Paste the full read-only setup diagnostic output.
+      render: text
     validations:
       required: true
   - type: input
@@ -38,10 +41,10 @@ body:
     validations:
       required: true
   - type: input
-    id: controller-marker
+    id: mcp-client
     attributes:
-      label: Controller build marker
-      placeholder: channels-v39
+      label: MCP client
+      placeholder: ChatGPT Desktop / Claude Desktop / Cursor / other
     validations:
       required: false
   - type: dropdown
@@ -55,26 +58,16 @@ body:
     validations:
       required: true
   - type: textarea
-    id: ping
+    id: problem
     attributes:
-      label: Ping/status evidence
-      description: Paste `fl_transport(action="ping")`, `fl://status`, or daemon output.
+      label: What failed?
+      description: Describe the expected result and the actual failure.
     validations:
       required: true
   - type: textarea
-    id: steps
+    id: tried
     attributes:
-      label: Steps to reproduce
-      placeholder: |
-        1. Start daemon...
-        2. Open FL Studio...
-        3. Call...
-    validations:
-      required: true
-  - type: textarea
-    id: logs
-    attributes:
-      label: Logs and output
-      description: Paste relevant terminal, daemon, MCP, or FL script-output logs.
+      label: Remediation already tried
+      description: Include MIDI port names, controller marker, `fl_transport(action="ping")`, and relevant logs if available.
     validations:
       required: false

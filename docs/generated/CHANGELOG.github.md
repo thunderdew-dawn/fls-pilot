@@ -2,7 +2,7 @@
 
 <!-- GENERATED FILE. Source of truth: GitHub Releases, tags, PRs, and labels. -->
 
-Generated: 2026-06-08T09:36:55+00:00
+Generated: 2026-06-08T13:20:15+00:00
 Repository: `thunderdew-dawn/flstudio-mcp`
 
 ## Releases
@@ -16,6 +16,7 @@ Repository: `thunderdew-dawn/flstudio-mcp`
 
 ### Other Changes
 
+- #52 [docs: sync GitHub markdown snapshots](https://github.com/thunderdew-dawn/flstudio-mcp/pull/52)
 - #55 [fix: fetch snapshot branch before force push](https://github.com/thunderdew-dawn/flstudio-mcp/pull/55)
 - #54 [docs: complete GitHub roadmap source migration](https://github.com/thunderdew-dawn/flstudio-mcp/pull/54)
 - #53 [docs: require GitHub agent playbook](https://github.com/thunderdew-dawn/flstudio-mcp/pull/53)

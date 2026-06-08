@@ -12,7 +12,8 @@ jobs:
   verify:
     runs-on: ubuntu-latest
     env:
-      GH_TOKEN: ${{ secrets.PROJECTS_TOKEN || github.token }}
+      GH_TOKEN: ${{ secrets.PROJECTS_TOKEN }}
+      PROJECTS_TOKEN_AVAILABLE: ${{ secrets.PROJECTS_TOKEN != '' }}
     steps:
       - uses: actions/checkout@v4
 
@@ -20,5 +21,12 @@ jobs:
         with:
           python-version: "3.12"
 
+      - name: Skip when PROJECTS_TOKEN is not configured
+        if: ${{ env.PROJECTS_TOKEN_AVAILABLE != 'true' }}
+        run: |
+          echo "PROJECTS_TOKEN is required for user Project #7 fingerprint checks."
+          echo "GITHUB_TOKEN cannot read thunderdew-dawn's private user project reliably."
+
       - name: Check canonical Project #7 fingerprint
+        if: ${{ env.PROJECTS_TOKEN_AVAILABLE == 'true' }}
         run: python scripts/check_github_project_fingerprint.py

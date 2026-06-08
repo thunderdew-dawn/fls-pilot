@@ -8,6 +8,7 @@ on:
       - ".github/workflows/release.yml"
       - ".github/workflows/release_dry_run.yml"
       - "fl_controller/FLStudioMCP/device_FLStudioMCP.py"
+      - "scripts/check_release_tag.py"
       - "src/**"
 
 permissions:

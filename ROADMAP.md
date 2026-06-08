@@ -74,6 +74,27 @@ Verified live against FL Studio via TCP bridge on macOS, including guided cleanu
 
 ## Active Roadmap
 
+### Release Train Snapshot — 2026-06-08
+
+GitHub Issues and Milestones are the planning source of truth. Current release
+sequencing:
+
+- `v2.0.1-maintenance`: GitHub governance, automation, docs, and release-process
+  hardening only.
+- `v3.0.0-alpha.1`: breaking rename to `fls-pilot` / `fls_pilot`, with no old
+  aliases retained.
+- `v3.0.0-alpha.2`: safety-core validation for persistent FL Studio writes.
+- `v3.0.0-beta.1`: read-only setup doctor and safe first-run path.
+- `v3.0.0-beta.2`: Mix Review, Preflight, and Organizer proposal-mode user
+  value pack.
+- `v3.0.0-rc.1`: release freeze, docs, migration notes, smoke checks, and
+  release notes.
+- `v3.0.0`: stable breaking release under the `fls-pilot` identity.
+- `v3.1.0-alpha.1`: Jam-to-Project alpha after the 3.0 foundation is stable.
+
+See [Release Strategy](docs/RELEASE_STRATEGY.md) for tag/version policy and
+release gates.
+
 ### P0 — Safety and Evidence
 - Keep safety primitives current
 - Keep rollback by ID reliable
@@ -337,19 +358,23 @@ Safety:
 - `scripts/audit_tool_safety.py --fail-on-gaps` must remain green with 0 write
   gaps throughout the rollout.
 
-### v2.1.0 — Jam-to-Project Assistant
+### v3.1.0-alpha.1 — Jam-to-Project Assistant
 
 Goal:
 Turn an unstructured jam session into a structured, production-ready FL Studio project.
 Reuse the v1.2 operation registry, domain tools, and batch infrastructure where
 they are available and rollback-safe.
 
+This was previously drafted as `v2.1.0`. It now belongs after the breaking
+`fls-pilot` rename and 3.0 stability gates, so the first release target is
+`v3.1.0-alpha.1`.
+
 Proposed scope:
 - `fl_analyze_jam_session()`
 - `fl_plan_jam_session_cleanup()`
-- `fl_apply_jam_session_cleanup_step(plan_id, step_id)`
-- `fl_apply_jam_session_cleanup_group(plan_id, group_id)`
-- `fl_finalize_jam_session_cleanup()`
+- `fl_preview_jam_session_cleanup_report()`
+- optional low-risk apply-step prototypes only when the 3.0 safety contract
+  fully covers the operation
 
 The assistant should detect and organize inconsistent or missing names across:
 - patterns

@@ -11,4 +11,5 @@ Closes # (issue number)
 - [ ] Safety audit script passes successfully (`python scripts/audit_tool_safety.py --fail-on-gaps`).
 - [ ] Anti-vibe check script passes successfully (`python scripts/audit_anti_vibe.py`).
 - [ ] I have linked and updated the relevant GitHub roadmap issue or milestone if feature status changed.
+- [ ] I have checked `docs/RELEASE_STRATEGY.md` when this affects release scope, package naming, or versioning.
 - [ ] I have updated generated/snapshot docs such as `ROADMAP.md` or `docs/CHANGELOG.md` only when this PR intentionally changes those snapshots.

@@ -24,7 +24,8 @@ jobs:
   sync-project-item:
     runs-on: ubuntu-latest
     env:
-      GH_TOKEN: ${{ secrets.PROJECTS_TOKEN || github.token }}
+      GH_TOKEN: ${{ secrets.PROJECTS_TOKEN }}
+      PROJECTS_TOKEN_AVAILABLE: ${{ secrets.PROJECTS_TOKEN != '' }}
       OWNER: thunderdew-dawn
       PROJECT_NUMBER: "7"
       PROJECT_ID: PVT_kwHOC9dBM84BZ7oT
@@ -35,8 +36,15 @@ jobs:
       FIELD_TYPE: PVTSSF_lAHOC9dBM84BZ7oTzhU6yME
       FIELD_SAFETY: PVTSSF_lAHOC9dBM84BZ7oTzhU6yM8
     steps:
+      - name: Skip when PROJECTS_TOKEN is not configured
+        if: ${{ env.PROJECTS_TOKEN_AVAILABLE != 'true' }}
+        run: |
+          echo "PROJECTS_TOKEN is required for user Project #7 automation."
+          echo "GITHUB_TOKEN cannot edit thunderdew-dawn's user project, so this run is intentionally a no-op."
+
       - name: Resolve issue
         id: issue
+        if: ${{ env.PROJECTS_TOKEN_AVAILABLE == 'true' }}
         run: |
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             echo "number=${{ inputs.issue_number }}" >> "$GITHUB_OUTPUT"
@@ -45,6 +53,7 @@ jobs:
           fi
 
       - name: Add to canonical project and sync fields
+        if: ${{ env.PROJECTS_TOKEN_AVAILABLE == 'true' }}
         run: |
           set -euo pipefail
           issue_url="https://github.com/${{ github.repository }}/issues/${{ steps.issue.outputs.number }}"
@@ -60,6 +69,10 @@ jobs:
           issue_state="$(gh issue view "${{ steps.issue.outputs.number }}" --repo "${{ github.repository }}" --json state,stateReason --jq '.state + ":" + (.stateReason // "")')"
           current_lane="$(printf '%s' "$item_json" | jq -r --argjson n "${{ steps.issue.outputs.number }}" '.items[] | select(.content.number == $n) | ."roadmap Lane" // ""' | head -n 1)"
           current_status="$(printf '%s' "$item_json" | jq -r --argjson n "${{ steps.issue.outputs.number }}" '.items[] | select(.content.number == $n) | .status // ""' | head -n 1)"
+
+          has_label() {
+            [[ ",$labels," == *",$1,"* ]]
+          }
 
           option() {
             case "$1:$2" in
@@ -96,48 +109,63 @@ jobs:
           }
 
           choose_priority() {
-            if [[ "$labels" == *priority:p0* ]]; then echo P0
-            elif [[ "$labels" == *priority:p1* ]]; then echo P1
-            elif [[ "$labels" == *priority:p3* ]]; then echo P3
+            if has_label priority:p0 || has_label P0; then echo P0
+            elif has_label priority:p1 || has_label P1; then echo P1
+            elif has_label priority:p3; then echo P3
             else echo P2
             fi
           }
           choose_area() {
-            if [[ "$labels" == *area:safety* ]]; then echo Safety
-            elif [[ "$labels" == *area:github* ]]; then echo GitHub
-            elif [[ "$labels" == *area:kb* ]]; then echo KB
-            elif [[ "$labels" == *area:ux* ]]; then echo UX
-            elif [[ "$labels" == *area:api* ]]; then echo API
-            elif [[ "$labels" == *area:docs* ]]; then echo Docs
+            if has_label area:safety || has_label area:security || has_label safety || has_label rollback; then echo Safety
+            elif has_label area:github || has_label area:ci || has_label area:rename; then echo GitHub
+            elif has_label area:kb; then echo KB
+            elif has_label area:ux || has_label area:installer || has_label ux || has_label onboarding || has_label support; then echo UX
+            elif has_label area:api || has_label api-dependent || has_label api-limited; then echo API
+            elif has_label area:docs || has_label documentation; then echo Docs
             else echo Workflow
             fi
           }
           choose_type() {
-            if [[ "$labels" == *type:doctor* ]]; then echo Doctor
-            elif [[ "$labels" == *type:report* ]]; then echo Report
-            elif [[ "$labels" == *type:github-sync* ]]; then echo "GitHub Sync"
-            elif [[ "$labels" == *type:roadmap* ]]; then echo Roadmap
+            if has_label type:doctor; then echo Doctor
+            elif has_label type:report; then echo Report
+            elif has_label type:github-sync; then echo "GitHub Sync"
+            elif has_label type:roadmap || has_label type:rename || has_label type:security || has_label type:maintenance; then echo Roadmap
             else echo Workflow
             fi
           }
           choose_safety() {
-            if [[ "$labels" == *read-only* ]]; then echo "Read-only"
-            elif [[ "$labels" == *write-safe-required* ]]; then echo "Write-safe required"
-            elif [[ "$labels" == *api-dependent* ]]; then echo "API-dependent"
-            else echo "Mixed/manual"
+            local modes=0
+            local value="Mixed/manual"
+            if has_label read-only || has_label dry-run-only; then
+              modes=$((modes + 1))
+              value="Read-only"
             fi
+            if has_label write-safe-required; then
+              modes=$((modes + 1))
+              value="Write-safe required"
+            fi
+            if has_label api-dependent || has_label api-limited; then
+              modes=$((modes + 1))
+              value="API-dependent"
+            fi
+            if [ "$modes" -eq 1 ]; then echo "$value"; else echo "Mixed/manual"; fi
           }
 
           if [[ "$issue_state" == CLOSED:* ]]; then
             lane=Done
             status=Done
-          elif [[ "$labels" == *status:blocked* ]]; then
+          elif has_label status:blocked; then
             lane=Blocked
             status="${current_status:-Todo}"
           else
             case "$current_lane" in
               Now|Next|Later) lane="$current_lane" ;;
-              *) lane=Later ;;
+              *)
+                if has_label release-blocker || has_label priority:p0 || has_label P0; then lane=Now
+                elif has_label priority:p1 || has_label P1; then lane=Next
+                else lane=Later
+                fi
+                ;;
             esac
             case "$current_status" in
               Next|"In progress") status="$current_status" ;;
@@ -146,6 +174,10 @@ jobs:
           fi
 
           set_field() {
+            if [ -z "$2" ]; then
+              echo "No project option ID for field $1"
+              exit 1
+            fi
             gh project item-edit --id "$item_id" --project-id "$PROJECT_ID" \
               --field-id "$1" --single-select-option-id "$2" >/dev/null
           }
