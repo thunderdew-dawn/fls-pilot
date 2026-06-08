@@ -2,7 +2,7 @@
 
 <!-- GENERATED FILE. Source of truth: GitHub Issues/Milestones/Project #7. -->
 
-Generated: 2026-06-08T08:05:32+00:00
+Generated: 2026-06-08T09:36:55+00:00
 Repository: `thunderdew-dawn/flstudio-mcp`
 
 ## Open Roadmap
@@ -31,7 +31,6 @@ Repository: `thunderdew-dawn/flstudio-mcp`
 ### GitHub Roadmap Migration
 
 - [P0] #8 [P0: Safety and evidence discipline tracker](https://github.com/thunderdew-dawn/flstudio-mcp/issues/8) - write-safe-required
-- [P0] #9 [P0: GitHub as roadmap source of truth migration](https://github.com/thunderdew-dawn/flstudio-mcp/issues/9)
 - [P1] #10 [P1: Generate ROADMAP.md and CHANGELOG.md from GitHub](https://github.com/thunderdew-dawn/flstudio-mcp/issues/10)
 
 ### Product Workflows
@@ -66,6 +65,7 @@ Repository: `thunderdew-dawn/flstudio-mcp`
 
 ## Closed / Not Planned
 
+- #9 [P0: GitHub as roadmap source of truth migration](https://github.com/thunderdew-dawn/flstudio-mcp/issues/9) - completed
 - #42 [Rejected: full FLP project snapshot and restore automation](https://github.com/thunderdew-dawn/flstudio-mcp/issues/42) - not_planned
 - #43 [Rejected: playlist clip editing, splitting, merging, and overlap tools](https://github.com/thunderdew-dawn/flstudio-mcp/issues/43) - not_planned
 - #44 [Rejected: plugin loading, insertion, FL Cloud, and browser automation](https://github.com/thunderdew-dawn/flstudio-mcp/issues/44) - not_planned

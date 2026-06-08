@@ -2,7 +2,7 @@
 
 <!-- GENERATED FILE. Source of truth: GitHub Releases, tags, PRs, and labels. -->
 
-Generated: 2026-06-08T08:05:32+00:00
+Generated: 2026-06-08T09:36:55+00:00
 Repository: `thunderdew-dawn/flstudio-mcp`
 
 ## Releases
@@ -16,4 +16,10 @@ Repository: `thunderdew-dawn/flstudio-mcp`
 
 ### Other Changes
 
+- #55 [fix: fetch snapshot branch before force push](https://github.com/thunderdew-dawn/flstudio-mcp/pull/55)
+- #54 [docs: complete GitHub roadmap source migration](https://github.com/thunderdew-dawn/flstudio-mcp/pull/54)
+- #53 [docs: require GitHub agent playbook](https://github.com/thunderdew-dawn/flstudio-mcp/pull/53)
+- #51 [docs: add maintenance agent workflows](https://github.com/thunderdew-dawn/flstudio-mcp/pull/51)
+- #50 [docs: add agent operating playbook](https://github.com/thunderdew-dawn/flstudio-mcp/pull/50)
+- #49 [docs: sync GitHub markdown snapshots](https://github.com/thunderdew-dawn/flstudio-mcp/pull/49)
 - #1 [Fix anti-vibe KB metadata audit](https://github.com/thunderdew-dawn/flstudio-mcp/pull/1)
