@@ -110,11 +110,17 @@ rollback-first FL Studio production tooling, documented API-evidence handling,
 live-probe discipline for build-dependent behavior, macOS support, CI safety
 audits, prompt evals, and a committed agent workflow guide.
 
+The next breaking release line is planned as `fls-pilot` / `FL Studio Pilot`.
+See [`docs/RELEASE_STRATEGY.md`](docs/RELEASE_STRATEGY.md) for the release
+train and migration gates.
+
 See [`NOTICE.md`](NOTICE.md) for provenance and attribution.
 
 ## Project Operations
 
 - Roadmap source of truth: [FL Studio MCP Core Roadmap](https://github.com/users/thunderdew-dawn/projects/7)
+- Public roadmap snapshot: [`docs/generated/ROADMAP.github.md`](docs/generated/ROADMAP.github.md)
+- Release strategy: [`docs/RELEASE_STRATEGY.md`](docs/RELEASE_STRATEGY.md)
 - Issues and support: [GitHub Issues](https://github.com/thunderdew-dawn/flstudio-mcp/issues) and [SUPPORT.md](SUPPORT.md)
 - Security policy: [SECURITY.md](SECURITY.md)
 - Generated roadmap/changelog snapshots: `docs/generated/` via the `Sync GitHub Markdown Snapshots` workflow

@@ -2,8 +2,8 @@ name: FL Build Compatibility
 description: Report behavior tied to a specific FL Studio/controller build.
 title: "[COMPAT] "
 labels:
-  - compatibility
   - area:api
+  - api-dependent
   - status:needs-triage
 body:
   - type: input

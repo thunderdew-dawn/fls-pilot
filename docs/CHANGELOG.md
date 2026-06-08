@@ -11,6 +11,21 @@ Source-of-truth note: release planning moved toward GitHub Releases, tags, PRs,
 and release labels on 2026-06-08. This file remains a readable changelog
 snapshot backed by the GitHub-to-Markdown snapshot workflow.
 
+## Unreleased - GitHub Governance And Release Train Cleanup
+
+### Changed
+
+- Documented the post-`v2.0.0-stable` release train: optional
+  `v2.0.1-maintenance`, breaking `v3.0.0` under the `fls-pilot` identity, and
+  Jam-to-Project as `v3.1.0-alpha.1`.
+- Hardened GitHub Project automation and fingerprint checks around the
+  `PROJECTS_TOKEN` requirement for private user Project #7.
+- Normalized issue templates, release-note categories, and Dependabot labels
+  toward the structured `priority:*`, `type:*`, `area:*`, safety, and release
+  label schema.
+- Added release tag/version validation and prerelease-aware GitHub release
+  metadata for future alpha, beta, and RC tags.
+
 ## v2.0.0-stable - Architecture Foundation, Tool Efficiency, and Safety-First Production Workflows
 
 **Release date:** 2026-06-07  

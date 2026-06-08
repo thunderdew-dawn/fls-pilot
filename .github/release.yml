@@ -6,25 +6,31 @@ changelog:
     - title: Breaking Changes
       labels:
         - breaking-change
-    - title: Features
+    - title: Safety And Release Gates
+      labels:
+        - release-blocker
+        - area:safety
+        - area:security
+    - title: Features And Workflows
       labels:
         - type:feature
-        - enhancement
+        - type:workflow
     - title: Fixes
       labels:
         - type:fix
-        - bug
-    - title: Documentation
+    - title: Documentation And GitHub
       labels:
-        - documentation
         - area:docs
+        - area:github
+        - type:github-sync
     - title: Dependencies
       labels:
         - dependencies
-    - title: Safety and Compatibility
+    - title: API And Compatibility
       labels:
-        - area:safety
-        - compatibility
+        - area:api
+        - api-dependent
+        - api-limited
     - title: Other Changes
       labels:
         - "*"

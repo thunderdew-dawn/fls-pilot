@@ -1,0 +1,39 @@
+name: Documentation Problem
+description: Report unclear, outdated, or incorrect project documentation.
+title: "[DOCS] "
+labels:
+  - area:docs
+  - type:maintenance
+  - status:needs-triage
+body:
+  - type: textarea
+    id: location
+    attributes:
+      label: Documentation location
+      description: Link or name the file, section, heading, command, or example.
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What is unclear, stale, factually wrong, or semantically misleading?
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Suggested correction
+      description: Include the expected behavior, accurate command, or safer wording if known.
+    validations:
+      required: false
+  - type: dropdown
+    id: safety
+    attributes:
+      label: Does this affect FL Studio safety claims?
+      options:
+        - No
+        - Yes, safety or rollback wording may be wrong
+        - Unknown
+    validations:
+      required: true

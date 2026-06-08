@@ -23,21 +23,37 @@ jobs:
       - name: Install build dependencies
         run: python -m pip install --upgrade pip build twine
 
+      - name: Validate release tag
+        run: python scripts/check_release_tag.py --tag "$GITHUB_REF_NAME"
+
       - name: Build wheel and source dist
         run: python -m build
 
       - name: Check distributions
         run: python -m twine check dist/*
 
+      - name: Resolve release metadata
+        id: release_meta
+        run: |
+          set -euo pipefail
+          tag="$GITHUB_REF_NAME"
+          prerelease=false
+          if [[ "$tag" =~ -(alpha|beta|rc)\. ]]; then
+            prerelease=true
+          fi
+          echo "prerelease=$prerelease" >> "$GITHUB_OUTPUT"
+          echo "release_name=$tag" >> "$GITHUB_OUTPUT"
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
+          name: ${{ steps.release_meta.outputs.release_name }}
           generate_release_notes: true
           files: |
             dist/*.whl
             dist/*.tar.gz
             fl_controller/FLStudioMCP/device_FLStudioMCP.py
           draft: false
-          prerelease: false
+          prerelease: ${{ steps.release_meta.outputs.prerelease }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
