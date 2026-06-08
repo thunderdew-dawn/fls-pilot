@@ -332,6 +332,272 @@ Rules:
 - Docs and Knowledgebase are updated when behavior or reusable evidence changed.
 - CI, CodeQL, safety audits, and focused tests pass.
 
+## Common Maintenance Workflows
+
+These workflows cover recurring software-maintenance work that does not always
+start as a new product roadmap item.
+
+### Release Execution
+
+Use this when the release decision has already been made.
+
+Human actions:
+
+1. Confirm the target version, release scope, and whether the release is stable
+   or prerelease.
+2. Confirm `main` is green: CI, CodeQL, Project Fingerprint, and Release Dry
+   Run.
+3. Confirm generated snapshots are current or intentionally left unchanged.
+4. Create or approve the release tag only after the dry run passes.
+
+Release agent prompt:
+
+```text
+Prepare release <version> for thunderdew-dawn/flstudio-mcp.
+
+Rules:
+- Inspect pyproject.toml, README.md, docs/generated/, .github/workflows/release.yml,
+  and the latest GitHub releases.
+- Do not change FL Studio state.
+- Run Release Dry Run before tagging.
+- Verify dist metadata with twine check.
+- Confirm controller artifact inclusion.
+- Produce the exact tag command, expected GitHub Actions workflow, and rollback
+  plan for a bad release.
+```
+
+Completion criteria:
+
+- Release Dry Run passes on the release commit.
+- Tag-triggered Release workflow succeeds.
+- GitHub Release contains wheel, source distribution, and controller artifact.
+- Any follow-up issue is created for release defects.
+
+### Existing PR CI Failure
+
+Use this when an already-open PR fails CI, CodeQL, or Release Dry Run.
+
+Agent prompt:
+
+```text
+Diagnose failing checks for PR #<number>.
+
+Rules:
+- Use gh to inspect check names, failing jobs, and logs.
+- Identify the smallest failing command and the first relevant error.
+- Do not rewrite the PR broadly.
+- Propose a fix plan before editing unless the failure is an obvious typo.
+- Run the same focused check locally when possible.
+- Push a narrow fix commit to the PR branch.
+```
+
+Completion criteria:
+
+- The failing check passes.
+- The PR diff still matches the original scope.
+- Any pre-existing unrelated failure is called out separately.
+
+### Dependency Or Dependabot PR
+
+Use this for Dependabot PRs or routine dependency updates.
+
+Agent prompt:
+
+```text
+Review dependency update PR #<number>.
+
+Rules:
+- Identify package/ecosystem, old version, new version, and changelog risk.
+- Check whether the update touches runtime, dev tooling, GitHub Actions, audio
+  dependencies, or packaging.
+- Run focused tests plus Release Dry Run when packaging or build behavior might
+  change.
+- Do not bundle unrelated dependency upgrades.
+- If the dependency has a security alert, keep sensitive details out of public
+  issue text.
+```
+
+Completion criteria:
+
+- CI passes.
+- Release Dry Run passes when relevant.
+- Security/dependency alert is resolved or explicitly dismissed with reason.
+- PR is merged or closed with evidence.
+
+### Review-Only Work
+
+Use this when the user asks for a review without implementation.
+
+Agent prompt:
+
+```text
+Review PR #<number> without making code changes.
+
+Rules:
+- Prioritize bugs, regressions, safety gaps, missing tests, and API-evidence
+  problems.
+- Cite file/line references.
+- Do not suggest broad refactors unless they block correctness or safety.
+- If no issues are found, say so and list residual test or verification gaps.
+```
+
+Completion criteria:
+
+- Findings are actionable and ordered by severity.
+- Review does not modify files.
+- Any required follow-up is assigned to an issue or PR comment.
+
+### Hotfix Or Emergency Fix
+
+Use this for urgent defects that block users, CI, release, install, or safety.
+
+Human actions:
+
+1. Create or identify the hotfix issue.
+2. Mark priority and safety labels.
+3. Decide whether normal PR review can be shortened.
+
+Hotfix agent prompt:
+
+```text
+Implement hotfix for issue #<number>.
+
+Rules:
+- Keep the fix as small as possible.
+- Avoid unrelated cleanup.
+- Preserve rollback and safety contracts.
+- Run the narrow failing check, then CI-equivalent checks if practical.
+- Document what follow-up cleanup is intentionally deferred.
+```
+
+Completion criteria:
+
+- The blocking failure is fixed.
+- Required checks pass.
+- Follow-up issue exists for non-urgent cleanup.
+- Project fields reflect the emergency status and resolution.
+
+### Revert Or Rollback A Bad Change
+
+Use this when a merged change caused a regression or unsafe behavior.
+
+Human actions:
+
+1. Identify the bad commit or PR.
+2. Decide whether to revert the whole PR or apply a targeted corrective patch.
+3. Open or update an issue with the regression evidence.
+
+Agent prompt:
+
+```text
+Prepare rollback for bad change <commit-or-pr>.
+
+Rules:
+- Do not use destructive git commands.
+- Inspect the original PR, changed files, and current main.
+- Prefer `git revert` for a clean whole-PR rollback when appropriate.
+- If a targeted patch is safer, explain why.
+- Preserve unrelated user changes.
+- Run the checks that would have caught the regression.
+```
+
+Completion criteria:
+
+- Regression is removed or safely mitigated.
+- Revert/corrective PR references the bad change and the regression issue.
+- Follow-up issue exists if the root cause still needs analysis.
+
+### Documentation-Only Change
+
+Use this for docs, playbooks, prompts, README updates, or generated snapshots
+that do not change runtime behavior.
+
+Agent prompt:
+
+```text
+Make documentation-only change for issue/request <number-or-description>.
+
+Rules:
+- Keep the diff limited to docs or GitHub metadata.
+- Do not change runtime code, tests, controller files, or generated artifacts
+  unless explicitly requested.
+- Preserve source-of-truth rules: GitHub issues/project for planning,
+  generated snapshots for roadmap/changelog views.
+- Run markdown-adjacent checks available in the repo and anti-vibe audit.
+```
+
+Completion criteria:
+
+- Docs answer the user workflow clearly.
+- Links resolve to existing files or GitHub resources.
+- CI and CodeQL pass on the PR.
+
+### API Or Compatibility Probe
+
+Use this when behavior depends on FL Studio version, controller marker, target
+selection, indexing, readback timing, or undocumented API behavior.
+
+Human actions:
+
+1. Open an API Probe or FL Build Compatibility issue.
+2. Include FL Studio build, controller marker, OS, bridge type, target state,
+   and exact question.
+3. Choose `read-only`, `rollback-safe temporary write`, or `probe-only design
+   needed`.
+
+Probe agent prompt:
+
+```text
+Plan API/compatibility probe for issue #<number>.
+
+Rules:
+- Check Knowledgebase first.
+- Do not guess ranges, indices, IDs, or target selection.
+- Prefer read-only evidence first.
+- If a write is required, define snapshot, smallest write, readback, changelog,
+  and rollback before execution.
+- Store reusable findings in Knowledgebase and docs/API_CAPABILITY_AUDIT.md
+  when confirmed.
+```
+
+Completion criteria:
+
+- Probe result has confidence level and reproduction steps.
+- Knowledgebase is updated when reusable behavior was learned.
+- User-facing tools are updated only after evidence and rollback requirements
+  are satisfied.
+
+### Backport Or Cherry-Pick
+
+Use this when a fix must be applied to another branch, fork, or sister project.
+
+Human actions:
+
+1. Identify target branch/repo and source commit/PR.
+2. Confirm whether behavior, API support, and safety requirements are identical
+   in the target.
+3. Decide whether the backport should preserve the original commit or become a
+   tailored patch.
+
+Backport agent prompt:
+
+```text
+Backport <commit-or-pr> to <target-branch-or-repo>.
+
+Rules:
+- Inspect the source change and target branch state.
+- Do not assume APIs, paths, or safety helpers are identical.
+- Prefer a clean cherry-pick only when dependencies match.
+- If conflicts occur, resolve narrowly and document target-specific changes.
+- Run target-branch checks, not only source-branch checks.
+```
+
+Completion criteria:
+
+- Target branch/repo has a focused PR or commit.
+- Checks pass in the target context.
+- Any skipped part of the source change is documented with reason.
+
 ## Recommended GitHub Commands
 
 ```bash
