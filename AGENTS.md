@@ -31,6 +31,17 @@ instructions:
 If either file conflicts with an ad-hoc prompt, stop and surface the conflict
 before implementing. The safety contract and roadmap scope are not optional.
 
+For GitHub planning, issue/PR work, roadmap execution, releases, dependency
+updates, security alerts, bug triage, reviews, hotfixes, reverts,
+documentation-only changes, API probes, or backports, additionally read and
+follow:
+
+- `docs/GITHUB_PLANNING.md`
+- `docs/AGENT_OPERATING_PLAYBOOK.md`
+
+The playbook defines where durable agent plans belong. Do not leave roadmap
+slice plans only in local chat.
+
 ## Working Mode
 
 - Act as a senior, pragmatic software engineer.
