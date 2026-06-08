@@ -140,9 +140,15 @@ For every new FL-mutating tool, add or update:
 
 ## Roadmap Discipline
 
-- Treat `ROADMAP.md` as the active execution tracker.
-- Keep it current in the same PR or commit series whenever a slice is
-  completed, re-scoped, verified, blocked, or reprioritized.
+- Treat GitHub Issues and Milestones labeled `github-source-of-truth` as the
+  planning source of truth for open roadmap work after the 2026-06-08 GitHub
+  migration.
+- Treat `ROADMAP.md` as the readable roadmap snapshot until automated
+  GitHub-to-Markdown generation is implemented.
+- Keep the linked GitHub issue or milestone current in the same PR or commit
+  series whenever a slice is completed, re-scoped, verified, blocked, or
+  reprioritized. Update `ROADMAP.md` only when changing the snapshot itself or
+  while the generator is not yet available for the affected section.
 - Record live FL verification checkpoints with date, FL build, controller build
   marker, tested path, and rollback result.
 

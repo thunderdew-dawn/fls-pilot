@@ -10,4 +10,5 @@ Closes # (issue number)
 - [ ] Offline unit tests pass successfully locally (`pytest`).
 - [ ] Safety audit script passes successfully (`python scripts/audit_tool_safety.py --fail-on-gaps`).
 - [ ] Anti-vibe check script passes successfully (`python scripts/audit_anti_vibe.py`).
-- [ ] I have updated `ROADMAP.md` if any feature status has changed.
+- [ ] I have linked and updated the relevant GitHub roadmap issue or milestone if feature status changed.
+- [ ] I have updated generated/snapshot docs such as `ROADMAP.md` or `docs/CHANGELOG.md` only when this PR intentionally changes those snapshots.

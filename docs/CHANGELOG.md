@@ -1,6 +1,15 @@
 # Changelog
 
-This changelog is curated from the repository commit history, release tags, and project documentation. It focuses on user-visible behavior, compatibility, safety guarantees, verification evidence, and known FL Studio API boundaries. Routine formatting, metadata refreshes, wording-only documentation passes, and one-off housekeeping commits are intentionally omitted unless they change the public release contract.
+This changelog is curated from the repository commit history, release tags,
+GitHub releases, merged pull requests, and project documentation. It focuses on
+user-visible behavior, compatibility, safety guarantees, verification evidence,
+and known FL Studio API boundaries. Routine formatting, metadata refreshes,
+wording-only documentation passes, and one-off housekeeping commits are
+intentionally omitted unless they change the public release contract.
+
+Source-of-truth note: release planning moved toward GitHub Releases, tags, PRs,
+and release labels on 2026-06-08. This file remains the readable changelog
+snapshot until GitHub-to-Markdown generation is implemented.
 
 ## v2.0.0-stable - Architecture Foundation, Tool Efficiency, and Safety-First Production Workflows
 

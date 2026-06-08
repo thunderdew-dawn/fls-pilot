@@ -1,7 +1,14 @@
 # FL Studio AI Assistant Roadmap
 
 ## Purpose
-This file is the active execution roadmap for the branch.
+This file is the readable roadmap snapshot for the branch.
+
+Source-of-truth note: open roadmap planning moved to GitHub Issues and
+Milestones on 2026-06-08. Items labeled `github-source-of-truth` are the
+planning source of truth while GitHub-to-Markdown generation is tracked in
+issue #10. Keep this snapshot aligned only when intentionally refreshing the
+Markdown view or while automation is not yet available for the affected
+section.
 
 ## Current Implementation Scope
 1. Safety primitives and change history

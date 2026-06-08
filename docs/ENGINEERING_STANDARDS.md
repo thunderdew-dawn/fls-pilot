@@ -141,9 +141,11 @@ Current priority order:
 - Avoid mixing unrelated formatting, cleanup, and feature work.
 - Update README, roadmap, API audit, or docs when tool behavior or safety
   guarantees change.
-- Keep `ROADMAP.md` current as an operational source of truth:
-  every completed slice, live verification checkpoint, and priority/order change
-  must be reflected in the same PR or commit series.
+- Keep the GitHub roadmap issue or milestone current as the planning source of
+  truth for open work. `ROADMAP.md` is a readable snapshot during the
+  GitHub-to-Markdown transition, so update it only when the snapshot itself is
+  intentionally changed or when the generator is not yet available for the
+  affected section.
 
 ## Testing And Verification
 
