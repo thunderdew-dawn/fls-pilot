@@ -10,8 +10,8 @@ OWNER = "thunderdew-dawn"
 PROJECT = "7"
 EXPECTED = {
     "items": {"min": 3, "max": 48, "count": 46},
-    "lanes": {"Now": 3, "Next": 3, "Later": 33, "Done": 7},
-    "statuses": {"Todo": 36, "Next": 2, "In progress": 1, "Done": 7},
+    "lanes": {"Now": 2, "Next": 3, "Later": 33, "Done": 8},
+    "statuses": {"Todo": 36, "Next": 2, "Done": 8},
     "priorities": {"P0": 3, "P1": 6, "P2": 25, "P3": 12},
 }
 

@@ -8,8 +8,8 @@ wording-only documentation passes, and one-off housekeeping commits are
 intentionally omitted unless they change the public release contract.
 
 Source-of-truth note: release planning moved toward GitHub Releases, tags, PRs,
-and release labels on 2026-06-08. This file remains the readable changelog
-snapshot until GitHub-to-Markdown generation is implemented.
+and release labels on 2026-06-08. This file remains a readable changelog
+snapshot backed by the GitHub-to-Markdown snapshot workflow.
 
 ## v2.0.0-stable - Architecture Foundation, Tool Efficiency, and Safety-First Production Workflows
 
