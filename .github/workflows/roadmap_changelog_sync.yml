@@ -43,7 +43,8 @@ jobs:
         run: |
           set -euo pipefail
           branch="automation/github-markdown-snapshots"
-          if git diff --quiet -- ROADMAP.md docs/CHANGELOG.md docs/generated/ROADMAP.github.md docs/generated/CHANGELOG.github.md; then
+          changed="$(git status --porcelain -- ROADMAP.md docs/CHANGELOG.md docs/generated/ROADMAP.github.md docs/generated/CHANGELOG.github.md)"
+          if [ -z "$changed" ]; then
             echo "No generated markdown changes."
             exit 0
           fi
