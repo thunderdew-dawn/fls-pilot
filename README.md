@@ -22,8 +22,6 @@
 
 **Rollback-first FL Studio control for MCP-compatible LLMs: AI mixing, composition, project cleanup, routing review, and production assistance through natural language.**
 
-**Rollback-first FL Studio control for MCP-compatible LLMs: AI mixing, composition, project cleanup, routing review, and production assistance through natural language.**
-
 *The LLM assistant diagnosing and fixing a mix in FL Studio through natural language.*
 
 ## Overview
@@ -47,7 +45,7 @@ The highest-value entry points for day-to-day production work are:
 7. **Audio Analyzer:** Analyze external audio files for tempo/key and extract melodies to MIDI when optional audio extras are installed.
 8. **Project Preflight & Health Overview:** Combine mix review, routing review, organization checks, and cleanup suggestions into an export-readiness report.
 
-For detailed usage, examples, and the full tool catalog, see the [User Guide](docs/USER_GUIDE.md).
+For detailed usage, examples, and the full tool catalog, see the [User Guide](docs/user-guide/index.md).
 
 ## How it Works: 8 Production Phases
 
@@ -142,58 +140,70 @@ fls-pilot is a production assistant, not only a note sender.
 
 ## Capability Matrix
 
-| Area        | Capability                              | Status      | Safety mode                                            | API reality                                                       | Tracking                                                                                         |
-| ----------- | --------------------------------------- | ----------- | ------------------------------------------------------ | ----------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
-| Mix         | Mix Review / Peak Watch                 | 🟡 Alpha    | Read-only diagnosis → gated fixes                      | Live peak evidence required while the user plays the project      | [area](https://github.com/thunderdew-dawn/fls-pilot/issues?q=is%3Aissue+label%3Aarea%3Aworkflow) |
-| Project     | Organizer / Naming / Colors             | 🟡 Alpha    | Snapshot + write + readback where supported + rollback | Supported where FL exposes channel and mixer metadata             | [area](https://github.com/thunderdew-dawn/fls-pilot/issues?q=is%3Aissue+label%3Aarea%3Aworkflow) |
-| Routing     | Routing Review / Bus Layout             | 🟡 Alpha    | Proposal → approved write → rollback unit              | Routing writes require supported FL API readback                  | [area](https://github.com/thunderdew-dawn/fls-pilot/issues?q=is%3Aissue+label%3Aarea%3Aworkflow) |
-| Composition | Piano Roll / Scale Composer             | 🟡 Alpha    | Generated script bridge                                | User must arm `MCP_Apply` once per session                        | [area](https://github.com/thunderdew-dawn/fls-pilot/issues?q=is%3Aissue+label%3Aarea%3Aworkflow) |
-| Plugins     | Plugin Chain Planner / Preset Assistant | 🟠 Partial  | Suggest-only until user loads the plugin               | FL Studio API cannot load or insert plugins                       | [area](https://github.com/thunderdew-dawn/fls-pilot/issues?q=is%3Aissue+label%3Aarea%3Aapi)      |
-| Audio       | Audio Analyzer / Melody Extraction      | 🟡 Optional | File analysis only                                     | Reads audio files from disk, not from the FL Studio API           | [area](https://github.com/thunderdew-dawn/fls-pilot/issues?q=is%3Aissue+label%3Aarea%3Aworkflow) |
-| Export      | MIDI Export / Preflight                 | 🟡 Alpha    | File write + report                                    | Audio rendering remains manual because FL API cannot click Render | [area](https://github.com/thunderdew-dawn/fls-pilot/issues?q=is%3Aissue+label%3Aarea%3Aworkflow) |
-| Safety      | Snapshot / Changelog / Rollback         | 🟡 Alpha    | Persistent change log + named rollback units           | Native FL undo is not reliable for API scripts                    | [area](https://github.com/thunderdew-dawn/fls-pilot/issues?q=is%3Aissue+label%3Aarea%3Asafety)   |
+| Area        | Capability                              | Status                 | Safety mode                                                                   | API reality                                                                                         | Tracking                                                                                         |
+| ----------- | --------------------------------------- | ---------------------- | ----------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| Mix         | Mix Review / Peak Watch                 | 🟢 Stable              | 🔵 Project read-only diagnosis → approved 🛡️ rollback-safe fixes              | Live peak evidence is required while the user plays the project                                     | [area](https://github.com/thunderdew-dawn/fls-pilot/issues?q=is%3Aissue+label%3Aarea%3Aworkflow) |
+| Project     | Organizer / Naming / Colors             | 🟢 Stable              | 🛡️ Snapshot + write + readback where supported + rollback                     | Supported where FL exposes channel and mixer metadata                                               | [area](https://github.com/thunderdew-dawn/fls-pilot/issues?q=is%3Aissue+label%3Aarea%3Aworkflow) |
+| Routing     | Routing Review / Bus Layout             | 🟢 Stable              | 🛡️ Proposal → approved write → rollback unit                                  | Routing writes require supported FL API readback                                                    | [area](https://github.com/thunderdew-dawn/fls-pilot/issues?q=is%3Aissue+label%3Aarea%3Aworkflow) |
+| Composition | Piano Roll / Scale Composer             | 🟢 Stable              | 🛡️ Generated script bridge + rollback-safe supported writes                   | User must arm `MCP_Apply` once per session                                                          | [area](https://github.com/thunderdew-dawn/fls-pilot/issues?q=is%3Aissue+label%3Aarea%3Aworkflow) |
+| Plugins     | Plugin Chain Planner / Preset Assistant | 🟢 Stable / 🟠 Partial | Stable for plugin discovery, preset suggestions, and supported parameter configuration; suggest-only for unavailable plugin actions | FL Studio API can inspect/configure supported plugin parameters, but cannot load, insert, or delete plugins | [area](https://github.com/thunderdew-dawn/fls-pilot/issues?q=is%3Aissue+label%3Aarea%3Aapi)      |
+| Audio       | Audio Analyzer / Melody Extraction      | 🟢 Stable              | 🔵 Project read-only + local file analysis                                    | Reads audio files from disk, not from the FL Studio API                                             | [area](https://github.com/thunderdew-dawn/fls-pilot/issues?q=is%3Aissue+label%3Aarea%3Aworkflow) |
+| Export      | MIDI Export / Preflight                 | 🟢 Stable              | 🔵 Project read-only + gated file write + report                              | MIDI files are written directly to disk; audio rendering remains manual because FL API cannot click Render | [area](https://github.com/thunderdew-dawn/fls-pilot/issues?q=is%3Aissue+label%3Aarea%3Aworkflow) |
+| Safety      | Snapshot / Changelog / Rollback         | 🟢 Stable              | 🛡️ Persistent changelog + named rollback units                                | Native FL undo is not reliable for API scripts                                                      | [area](https://github.com/thunderdew-dawn/fls-pilot/issues?q=is%3Aissue+label%3Aarea%3Asafety)   |
 
 ### Status Legend
 
-| Symbol            | Meaning                                                                           |
-| ----------------- | --------------------------------------------------------------------------------- |
-| 🟢 Stable         | Tested and expected to work across supported builds                               |
-| 🟡 Alpha          | Works, but still under active validation                                          |
-| 🟠 Partial        | Useful, but constrained by FL Studio API limits                                   |
-| 🔵 Read-only      | Reports or proposes only; does not mutate the project                             |
-| 🛡️ Rollback-safe | Persistent writes use snapshot, readback where supported, changelog, and rollback |
-| 🚧 Planned        | Tracked but not implemented                                                       |
-| ⛔ Not possible    | Blocked by FL Studio API or DAW/UI boundary                                       |
+| Symbol               | Meaning                                                                                              |
+| -------------------- | ---------------------------------------------------------------------------------------------------- |
+| 🟢 Stable            | Tested and expected to work across supported builds                                                  |
+| 🔵 Beta              | Feature-complete or close to feature-complete; suitable for broader validation before stable release |
+| 🟡 Alpha             | Implemented and usable, but still under active validation or affected by migration/release changes   |
+| 🟠 Partial           | Useful and stable for supported parts, but constrained by FL Studio API limits                       |
+| 🔵 Project read-only | Does not mutate the FL Studio project; may still analyze or write external files                     |
+| 🛡️ Rollback-safe     | Persistent project writes use snapshot, readback where supported, changelog, and rollback            |
+| 🚧 Planned           | Tracked but not implemented                                                                          |
+| ⛔ Not possible      | Blocked by the FL Studio API, DAW internals, or UI-only behavior                                     |
 
 ## FL Studio API Reality
 
-FL Studio's Python API is useful, but it does not expose the whole DAW. fls-pilot treats these limits as part of the product contract.
+FL Studio's Python API is useful, but it does not expose the whole DAW. fls-pilot treats these limits as part of the product contract: supported API-based workflows are stable, while unavailable DAW or UI-only actions are documented explicitly instead of being simulated or overstated.
 
-| Claim                         | Reality                                              | fls-pilot behavior                                                       |
-| ----------------------------- | ---------------------------------------------------- | ------------------------------------------------------------------------ |
-| Load plugins automatically    | ⛔ Not exposed by FL Studio's API                     | Suggests chains and presets; the user loads the chosen plugin manually   |
-| Configure plugin parameters   | 🟠 Possible after plugin is loaded and mapped        | Uses safe normalized values where mappings are known                     |
-| Write piano-roll notes        | 🟡 Possible through the armed script bridge          | Generates `MCP_Apply` script output and triggers the armed bridge        |
-| Move/split playlist clips     | ⛔ API-limited                                        | Uses supported pattern, marker, metadata, and checklist workflows        |
-| Read live mixer peaks         | 🟢 Supported                                         | Runs peak watch while the user plays the song                            |
-| Render audio to WAV           | ⛔ UI-only                                            | User renders manually; fls-pilot can analyze the rendered file afterward |
-| Rename/color/route tracks     | 🟡 Supported where the API exposes it                | Uses snapshot → write → readback → changelog → rollback                  |
-| Set deep Audio Clip internals | ⛔ Not exposed for Stretch/Normalize/sample internals | Applies safe supported defaults and generates manual checklists          |
+| Claim                         | Reality                                                       | fls-pilot behavior                                                       |
+| ----------------------------- | ------------------------------------------------------------- | ------------------------------------------------------------------------ |
+| Load plugins automatically    | ⛔ Not exposed by FL Studio's API                             | Suggests chains and presets; the user loads the chosen plugin manually   |
+| Configure plugin parameters   | 🟢 Stable where plugin is loaded, mapped, and supported       | Uses safe normalized values where mappings are known                     |
+| Write piano-roll notes        | 🟢 Stable through the armed script bridge                     | Generates `MCP_Apply` script output and triggers the armed bridge        |
+| Move/split playlist clips     | ⛔ Not exposed by FL Studio's API                             | Uses supported pattern, marker, metadata, and checklist workflows        |
+| Read live mixer peaks         | 🟢 Stable                                                     | Runs peak watch while the user plays the song                            |
+| Render audio to WAV           | ⛔ UI-only,         Not exposed by FL Studio's API            | User renders manually; fls-pilot can analyze the rendered file afterward |
+| Rename/color/route tracks     | 🟢 Stable where the API exposes the required metadata/actions | Uses snapshot → write → readback → changelog → rollback                  |
+| Set deep Audio Clip internals | ⛔ Not API-exposed for Stretch/Normalize/sample internals     | Applies safe supported defaults and generates manual checklists          |
+
 
 ## Maintained fork
 
-This repository is a materially extended fork of [`rosasynthesiz/flstudio-mcp`](https://github.com/rosasynthesiz/flstudio-mcp), now maintained at [`thunderdew-dawn/fls-pilot`](https://github.com/thunderdew-dawn/fls-pilot).
+This repository is a materially extended and actively maintained fork of [`rosasynthesiz/flstudio-mcp`](https://github.com/rosasynthesiz/flstudio-mcp), now developed as [`thunderdew-dawn/fls-pilot`](https://github.com/thunderdew-dawn/fls-pilot).
 
-The project now uses the `fls-pilot` package and command names as an intentional breaking rename. Its engineering direction is explicit: rollback-first FL Studio production tooling, documented API-evidence handling, live-probe discipline for build-dependent behavior, macOS support, CI safety audits, prompt evals, and a committed agent workflow guide.
+The rename from `flstudio-mcp` to `fls-pilot` is intentional and breaking. It avoids confusion with the upstream project, prevents package and command-name collisions in distribution channels such as PyPI, and makes it clear that this fork now follows its own release path, compatibility contract, and engineering direction.
 
-Breaking-release sequencing and migration gates are tracked in GitHub Project #7 and [release planning issue #66](https://github.com/thunderdew-dawn/fls-pilot/issues/66). See `NOTICE.md` for provenance and attribution.
+In short: `flstudio-mcp` is the respected upstream foundation; `fls-pilot` is a renamed, compatibility-breaking maintained fork with a broader client target, stricter safety/governance model, clearer API-limit documentation, and an expanded production-tooling roadmap.
+
+We are grateful for the original work in `rosasynthesiz/flstudio-mcp`. Its concepts and implementation provided the foundation that made this fork possible. Provenance and attribution are documented in `NOTICE.md`.
+
+Breaking-release sequencing and migration gates are tracked in GitHub Project #7 and [release planning issue #66](https://github.com/thunderdew-dawn/fls-pilot/issues/66).
+
 
 ## Project Status
 
-The GitHub project board is the source of truth. Public Markdown snapshots are generated into `docs/generated/`.
+The GitHub project board, issues, pull requests, milestones, and releases are the source of truth.
+
+Public Markdown snapshots are generated from GitHub metadata by the `Sync GitHub Markdown Snapshots` workflow.
 
 * [Roadmap source of truth: GitHub Project #7](https://github.com/users/thunderdew-dawn/projects/7)
-* [Public roadmap snapshot](docs/generated/ROADMAP.github.md)
+* [Public roadmap snapshot](docs/project/ROADMAP.github.md)
+* [Public changelog snapshot](docs/project/CHANGELOG.github.md)
+
+Do not edit the generated snapshot files manually. Update the GitHub source data or the renderer scripts instead.
 * [Release planning issue #66](https://github.com/thunderdew-dawn/fls-pilot/issues/66)
 * [Open release blockers](https://github.com/thunderdew-dawn/fls-pilot/issues?q=is%3Aissue+is%3Aopen+label%3Arelease-blocker)
 * [API-limited work](https://github.com/thunderdew-dawn/fls-pilot/issues?q=is%3Aissue+label%3Aapi-limited)
@@ -205,4 +215,4 @@ The GitHub project board is the source of truth. Public Markdown snapshots are g
 * [GitHub source-of-truth items](https://github.com/thunderdew-dawn/fls-pilot/issues?q=is%3Aissue+label%3Agithub-source-of-truth)
 * [Issues and support](https://github.com/thunderdew-dawn/fls-pilot/issues), plus `SUPPORT.md`
 * [Security policy](SECURITY.md)
-* Generated roadmap/changelog snapshots: `docs/generated/` via the `Sync GitHub Markdown Snapshots` workflow
+* Generated roadmap/changelog snapshots: `docs/project/` via the `Sync GitHub Markdown Snapshots` workflow

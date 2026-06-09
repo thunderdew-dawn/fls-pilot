@@ -2,11 +2,6 @@ name: Sync GitHub Markdown Snapshots
 
 on:
   workflow_dispatch:
-    inputs:
-      write_canonical:
-        description: Also write ROADMAP.md and docs/CHANGELOG.md.
-        required: false
-        default: "false"
   schedule:
     - cron: "17 4 * * 1"
 
@@ -30,20 +25,14 @@ jobs:
 
       - name: Render generated snapshots
         run: |
-          python scripts/render_github_roadmap.py --repo "$GITHUB_REPOSITORY" --output docs/generated/ROADMAP.github.md
-          python scripts/render_github_changelog.py --repo "$GITHUB_REPOSITORY" --output docs/generated/CHANGELOG.github.md
-
-      - name: Optionally render canonical snapshots
-        if: ${{ github.event_name == 'workflow_dispatch' && inputs.write_canonical == 'true' }}
-        run: |
-          python scripts/render_github_roadmap.py --repo "$GITHUB_REPOSITORY" --output ROADMAP.md
-          python scripts/render_github_changelog.py --repo "$GITHUB_REPOSITORY" --output docs/CHANGELOG.md
+          python scripts/render_github_roadmap.py --repo "$GITHUB_REPOSITORY" --output docs/project/ROADMAP.github.md
+          python scripts/render_github_changelog.py --repo "$GITHUB_REPOSITORY" --output docs/project/CHANGELOG.github.md
 
       - name: Create or update snapshot pull request
         run: |
           set -euo pipefail
           branch="automation/github-markdown-snapshots"
-          changed="$(git status --porcelain -- ROADMAP.md docs/CHANGELOG.md docs/generated/ROADMAP.github.md docs/generated/CHANGELOG.github.md)"
+          changed="$(git status --porcelain -- docs/project/ROADMAP.github.md docs/project/CHANGELOG.github.md)"
           if [ -z "$changed" ]; then
             echo "No generated markdown changes."
             exit 0
@@ -52,7 +41,7 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git fetch origin "$branch" || true
           git checkout -B "$branch"
-          git add ROADMAP.md docs/CHANGELOG.md docs/generated/ROADMAP.github.md docs/generated/CHANGELOG.github.md
+          git add docs/project/ROADMAP.github.md docs/project/CHANGELOG.github.md
           git commit -m "docs: sync GitHub markdown snapshots"
           git push --force-with-lease origin "$branch"
           existing="$(gh pr list --head "$branch" --json number --jq '.[0].number // empty')"
