@@ -1,0 +1,79 @@
+site_name: fls-pilot
+site_description: Rollback-first FL Studio control for MCP-compatible AI assistants.
+site_url: https://thunderdew-dawn.github.io/fls-pilot/
+
+repo_name: thunderdew-dawn/fls-pilot
+repo_url: https://github.com/thunderdew-dawn/fls-pilot
+edit_uri: edit/main/docs/
+
+docs_dir: docs
+site_dir: site
+
+theme:
+  name: material
+  language: en
+  features:
+    - navigation.sections
+    - navigation.expand
+    - navigation.indexes
+    - navigation.top
+    - search.suggest
+    - search.highlight
+    - content.code.copy
+
+nav:
+  - Home: index.md
+  - User Guide:
+      - Overview: user-guide/index.md
+      - Workflows: user-guide/workflows.md
+      - Prompts: user-guide/prompts.md
+      - Tool Reference: user-guide/tool-reference.md
+  - Concepts:
+      - Architecture: concepts/architecture.md
+      - Safety Model: concepts/safety-model.md
+      - API Capability and Safety Audit: concepts/api-capability-audit.md
+      - Senior Developer Audit Criteria: concepts/senior-dev-audit-criteria.md
+  - Engineering:
+      - Engineering Standards: engineering/standards.md
+      - Note Bridge Setup: engineering/note-bridge-setup.md
+      - Verification History: engineering/verification-history.md
+  - Agents:
+      - Overview: agents/index.md
+      - Runtime Usage: agents/runtime-usage.md
+      - Development Guide: agents/development.md
+      - GitHub Playbook: agents/github-playbook.md
+      - Knowledgebase Protocol: agents/knowledgebase-protocol.md
+      - Prompts:
+          - Implementation Slice: agents/prompts/implementation-slice.md
+          - Bug Triage: agents/prompts/bug-triage.md
+          - API Probe: agents/prompts/api-probe.md
+          - Mix Review: agents/prompts/mix-review.md
+          - Routing Review: agents/prompts/routing-review.md
+          - Project Organizer: agents/prompts/project-organizer.md
+          - Release: agents/prompts/release.md
+  - Project:
+      - Roadmap: project/ROADMAP.github.md
+      - Changelog: project/CHANGELOG.github.md
+  - Community:
+      - Contributing: community/contributing.md
+      - Code of Conduct: community/code-of-conduct.md
+      - Security: community/security.md
+      - Support: community/support.md
+      - Notice: community/notice.md
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - def_list
+  - footnotes
+  - md_in_html
+  - tables
+  - toc:
+      permalink: true
+  - pymdownx.details
+  - pymdownx.superfences
+
+plugins:
+  - search
+
+strict: true

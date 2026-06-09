@@ -1,4 +1,4 @@
-# Agent Operating Playbook
+# GitHub Playbook
 
 This playbook describes how humans, local coding agents, and review agents
 should use the configured GitHub setup for day-to-day project work. GitHub

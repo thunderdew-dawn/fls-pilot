@@ -1,6 +1,9 @@
-# Agent Orientation
+# Runtime Usage
 
-Compact startup path for LLM agents using FLStudioPilot with FL Studio.
+Compact startup path for agents that use FLStudioPilot with FL Studio.
+This is the right context for user-facing workflows such as Mix Review, Routing
+Review, Project Organizer, audio analysis, MIDI export, and bridge/session
+checks.
 
 ## Startup Protocol
 
@@ -43,33 +46,7 @@ Compact startup path for LLM agents using FLStudioPilot with FL Studio.
 - Keep detail calls scoped to the active track, channel, pattern, plugin, or
   workflow plan.
 
-## Write Safety Gates
-
-Every persistent FL write must follow:
-
-1. Scoped snapshot.
-2. Smallest practical write.
-3. Readback verification where supported.
-4. Changelog entry.
-5. Rollback path.
-
-Multi-step persistent changes must be one named rollback unit unless the split
-is explicit and documented. Piano Roll writes stay undo-backed and must state
-readback limits.
-
-## Stop And Fallback Rules
-
-- Do not guess normalized values, dB/Hz mappings, REC event IDs, track indices,
-  plugin parameter indices, or valid ranges.
-- Do not edit MIDI/TCP ports unless the user asks for setup troubleshooting.
-- Do not auto-load plugins, insert plugins, delete patterns/clips, edit
-  playlist clips, save-as, render, or use raw escape hatches.
-- Do not promise Stretch Pro, Normalize, native EQ type, Piano Roll readback, or
-  other unsupported FL API behavior.
-- If bridge status, target selection, readback, rollback, or API support is
-  unclear, switch to read-only, dry-run, probe-only, or manual guidance.
-
-## Definition Of Done
+## Runtime Definition Of Done
 
 - The selected tool path is current and Knowledgebase-informed.
 - Writes, if any, are rollback-backed and verified by readback where supported.
@@ -77,3 +54,9 @@ readback limits.
 - Docs, roadmap/API audit, and Knowledgebase are updated when public MCP
   behavior changes.
 - Verification covers the smallest meaningful resource/tool/test surface.
+
+## When To Expand Context
+
+Read [Development Guide](development.md) only when the task changes repository
+files or tests. Read [GitHub Playbook](github-playbook.md) only when the task
+involves issues, PRs, releases, roadmap planning, CI, security, or backports.
