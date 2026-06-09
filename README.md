@@ -162,11 +162,16 @@ FL Studio's Python API is useful, but it does not expose the whole DAW. fls-pilo
 
 ## Maintained fork
 
-This repository is a materially extended fork of [`rosasynthesiz/flstudio-mcp`](https://github.com/rosasynthesiz/flstudio-mcp), now maintained at [`thunderdew-dawn/fls-pilot`](https://github.com/thunderdew-dawn/fls-pilot).
+This repository is a materially extended and actively maintained fork of [`rosasynthesiz/flstudio-mcp`](https://github.com/rosasynthesiz/flstudio-mcp), now developed as [`thunderdew-dawn/fls-pilot`](https://github.com/thunderdew-dawn/fls-pilot).
 
-The project now uses the `fls-pilot` package and command names as an intentional breaking rename. Its engineering direction is explicit: rollback-first FL Studio production tooling, documented API-evidence handling, live-probe discipline for build-dependent behavior, macOS support, CI safety audits, prompt evals, and a committed agent workflow guide.
+The rename from `flstudio-mcp` to `fls-pilot` is intentional and breaking. It avoids confusion with the upstream project, prevents package and command-name collisions in distribution channels such as PyPI, and makes it clear that this fork now follows its own release path, compatibility contract, and engineering direction.
 
-Breaking-release sequencing and migration gates are tracked in GitHub Project #7 and [release planning issue #66](https://github.com/thunderdew-dawn/fls-pilot/issues/66). See `NOTICE.md` for provenance and attribution.
+In short: `flstudio-mcp` is the respected upstream foundation; `fls-pilot` is a renamed, compatibility-breaking maintained fork with a broader client target, stricter safety/governance model, clearer API-limit documentation, and an expanded production-tooling roadmap.
+
+We are grateful for the original work in `rosasynthesiz/flstudio-mcp`. Its concepts and implementation provided the foundation that made this fork possible. Provenance and attribution are documented in `NOTICE.md`.
+
+Breaking-release sequencing and migration gates are tracked in GitHub Project #7 and [release planning issue #66](https://github.com/thunderdew-dawn/fls-pilot/issues/66).
+
 
 ## Project Status
 
