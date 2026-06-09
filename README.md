@@ -25,7 +25,7 @@ The highest-value entry points for day-to-day production work are:
 7. **Audio Analyzer:** Analyze external audio files for tempo/key and extract melodies to MIDI when optional audio extras are installed.
 8. **Project Preflight & Health Overview:** Combine mix review, routing review, organization checks, and cleanup suggestions into an export-readiness report.
 
-For detailed usage, examples, and the full tool catalog, see the [User Guide](docs/USER_GUIDE.md).
+For detailed usage, examples, and the full tool catalog, see the [User Guide](docs/user-guide/index.md).
 
 ## How it Works: 8 Production Phases
 
@@ -175,10 +175,15 @@ Breaking-release sequencing and migration gates are tracked in GitHub Project #7
 
 ## Project Status
 
-The GitHub project board is the source of truth. Public Markdown snapshots are generated into `docs/generated/`.
+The GitHub project board, issues, pull requests, milestones, and releases are the source of truth.
+
+Public Markdown snapshots are generated from GitHub metadata by the `Sync GitHub Markdown Snapshots` workflow.
 
 * [Roadmap source of truth: GitHub Project #7](https://github.com/users/thunderdew-dawn/projects/7)
-* [Public roadmap snapshot](docs/generated/ROADMAP.github.md)
+* [Public roadmap snapshot](docs/project/ROADMAP.github.md)
+* [Public changelog snapshot](docs/project/CHANGELOG.github.md)
+
+Do not edit the generated snapshot files manually. Update the GitHub source data or the renderer scripts instead.
 * [Release planning issue #66](https://github.com/thunderdew-dawn/fls-pilot/issues/66)
 * [Open release blockers](https://github.com/thunderdew-dawn/fls-pilot/issues?q=is%3Aissue+is%3Aopen+label%3Arelease-blocker)
 * [API-limited work](https://github.com/thunderdew-dawn/fls-pilot/issues?q=is%3Aissue+label%3Aapi-limited)
@@ -190,4 +195,4 @@ The GitHub project board is the source of truth. Public Markdown snapshots are g
 * [GitHub source-of-truth items](https://github.com/thunderdew-dawn/fls-pilot/issues?q=is%3Aissue+label%3Agithub-source-of-truth)
 * [Issues and support](https://github.com/thunderdew-dawn/fls-pilot/issues), plus `SUPPORT.md`
 * [Security policy](SECURITY.md)
-* Generated roadmap/changelog snapshots: `docs/generated/` via the `Sync GitHub Markdown Snapshots` workflow
+* Generated roadmap/changelog snapshots: `docs/project/` via the `Sync GitHub Markdown Snapshots` workflow
