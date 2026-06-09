@@ -1,6 +1,20 @@
 # User Guide
 
-fls-pilot turns FL Studio into a controllable production workspace for MCP-compatible AI assistants. This guide is split into focused pages for MkDocs:
+fls-pilot turns FL Studio into a controllable production workspace for MCP-compatible AI assistants. 
+
+fls-pilot is (not only) a Model Context Protocol (MCP) server that lets MCP-compatible clients such as Claude Desktop, ChatGPT Desktop, Cursor, and other MCP hosts control FL Studio through FL Studio's scripting API and a safety-focused server layer.
+
+It is built for real music-production workflows: mix diagnosis, live peak watching, project cleanup, naming and color standards, routing review, plugin-chain planning, MIDI export, piano-roll composition, audio analysis, and export-readiness checks.
+
+Knowledgebase-first architecture
+fls-pilot keeps verified FL Studio knowledge in a local, human- and machine-readable Knowledgebase: parameter ranges, dB/Hz/normalized mappings, known API limits, pitfalls, and safe workflow recipes. Agents are instructed to consult and extend this Knowledgebase instead of guessing.
+
+Token-efficient LLM workflows
+The project treats token cost, tool-selection noise, and unnecessary MCP roundtrips as product-quality concerns. Runtime resources, KB lookup tools, capped context endpoints, and domain-specific workflows are designed to give LLMs the smallest useful context instead of dumping the whole project or tool surface into the prompt.
+
+The project is intentionally **rollback-first**. Supported project mutations are routed through scoped snapshots, smallest-practical writes, readback where FL Studio exposes it, changelog entries, and rollback paths. Where FL Studio's API does not expose functionality, fls-pilot states that boundary explicitly instead of pretending the assistant can do it.
+
+This guide is split into focused pages for MkDocs:
 
 - [Workflows](workflows.md): how users interact with the assistant, common production workflows, and safety classes.
 - [Prompts](prompts.md): reusable prompt patterns and module-specific examples.
