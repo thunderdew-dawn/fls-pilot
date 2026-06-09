@@ -1,3 +1,23 @@
+![version](https://img.shields.io/badge/version-3.0.0a1-blue)
+![status](https://img.shields.io/badge/status-alpha-orange)
+[![CI](https://github.com/thunderdew-dawn/fls-pilot/actions/workflows/ci.yml/badge.svg)](https://github.com/thunderdew-dawn/fls-pilot/actions/workflows/ci.yml)
+[![CodeQL](https://github.com/thunderdew-dawn/fls-pilot/actions/workflows/codeql.yml/badge.svg)](https://github.com/thunderdew-dawn/fls-pilot/actions/workflows/codeql.yml)
+![license](https://img.shields.io/badge/license-MIT-green)
+
+![Python](https://img.shields.io/badge/python-3.10+-blue)
+![Windows](https://img.shields.io/badge/Windows-10%2F11-0078D6?logo=windows&logoColor=white)
+![macOS](https://img.shields.io/badge/macOS-12%2B-000000?logo=apple&logoColor=white)
+![FL Studio](https://img.shields.io/badge/FL%20Studio-2025%2B-orange)
+
+![rollback-first](https://img.shields.io/badge/safety-rollback--first-brightgreen)
+![readback](https://img.shields.io/badge/writes-readback%20gated-blue)
+![api-evidence](https://img.shields.io/badge/API-evidence%20based-purple)
+![no-UI-claims](https://img.shields.io/badge/limits-explicit-lightgrey)
+
+![MCP](https://img.shields.io/badge/MCP-compatible-6f42c1)
+![LLM](https://img.shields.io/badge/LLM-Claude%20%7C%20ChatGPT%20%7C%20Cursor-blueviolet)
+![DAW](https://img.shields.io/badge/DAW-FL%20Studio-orange)
+
 # fls-pilot
 
 **Rollback-first FL Studio control for MCP-compatible LLMs: AI mixing, composition, project cleanup, routing review, and production assistance through natural language.**
