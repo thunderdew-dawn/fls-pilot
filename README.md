@@ -1,5 +1,25 @@
 # fls-pilot
 
+![version](https://img.shields.io/badge/version-3.0.0a1-blue)
+![status](https://img.shields.io/badge/status-alpha-orange)
+[![CI](https://github.com/thunderdew-dawn/fls-pilot/actions/workflows/ci.yml/badge.svg)](https://github.com/thunderdew-dawn/fls-pilot/actions/workflows/ci.yml)
+[![CodeQL](https://github.com/thunderdew-dawn/fls-pilot/actions/workflows/codeql.yml/badge.svg)](https://github.com/thunderdew-dawn/fls-pilot/actions/workflows/codeql.yml)
+![license](https://img.shields.io/badge/license-MIT-green)
+
+![Python](https://img.shields.io/badge/python-3.10+-blue)
+![Windows](https://img.shields.io/badge/Windows-10%2F11-0078D6?logo=windows&logoColor=white)
+![macOS](https://img.shields.io/badge/macOS-12%2B-000000?logo=apple&logoColor=white)
+![FL Studio](https://img.shields.io/badge/FL%20Studio-2025%2B-orange)
+
+![rollback-first](https://img.shields.io/badge/safety-rollback--first-brightgreen)
+![readback](https://img.shields.io/badge/writes-readback%20gated-blue)
+![api-evidence](https://img.shields.io/badge/API-evidence%20based-purple)
+![no-UI-claims](https://img.shields.io/badge/limits-explicit-lightgrey)
+
+![MCP](https://img.shields.io/badge/MCP-compatible-6f42c1)
+![LLM](https://img.shields.io/badge/LLM-Claude%20%7C%20ChatGPT%20%7C%20Cursor-blueviolet)
+![DAW](https://img.shields.io/badge/DAW-FL%20Studio-orange)
+
 **Rollback-first FL Studio control for MCP-compatible LLMs: AI mixing, composition, project cleanup, routing review, and production assistance through natural language.**
 
 *The LLM assistant diagnosing and fixing a mix in FL Studio through natural language.*
@@ -33,71 +53,71 @@ FL Studio's Python API has strict boundaries. fls-pilot combines safe controller
 
 ### Phase 1: Ideation & Composition
 
-* **Audio Analysis (****`fl_analyze_audio`****, ****`fl_extract_melody`****)**
+* **Audio Analysis (`fl_analyze_audio`, `fl_extract_melody`)**
 
   * **Limitation:** FL Studio's API cannot read or analyze arbitrary audio files directly.
   * **Workflow:** fls-pilot reads `.wav` or `.mp3` files from disk and analyzes them with Python libraries. Accurate pitch tracking is available when optional audio extras are installed.
 
-* **Piano Roll & Scales (****`fl_piano_roll`****, ****`fl_scale_get`****)**
+* **Piano Roll & Scales (`fl_piano_roll`, `fl_scale_get`)**
 
   * **Limitation:** External programs cannot freely push notes into the Piano Roll at runtime through a direct public API.
   * **Workflow:** fls-pilot generates a temporary `MCP_Apply` script. The user arms the bridge once per session, and the daemon triggers the script through the configured shortcut.
 
 ### Phase 2: Arrangement & Structure
 
-* **Patterns & Playlist (****`fl_pattern`****, ****`fl_playlist`****)**
+* **Patterns & Playlist (`fl_pattern`, `fl_playlist`)**
 
   * **Limitation:** Direct editing, splitting, or moving of playlist clips is API-limited.
   * **Workflow:** fls-pilot manages supported pattern creation, cloning where exposed, section markers, and track metadata.
 
 ### Phase 3 & 4: Diagnosis & Preparation
 
-* **Audio Clip Safe Defaults (****`fl_inspect_audio_clips`****)**
+* **Audio Clip Safe Defaults (`fl_inspect_audio_clips`)**
 
   * **Limitation:** Deep Audio Clip settings such as Stretch Pro, Normalize, and some sample internals are not exposed.
   * **Workflow:** fls-pilot applies safe Channel Rack volume defaults where supported, checks free mixer tracks, and creates manual checklists for unavailable API states.
 
-* **Project Organizer (****`fl_channel`****, ****`fl_mixer`****, ****`fl_apply_color_standard`****)**
+* **Project Organizer (`fl_channel`, `fl_mixer`, `fl_apply_color_standard`)**
 
   * **Safety:** Large renaming, coloring, and routing operations use scoped snapshots and named rollback units.
 
 ### Phase 5: Signal Flow & Routing
 
-* **Routing Tools (****`fl_review_routing`****, ****`fl_apply_bus_layout`****, ****`fl_group_tracks`****)**
+* **Routing Tools (`fl_review_routing`, `fl_apply_bus_layout`, `fl_group_tracks`)**
 
   * **Workflow:** fls-pilot detects routing issues, proposes bus layouts, and applies supported routing changes through rollback-safe operations.
 
 ### Phase 6: Sound Design
 
-* **Chain Planner & Presets (****`fl_setup_chain`****, ****`fl_suggest_preset`****)**
+* **Chain Planner & Presets (`fl_setup_chain`, `fl_suggest_preset`)**
 
   * **Hard limit:** FL Studio's API cannot load or insert plugins.
   * **Workflow:** fls-pilot scans plugin database and preset folders, suggests suitable chains, and can configure supported parameters after the user manually loads the selected plugin.
 
 ### Phase 7: Mixing & Dynamics
 
-* **Mix Doctor (****`fl_review_mix`****, ****`fl_mix_watch_start`****)**
+* **Mix Doctor (`fl_review_mix`, `fl_mix_watch_start`)**
 
   * **Limitation:** A static song snapshot is not enough because audio levels change over time.
   * **Workflow:** The user plays the song while fls-pilot polls live API peak meters and stores running peak evidence for each track.
 
-* **Knowledgebase & Intents (****`fl_apply_eq_intent`****)**
+* **Knowledgebase & Intents (`fl_apply_eq_intent`)**
 
   * **Problem:** LLMs can hallucinate invalid plugin or DAW parameter values.
   * **Workflow:** fls-pilot checks values against Knowledgebase conversion entries and verified ranges before sending supported changes to FL Studio.
 
 ### Phase 8: Export, Health & Safety
 
-* **Project Health Checks (****`fl_check_project_preflight`****)**
+* **Project Health Checks (`fl_check_project_preflight`)**
 
   * **Workflow:** Before manual audio rendering, fls-pilot can run combined mix, routing, cleanup, and export-readiness checks.
 
-* **MIDI Export (****`fl_export_midi`****)**
+* **MIDI Export (`fl_export_midi`)**
 
   * **Limitation:** FL Studio's API cannot click "Render to WAV".
   * **Workflow:** fls-pilot writes standard `.mid` files directly to disk. Audio bouncing remains manual.
 
-* **Safety Layer (****`fl_rollback_last_change`****)**
+* **Safety Layer (`fl_rollback_last_change`)**
 
   * **Limitation:** FL Studio's native undo can be unreliable for API scripts.
   * **Workflow:** fls-pilot stores scoped snapshots and changelog entries for supported writes. Rollback restores the affected supported state through the MCP safety path.
@@ -140,9 +160,9 @@ fls-pilot is a production assistant, not only a note sender.
 | 🟡 Alpha             | Implemented and usable, but still under active validation or affected by migration/release changes   |
 | 🟠 Partial           | Useful and stable for supported parts, but constrained by FL Studio API limits                       |
 | 🔵 Project read-only | Does not mutate the FL Studio project; may still analyze or write external files                     |
-| 🛡️ Rollback-safe    | Persistent project writes use snapshot, readback where supported, changelog, and rollback            |
+| 🛡️ Rollback-safe     | Persistent project writes use snapshot, readback where supported, changelog, and rollback            |
 | 🚧 Planned           | Tracked but not implemented                                                                          |
-| ⛔ Not possible       | Blocked by the FL Studio API, DAW internals, or UI-only behavior                                     |
+| ⛔ Not possible      | Blocked by the FL Studio API, DAW internals, or UI-only behavior                                     |
 
 ## FL Studio API Reality
 
@@ -150,14 +170,14 @@ FL Studio's Python API is useful, but it does not expose the whole DAW. fls-pilo
 
 | Claim                         | Reality                                                       | fls-pilot behavior                                                       |
 | ----------------------------- | ------------------------------------------------------------- | ------------------------------------------------------------------------ |
-| Load plugins automatically    | ⛔ Not exposed by FL Studio's API                              | Suggests chains and presets; the user loads the chosen plugin manually   |
+| Load plugins automatically    | ⛔ Not exposed by FL Studio's API                             | Suggests chains and presets; the user loads the chosen plugin manually   |
 | Configure plugin parameters   | 🟢 Stable where plugin is loaded, mapped, and supported       | Uses safe normalized values where mappings are known                     |
 | Write piano-roll notes        | 🟢 Stable through the armed script bridge                     | Generates `MCP_Apply` script output and triggers the armed bridge        |
-| Move/split playlist clips     | ⛔ Not exposed by FL Studio's API                                                | Uses supported pattern, marker, metadata, and checklist workflows        |
+| Move/split playlist clips     | ⛔ Not exposed by FL Studio's API                             | Uses supported pattern, marker, metadata, and checklist workflows        |
 | Read live mixer peaks         | 🟢 Stable                                                     | Runs peak watch while the user plays the song                            |
-| Render audio to WAV           | ⛔ UI-only,         Not exposed by FL Studio's API                                             | User renders manually; fls-pilot can analyze the rendered file afterward |
+| Render audio to WAV           | ⛔ UI-only,         Not exposed by FL Studio's API            | User renders manually; fls-pilot can analyze the rendered file afterward |
 | Rename/color/route tracks     | 🟢 Stable where the API exposes the required metadata/actions | Uses snapshot → write → readback → changelog → rollback                  |
-| Set deep Audio Clip internals | ⛔ Not API-exposed for Stretch/Normalize/sample internals          | Applies safe supported defaults and generates manual checklists          |
+| Set deep Audio Clip internals | ⛔ Not API-exposed for Stretch/Normalize/sample internals     | Applies safe supported defaults and generates manual checklists          |
 
 
 ## Maintained fork
