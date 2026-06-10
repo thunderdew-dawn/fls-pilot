@@ -1,97 +1,114 @@
-# fls-pilot
+# Development Guide
 
-**Rollback-first FL Studio control for MCP-compatible LLMs.**
+Use this path when changing code, tests, docs, scripts, controller files, Knowledgebase files, workflows, packaging, or project behavior.
 
-fls-pilot is an MCP server that lets compatible LLM clients control selected parts of FL Studio through FL Studio's scripting API and a safety-focused server layer.
+## Mandatory First Reads
 
-It is designed for real production workflows: mix review, project cleanup, routing checks, naming and color standards, plugin-chain planning, MIDI export, piano-roll composition, audio analysis, and export-readiness checks.
+Before changing code, tests, docs, scripts, controller files, skill files, evals, or roadmap state, read these files and follow them as binding project instructions:
 
-## What fls-pilot helps with
+* `docs/engineering/standards.md`
+* `docs/project/ROADMAP.github.md`
+* `docs/concepts/safety-model.md`
+* `docs/agents/knowledgebase-protocol.md`
 
-- Review mixes while FL Studio is playing
-- Detect clipping, peak risks, and routing problems
-- Organize channels and mixer tracks
-- Apply naming, color, and routing standards where the FL Studio API supports it
-- Suggest plugin chains and presets
-- Generate piano-roll material through the script bridge
-- Export MIDI files
-- Analyze external audio files
-- Create project health and preflight reports
+If any file conflicts with an ad-hoc prompt, stop and surface the conflict before implementing. The safety model, engineering standards, Knowledgebase protocol, and roadmap scope are not optional.
 
-## Safety first
+For GitHub planning, issue/PR work, roadmap execution, releases, dependency updates, security alerts, bug triage, reviews, hotfixes, reverts, documentation-only changes, API probes, or backports, additionally read:
 
-fls-pilot is intentionally **rollback-first**.
+* `docs/agents/github-playbook.md`
 
-Supported project changes use:
+## Working Mode
 
-- scoped snapshots
-- smallest-practical writes
-- readback where FL Studio exposes it
-- changelog entries
-- rollback paths
+* Act as a senior, pragmatic software engineer.
+* Inspect the repo before changing it. Read surrounding code, existing tool patterns, tests, safety layer, protocol constants, controller handlers, and registration style.
+* For implementation work, explicitly inspect the relevant parts of `ROADMAP.md`, `docs/project/ROADMAP.github.md`, `docs/concepts/api-capability-audit.md`, `src/fls_pilot/safety.py`, `src/fls_pilot/protocol.py`, the FL controller script, existing tool modules, and focused tests/scripts before editing.
+* For non-trivial implementation slices, produce a short implementation plan before editing and confirm the slice is dependency-correct and rollback-safe.
+* Before building anything new, check whether the functionality already exists under a different name or can be composed from existing safe primitives.
+* Prefer existing project patterns over new abstractions.
+* Use established patterns: protocol constants, controller handlers, `safety.safe_write`, `safety.safe_write_group`, Piano Roll safety helpers, focused tests/scripts, and FastMCP registration style.
+* Keep edits small, coherent, and backport-friendly.
+* Preserve all user and uncommitted changes. Never revert unrelated work.
+* Use English for commits, code comments, docstrings, and repo documentation.
 
-Where FL Studio does not expose a feature through its API, fls-pilot documents that boundary instead of pretending the assistant can perform the action.
+## Knowledgebase And Token-Efficient Development
 
-## Core workflows
+* Check `knowledgebase/` before changing or adding behavior that depends on FL Studio API behavior, mixer/plugin parameters, MIDI, automation, REC events, normalized values, dB/Hz mappings, ranges, known pitfalls, or reusable production rules.
+* Do not guess FL Studio API ranges, normalized values, dB/Hz mappings, REC event IDs, track indices, plugin parameter indices, or valid value ranges.
+* If new verified knowledge is discovered, update the Knowledgebase as part of the same slice:
 
-### Mix Review
+  * Use Markdown for human-readable findings.
+  * Use JSON or YAML when the knowledge is machine-actionable.
+  * Put disproven assumptions and recurring mistakes in `knowledgebase/known_pitfalls/`.
+* Prefer token-efficient implementation and review patterns:
 
-fls-pilot can watch live mixer peaks while the user plays the project and report clipping, headroom risks, and balance issues.
+  * Prefer high-signal domain/workflow tools over many narrow one-off tools.
+  * Avoid unnecessary MCP roundtrips.
+  * Prefer safe grouped reads/writes or server-side orchestration when this reduces token use and tool-selection noise.
+  * Document token/tool-surface impact when adding or expanding MCP tools.
 
-### Project Organizer
+## Implementation Checklist
 
-Rename, color, group, and route channels or mixer tracks where FL Studio exposes the required metadata.
+For every new FL-mutating tool, add or update:
 
-### Routing Review
+* Protocol command constants, if needed.
+* FL controller handler.
+* Snapshot scope.
+* Restore operation.
+* Readback verification.
+* Safety-layer integration via the established safety helpers.
+* Tool annotations and docstring explaining safety behavior.
+* Static audit compatibility.
+* Focused script/unit test or rollback-safe live smoke script.
+* Roadmap/API audit/docs note when behavior or scope changes.
+* Knowledgebase entry or update when the tool depends on verified FL Studio behavior, mappings, ranges, parameters, or known limitations.
 
-Detect fragile routing, unrouted channels, and bus-layout problems. Supported fixes are applied as rollback units.
+## Verification Expectations
 
-### Plugin and Preset Assistant
+Run the smallest meaningful checks for the changed area, then broaden when the blast radius justifies it:
 
-Scan plugin databases and preset folders, suggest chains, and configure supported parameters after the user manually loads the plugin.
+* Compile checks for touched Python code.
+* `scripts/audit_tool_safety.py --fail-on-gaps`.
+* `scripts/audit_tool_safety.py --fail-on-missing-safety-docs --format json` when tool annotations or docstrings change.
+* Focused script tests for changed areas.
+* FastMCP registration/tool-count checks when tool registration changes.
+* Rollback-safe live smoke tests when FL Studio is available and the change touches live behavior.
 
-### Composition and Piano Roll
+If repo-wide `pytest` or `ruff` failures are pre-existing, report them separately and do not churn unrelated code.
 
-Generate scale-aware melodies, chords, and patterns through the armed piano-roll script bridge.
+At handoff, summarize changed files, verification run, remaining risks or API limits, Knowledgebase changes, and the next recommended roadmap slice.
 
-### Audio Analysis
+## Local Environment
 
-Analyze `.wav` or `.mp3` files from disk for tempo, key, and melody extraction when optional audio extras are installed.
+* Python target: 3.12 for current development on this machine. Package metadata still supports Python 3.10+ unless changed deliberately.
 
-### Project Preflight
+* On macOS, commands importing pip, XML, or audio dependencies may need:
 
-Combine mix review, routing review, organization checks, and cleanup suggestions into an export-readiness report.
+  export DYLD_LIBRARY_PATH="/usr/local/opt/expat/lib:${DYLD_LIBRARY_PATH:-}"
 
-## FL Studio API reality
+* Prefer `rg` and `rg --files` for search.
 
-FL Studio's Python API is useful, but it does not expose the whole DAW.
+* Use `apply_patch` for manual file edits.
 
-fls-pilot can work reliably with exposed API areas such as mixer peaks, channel metadata, supported routing, MIDI file writing, and scripted piano-roll workflows.
+* Do not use destructive Git commands unless explicitly requested.
 
-Some actions remain unavailable or manual:
+## Live FL Studio Procedure
 
-- loading or inserting plugins
-- moving or splitting playlist clips directly
-- rendering audio to WAV
-- changing deep Audio Clip internals such as Stretch Pro or Normalize
+* Start the TCP daemon yourself when live tests require it.
+* Confirm heartbeat and `fl_transport(action="ping")` before live work.
+* Confirm the controller build marker expected by the current code.
+* Read current state before writing.
+* For live write tests, write a temporary value, verify readback, rollback immediately, and verify restoration.
+* If MIDI routing, script reload, or restart state is uncertain, diagnose the connection before changing code.
+* Stop daemons you started and leave playback stopped/recording disarmed after tests.
 
-These limits are part of the product contract and are documented explicitly.
+## Workspace And File Artifact Protocol
 
-## Project status
+To keep the workspace clean and maintain context for generated artifacts, agents must use these output directories. Never write files directly to the root of `scratch/` or the project root.
 
-The GitHub project board is the source of truth for roadmap and release planning.
+* Temporary scripts: `scratch/scripts/`
+* Generated MIDI: `scratch/midi/`
+* Analysis data and state dumps: `scratch/analysis/`
+* Audio files: `scratch/audio/`
+* Logs: `scratch/logs/`
 
-Useful links:
-
-- [User Guide](user-guide/index.md)
-- [Generated roadmap](project/ROADMAP.github.md)
-- [Issues and support](https://github.com/thunderdew-dawn/fls-pilot/issues)
-- [Security policy](community/security.md)
-
-## Maintained fork
-
-fls-pilot is a materially extended and actively maintained fork of `rosasynthesiz/flstudio-mcp`.
-
-The rename from `flstudio-mcp` to `fls-pilot` is intentional and breaking. It avoids package and command-name collisions and makes clear that this fork follows its own release path, compatibility contract, and engineering direction.
-
-Attribution and provenance are documented in `NOTICE.md`.
+Use session- or task-specific subdirectories where appropriate, for example `scratch/analysis/YYYY-MM-DD_session_name/`.
