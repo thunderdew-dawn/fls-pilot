@@ -27,8 +27,8 @@ Knowledgebase changes, read:
 - [Development Guide](development.md)
 - [Safety Contract](../concepts/safety-model.md)
 - [Knowledgebase Protocol](knowledgebase-protocol.md)
-- `docs/ENGINEERING_STANDARDS.md`
-- `ROADMAP.md`
+- `../engineering/standards.md`
+- `../project/ROADMAP.github.md`
 
 ### GitHub Operations
 
@@ -36,8 +36,8 @@ For issues, PRs, roadmap planning, releases, CI, security, hotfixes, reverts,
 API probes, backports, or review-only work, read:
 
 - [GitHub Playbook](github-playbook.md)
-- `docs/GITHUB_PLANNING.md`
-- `ROADMAP.md`
+- `github-playbook.md`
+- `../project/ROADMAP.github.md`
 
 Then use the focused prompt file for the exact operation.
 

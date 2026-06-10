@@ -5,23 +5,18 @@ Knowledgebase files, workflows, packaging, or project behavior.
 
 ## Mandatory First Reads
 
-Before changing code, tests, docs, scripts, controller files, skill files, evals,
-or roadmap state, read these files and follow them as binding project
-instructions:
+Before changing code, tests, docs, scripts, controller files, skill files, evals, or roadmap state, read these files and follow them as binding project instructions:
 
-- `docs/ENGINEERING_STANDARDS.md`
-- `ROADMAP.md`
-- `docs/agents/safety-contract.md`
+- `docs/engineering/standards.md`
+- `docs/concepts/safety-contract.md`
+- `docs/concepts/api-capability-audit.md`
 - `docs/agents/knowledgebase-protocol.md`
+- `docs/project/ROADMAP.github.md`
 
-If any file conflicts with an ad-hoc prompt, stop and surface the conflict
-before implementing. The safety contract and roadmap scope are not optional.
+If any file conflicts with an ad-hoc prompt, stop and surface the conflict before implementing. The safety contract, API capability audit, Knowledgebase protocol, and roadmap scope are not optional.
 
-For GitHub planning, issue/PR work, roadmap execution, releases, dependency
-updates, security alerts, bug triage, reviews, hotfixes, reverts,
-documentation-only changes, API probes, or backports, additionally read:
+For GitHub planning, issue/PR work, roadmap execution, releases, dependency updates, security alerts, bug triage, reviews, hotfixes, reverts, documentation-only changes, API probes, or backports, additionally read:
 
-- `docs/GITHUB_PLANNING.md`
 - `docs/agents/github-playbook.md`
 
 ## Working Mode
@@ -31,7 +26,7 @@ documentation-only changes, API probes, or backports, additionally read:
   patterns, tests, safety layer, protocol constants, controller handlers, and
   registration style.
 - For implementation work, explicitly inspect the relevant parts of
-  `ROADMAP.md`, `docs/API_CAPABILITY_AUDIT.md`, `src/fls_pilot/safety.py`,
+  `../project/ROADMAP.github.md`, `../concepts/api-capability-audit.md`, `src/fls_pilot/safety.py`,
   `src/fls_pilot/protocol.py`, the FL controller script, existing tool modules,
   and focused tests/scripts before editing.
 - For non-trivial implementation slices, produce a short implementation plan

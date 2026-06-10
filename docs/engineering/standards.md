@@ -142,7 +142,7 @@ Current priority order:
 - Update README, roadmap, API audit, or docs when tool behavior or safety
   guarantees change.
 - Keep the GitHub roadmap issue or milestone current as the planning source of
-  truth for open work. `ROADMAP.md`, `docs/CHANGELOG.md`, and `docs/generated/`
+  truth for open work. `../project/ROADMAP.github.md`, `../project/CHANGELOG.github.md`, and `docs/generated/`
   are readable snapshots backed by the GitHub-to-Markdown workflow, so update
   snapshot Markdown only intentionally or through the configured snapshot
   workflow.
