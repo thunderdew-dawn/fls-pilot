@@ -1,5 +1,9 @@
 # flstudio-mcp
 
+> Naming transition: This repository is moving toward the `fls-pilot` / `FL Studio Pilot` project identity.  
+> The v2.x stable line intentionally keeps the existing `flstudio-mcp`, `fl-studio-mcp`, and `FLStudioMCP` package, command, and controller names for compatibility.  
+> A full breaking rename is planned for the v3.x line.
+
 **Control FL Studio with any MCP-compatible LLM: AI mixing, composition, and mix diagnosis through natural language.**
 
 ![version](https://img.shields.io/badge/version-2.0.0-blue)
@@ -19,12 +23,13 @@
 flstudio-mcp is a Model Context Protocol (MCP) server that lets any MCP client (like Claude Desktop, ChatGPT, or Cursor) drive FL Studio 2025 directly — the mixer, plugins, piano roll, routing, and project — from plain-language requests. Ask for a mix diagnosis, a vocal chain, a chord progression in a particular scale, or a full arrangement, and the LLM assistant carries it out through FL's scripting API and a set of calibrated, safety-checked tools.
 
 **Key upgrades in v2.0.0:**
+
 - **Consolidated domain tools:** Dozens of single-purpose functions were folded into higher-level endpoints such as `fl_transport`, `fl_mixer`, `fl_channel`, `fl_effect`, and `fl_batch`. This reduces tool-selection noise and leaves more context for the assistant to reason about the project.
 - **Agent orientation resource:** Agents should start with `fl://agent-briefing` and `fl://status` for current tool selection, safety gates, and stop rules before live FL work.
 - **Knowledgebase-backed parameters:** API values, dB/Hz mappings, known limits, and safe ranges are captured in the local Knowledgebase so agents can prefer verified project evidence over guesses.
 - **Rollback-first writes:** Persistent FL Studio mutations route through the safety layer: scoped snapshot, smallest practical write, readback where supported, changelog entry, and rollback path. Grouped writes are stored as named rollback units.
 
-## High-Level Tools (New in v2.0.0)
+## High-Level Tools
 
 This release focuses on rollback-first FL Studio production tooling and a strict agent workflow. The tools below are the highest-value entry points for day-to-day use.
 
@@ -47,6 +52,7 @@ Deep Audio Clip parameters such as Stretch Mode, Normalize state, and some sampl
 FL Studio's Python API is useful but has strict boundaries. This project combines safe controller calls, local file analysis, generated Piano Roll scripts, and a snapshot/rollback safety layer. The summary below explains what is automated and where FL Studio still requires manual action.
 
 ### Phase 1: Ideation & Composition (Notes & Audio)
+
 - **Audio Analysis (`fl_analyze_audio`, `fl_extract_melody`)**
   - *The Limitation:* FL Studio's API cannot read or analyze audio files.
   - *How it works:* These tools read `.wav` or `.mp3` files directly from disk and analyze them with Python libraries such as CREPE when the optional accurate audio extras are installed.
@@ -55,11 +61,13 @@ FL Studio's Python API is useful but has strict boundaries. This project combine
   - *How it works:* The assistant generates a temporary `MCP_Apply` script. A background daemon triggers the armed script with a keyboard shortcut (`Cmd+Opt+Y` on macOS), causing FL Studio to write the notes to the selected Piano Roll target.
 
 ### Phase 2: Arrangement & Structure
+
 - **Patterns & Playlist (`fl_pattern`, `fl_playlist`)**
   - *The Limitation:* Direct editing, splitting, or moving of Audio/MIDI clips in the playlist is blocked by the API.
   - *How it works:* The assistant manages supported structure such as pattern creation, pattern cloning where exposed, section markers, and track metadata through unified domain tools.
 
 ### Phase 3 & 4: Diagnosis & Preparation
+
 - **Audio Clip Safe Defaults (`fl_inspect_audio_clips`)**
   - *The Limitation:* Deep Audio Clip features like "Stretch Pro" or the "Normalize" toggle are not exposed.
   - *How it works:* The tools can apply safe Channel Rack volume limits, check for free mixer tracks, and generate manual checklists for Stretch/Normalize states that the FL API cannot verify.
@@ -67,15 +75,18 @@ FL Studio's Python API is useful but has strict boundaries. This project combine
   - *Safety:* Renaming and coloring a large project uses scoped snapshots and named rollback units so supported changes can be audited and restored through the MCP safety layer.
 
 ### Phase 5: Signal Flow & Routing
+
 - **Routing Tools (`fl_review_routing`, `fl_apply_bus_layout`, `fl_group_tracks`)**
   - *How it works:* Routing tools detect structural issues, propose bus layouts, and apply supported routing changes as named rollback units.
 
 ### Phase 6: Sound Design (The Strictest API Boundary)
+
 - **Chain Planner & Presets (`fl_setup_chain`, `fl_suggest_preset`)**
   - *The Hard Limit:* It is technically impossible to load or insert a plugin via the FL Studio API.
   - *The workflow:* The assistant scans FL Studio plugin database and preset folders on disk, suggests chains from what it finds, and can configure parameters after the user manually loads the chosen plugin.
 
 ### Phase 7: Mixing & Dynamics
+
 - **Mix Doctor (`fl_review_mix`, `fl_mix_watch_start`)**
   - *The Limitation:* A static "snapshot" of a song is useless because audio is dynamic.
   - *How it works:* During peak watch, the user plays the song while the tool polls live API peak meters and keeps running peak evidence for each track.
@@ -84,17 +95,17 @@ FL Studio's Python API is useful but has strict boundaries. This project combine
   - *How it works:* Before sending supported parameter changes to FL Studio, the assistant checks requested values against Knowledgebase conversion entries such as `kb_get_conversion` and sends normalized values within verified ranges.
 
 ### Phase 8: Export, Health & Safety
+
 - **Project Health Checks (`fl_check_project_preflight`)**
   - *How it works:* Before a manual audio render, the assistant can run combined Mix Review, Routing Review, and cleanup checks to report export-readiness risks.
 - **Audio Export (`fl_export_midi`)**
-  - *The Limitation:* The API cannot click "Render to WAV". 
+  - *The Limitation:* The API cannot click "Render to WAV".
   - *How it works:* The tools write standard `.mid` files directly to disk for arrangement exports. Audio bouncing remains manual.
 - **The Safety Layer (`fl_rollback_last_change`)**
   - *The Limitation:* FL Studio's native Undo (`Ctrl+Z`) is highly unreliable for API scripts.
   - *How it works:* The MCP safety layer stores scoped snapshots and changelog entries for supported writes. Calling rollback restores the affected supported state through the MCP rollback path.
 
 The server exposes a comprehensive suite of tools across all these phases. For a user-facing workflow overview, full tool catalog, and precise command prompts, see the **[USER_GUIDE](docs/USER_GUIDE.md)**.
-
 
 ## Maintained fork
 
@@ -160,57 +171,63 @@ These are properties of FL Studio's scripting API, stated plainly:
 
 ### 1. Configure MIDI Ports
 
-* **Windows**: Create two virtual MIDI ports in loopMIDI, named exactly `FLStudioMCP RX` and `FLStudioMCP TX`.
-* **macOS**:
+- **Windows**: Create two virtual MIDI ports in loopMIDI, named exactly `FLStudioMCP RX` and `FLStudioMCP TX`.
+- **macOS**:
   1. Open the **Audio MIDI Setup** app.
   2. Choose **Window > Show MIDI Studio** (or press `Cmd+8`).
   3. Double-click the **IAC Driver** icon.
   4. Tick the **Device is online** checkbox.
   5. Under **Ports** (or **Buses**), add/rename two ports to exactly:
-     * `FLStudioMCP RX`
-     * `FLStudioMCP TX`
+     - `FLStudioMCP RX`
+     - `FLStudioMCP TX`
   6. Click **Apply**.
 
 ### 2. Install the Controller Script & Server
 
-#### Windows:
+#### Windows
+
 ```bat
 git clone https://github.com/thunderdew-dawn/flstudio-mcp
 cd flstudio-mcp
 scripts\install_windows.bat
 ```
 
-#### macOS:
+#### macOS
+
 ```bash
 git clone https://github.com/thunderdew-dawn/flstudio-mcp
 cd flstudio-mcp
 chmod +x scripts/install_macos.sh
 ./scripts/install_macos.sh
 ```
+
 This script will copy the controller script, create a virtual environment (`.venv`), install the server inside it, and verify that the IAC Driver ports are online. It also pre-seeds the note-bridge script (`MCP_Apply.pyscript`) inside your FL Studio user data directory.
 
 > [!IMPORTANT]
 > **macOS Accessibility Permissions**: Since the note-writing tool simulates keyboard shortcuts (`Cmd+Opt+Y`) via `pyautogui` to trigger script runs in FL Studio, the application executing the MCP server (e.g., your terminal, iTerm, Warp, or your MCP client app like Claude Desktop/ChatGPT) must be granted Accessibility permissions. Go to **System Settings > Privacy & Security > Accessibility** and ensure the app you are running is enabled.
 
 For optional audio/melody analysis extras:
-* Windows: `pip install -e ".[audio,audio-accurate]"`
-* macOS: `.venv/bin/pip install -e ".[audio,audio-accurate]"`
+
+- Windows: `pip install -e ".[audio,audio-accurate]"`
+- macOS: `.venv/bin/pip install -e ".[audio,audio-accurate]"`
 
 ### 3. Configure FL Studio (All Platforms)
 
 1. Open FL Studio.
 2. Go to **Options > MIDI Settings**:
-   * **Input list**: Click `FLStudioMCP RX`, tick **Enable**, set **Controller type** to `FLStudioMCP`, and set **Port** to `42`.
-   * **Output list**: Click `FLStudioMCP TX`, tick **Enable**, and set **Port** to `42` (MUST match the input port).
+   - **Input list**: Click `FLStudioMCP RX`, tick **Enable**, set **Controller type** to `FLStudioMCP`, and set **Port** to `42`.
+   - **Output list**: Click `FLStudioMCP TX`, tick **Enable**, and set **Port** to `42` (MUST match the input port).
 3. Go to **View > Script output**. It should show `[FLStudioMCP] Ready`.
 
 ### 4. Connect to your MCP Client
 
 #### Option A: Claude Desktop, Cursor, or other stdio clients
+
 1. Start the MIDI bridge daemon (recommended so MIDI ports are held by a stable background process):
-   * Windows: Run `fl-studio-mcp-daemon`
-   * macOS: Run `.venv/bin/fl-studio-mcp-daemon`
+   - Windows: Run `fl-studio-mcp-daemon`
+   - macOS: Run `.venv/bin/fl-studio-mcp-daemon`
 2. Configure your client (e.g., Claude Desktop). Add this to your configuration file (Windows: `%APPDATA%\Claude\claude_desktop_config.json`, macOS: `~/Library/Application Support/Claude/claude_desktop_config.json`):
+
    ```json
    {
      "mcpServers": {
@@ -223,22 +240,25 @@ For optional audio/melody analysis extras:
      }
    }
    ```
+
    *(Note: On Windows, use `fl-studio-mcp` for the command instead of the `.venv` path if installed globally.)*
 
 #### Option B: ChatGPT Desktop (SSE)
+
 ChatGPT Desktop does not support local stdio subprocesses and requires a remote/SSE connection:
+
 1. Start the MIDI bridge daemon in a terminal:
-   * Windows: `fl-studio-mcp-daemon`
-   * macOS: `.venv/bin/fl-studio-mcp-daemon`
+   - Windows: `fl-studio-mcp-daemon`
+   - macOS: `.venv/bin/fl-studio-mcp-daemon`
 2. Start the MCP server with the SSE transport in another terminal:
-   * Windows: `set FLSTUDIO_MCP_TRANSPORT=tcp && fl-studio-mcp --sse --port 8080`
-   * macOS: `export FLSTUDIO_MCP_TRANSPORT=tcp && .venv/bin/fl-studio-mcp --sse --port 8080`
+   - Windows: `set FLSTUDIO_MCP_TRANSPORT=tcp && fl-studio-mcp --sse --port 8080`
+   - macOS: `export FLSTUDIO_MCP_TRANSPORT=tcp && .venv/bin/fl-studio-mcp --sse --port 8080`
 3. Enable Developer Mode in ChatGPT Desktop (Settings > Developer).
 4. Go to **Settings > Developer > MCP**, click **Add New Server**:
-   * **Name**: `FL Studio`
-   * **Type**: `sse`
-   * **URL**: `http://localhost:8080/sse`
-   * Click **Save**.
+   - **Name**: `FL Studio`
+   - **Type**: `sse`
+   - **URL**: `http://localhost:8080/sse`
+   - Click **Save**.
 
 ### 5. Arm the Note Bridge (Per Session)
 
@@ -280,6 +300,10 @@ Design notes and findings are in [`docs/`](docs/).
 ## License
 
 MIT — see [LICENSE](LICENSE).
+
+# FL Studio Pilot / fls-pilot
+
+> v2.x compatibility note: package names, commands, MIDI ports, and controller identifiers still use `flstudio-mcp` / `fl-studio-mcp` / `FLStudioMCP`.
 
 ## Status & contributing
 
