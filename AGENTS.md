@@ -14,7 +14,7 @@ health checks, or other user-facing MCP workflows.
 Read:
 
 - `docs/agents/runtime-usage.md`
-- `docs/agents/safety-contract.md`
+- `docs/concepts/safety-contract.md`
 
 Optional, only when needed:
 
