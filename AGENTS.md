@@ -37,10 +37,10 @@ Knowledgebase files, workflows, packaging, or project behavior.
 Read:
 
 - `docs/agents/development.md`
-- `docs/agents/safety-contract.md`
+- `docs/concepts/safety-contract.md`
 - `docs/agents/knowledgebase-protocol.md`
 - `docs/engineering/standards.md`
-- `docs/ROADMAP.github.md`
+- `docs/project/ROADMAP.github.md`
 
 For live FL Studio verification, also follow:
 
