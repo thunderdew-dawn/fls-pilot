@@ -20,7 +20,7 @@
 ![LLM](https://img.shields.io/badge/LLM-Claude%20%7C%20ChatGPT%20%7C%20Cursor-blueviolet)
 ![DAW](https://img.shields.io/badge/DAW-FL%20Studio-orange)
 
-[![Documentation Status](https://readthedocs.org/projects/fls-pilot/badge/?version=latest)](https://fls-pilot.readthedocs.io/en/latest/?badge=latest)
+[![Documentation Status](https://fl-studio-pilot.readthedocs.io/en/latest/)
 
 **Rollback-first FL Studio control for MCP-compatible LLMs: AI mixing, composition, project cleanup, routing review, and production assistance through natural language.**
 
