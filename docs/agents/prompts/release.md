@@ -7,7 +7,7 @@ Prepare release <version> for thunderdew-dawn/fls-pilot.
 
 Rules:
 - Read AGENTS.md, docs/agents/github-playbook.md, docs/agents/development.md,
-  docs/ENGINEERING_STANDARDS.md, ROADMAP.md, and the latest GitHub releases.
+  ../../engineering/standards.md, ../../project/ROADMAP.github.md, and the latest GitHub releases.
 - Inspect pyproject.toml, README.md, docs/generated/,
   .github/workflows/release.yml, and release-related workflows.
 - Do not change FL Studio state.

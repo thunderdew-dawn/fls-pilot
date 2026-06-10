@@ -1,6 +1,6 @@
 site_name: fls-pilot
 site_description: Rollback-first FL Studio control for MCP-compatible AI assistants.
-site_url: https://thunderdew-dawn.github.io/fls-pilot/
+site_url: https://fls-pilot.readthedocs.io/
 
 repo_name: thunderdew-dawn/fls-pilot
 repo_url: https://github.com/thunderdew-dawn/fls-pilot
@@ -30,7 +30,7 @@ nav:
       - Tool Reference: user-guide/tool-reference.md
   - Concepts:
       - Architecture: concepts/architecture.md
-      - Safety Model: concepts/safety-model.md
+      - Safety Contract: concepts/safety-contract.md
       - API Capability and Safety Audit: concepts/api-capability-audit.md
       - Senior Developer Audit Criteria: concepts/senior-dev-audit-criteria.md
   - Engineering:

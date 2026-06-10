@@ -104,4 +104,4 @@ fls-pilot is a materially extended and actively maintained fork of `rosasynthesi
 
 The rename from `flstudio-mcp` to `fls-pilot` is intentional and breaking. It avoids package and command-name collisions and makes clear that this fork follows its own release path, compatibility contract, and engineering direction.
 
-Attribution and provenance are documented in `docs/community/notice.md.md`.
+Attribution and provenance are documented in `docs/community/notice.md`.

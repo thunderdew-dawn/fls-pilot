@@ -15,6 +15,6 @@ Rules:
 - Prefer read-only evidence first.
 - If a write is required, define snapshot, smallest write, readback, changelog,
   and rollback before execution.
-- Store reusable findings in Knowledgebase and docs/API_CAPABILITY_AUDIT.md when
+- Store reusable findings in Knowledgebase and ../../concepts/api-capability-audit.md when
   confirmed.
 ```

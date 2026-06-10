@@ -31,7 +31,7 @@ Repository: `thunderdew-dawn/fls-pilot`
 ### GitHub Roadmap Migration
 
 - [P0] #8 [P0: Safety and evidence discipline tracker](https://github.com/thunderdew-dawn/fls-pilot/issues/8) - write-safe-required
-- [P1] #10 [P1: Generate ROADMAP.md and CHANGELOG.md from GitHub](https://github.com/thunderdew-dawn/fls-pilot/issues/10)
+- [P1] #10 [P1: Generate ROADMAP.github.md and CHANGELOG.github.md from GitHub](https://github.com/thunderdew-dawn/fls-pilot/issues/10)
 
 ### M0 Naming & Governance Freeze
 

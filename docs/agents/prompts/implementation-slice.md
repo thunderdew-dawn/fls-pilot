@@ -7,8 +7,8 @@ Claim and execute the first unclaimed implementation slice in issue #<number>.
 
 Rules:
 - Read AGENTS.md, docs/agents/development.md, docs/agents/safety-contract.md,
-  docs/agents/knowledgebase-protocol.md, docs/ENGINEERING_STANDARDS.md,
-  ROADMAP.md, and the issue.
+  docs/agents/knowledgebase-protocol.md, ../../engineering/standards.md,
+  ../../project/ROADMAP.github.md, and the issue.
 - Use only the slice instructions and listed files unless blocked.
 - Do not redesign the feature.
 - Do not change FL Studio state unless the slice explicitly requires a

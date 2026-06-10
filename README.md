@@ -20,6 +20,8 @@
 ![LLM](https://img.shields.io/badge/LLM-Claude%20%7C%20ChatGPT%20%7C%20Cursor-blueviolet)
 ![DAW](https://img.shields.io/badge/DAW-FL%20Studio-orange)
 
+[![Documentation Status](https://readthedocs.org/projects/fls-pilot/badge/?version=latest)](https://fls-pilot.readthedocs.io/en/latest/?badge=latest)
+
 **Rollback-first FL Studio control for MCP-compatible LLMs: AI mixing, composition, project cleanup, routing review, and production assistance through natural language.**
 
 *The LLM assistant diagnosing and fixing a mix in FL Studio through natural language.*
@@ -45,7 +47,13 @@ The highest-value entry points for day-to-day production work are:
 7. **Audio Analyzer:** Analyze external audio files for tempo/key and extract melodies to MIDI when optional audio extras are installed.
 8. **Project Preflight & Health Overview:** Combine mix review, routing review, organization checks, and cleanup suggestions into an export-readiness report.
 
-For detailed usage, examples, and the full tool catalog, see the [User Guide](docs/user-guide/index.md).
+## Documentation
+
+The full documentation is available on Read the Docs:
+
+<https://fls-pilot.readthedocs.io/>
+
+The documentation under `/docs` is the canonical source for the Developer Contract, Knowledgebase Protocol, Engineering Standards, API limits, safety model, and token-efficient MCP design rules.
 
 ## How it Works: 8 Production Phases
 
@@ -179,7 +187,6 @@ FL Studio's Python API is useful, but it does not expose the whole DAW. fls-pilo
 | Rename/color/route tracks     | 🟢 Stable where the API exposes the required metadata/actions | Uses snapshot → write → readback → changelog → rollback                  |
 | Set deep Audio Clip internals | ⛔ Not API-exposed for Stretch/Normalize/sample internals     | Applies safe supported defaults and generates manual checklists          |
 
-
 ## Maintained fork
 
 This repository is a materially extended and actively maintained fork of [`rosasynthesiz/flstudio-mcp`](https://github.com/rosasynthesiz/flstudio-mcp), now developed as [`thunderdew-dawn/fls-pilot`](https://github.com/thunderdew-dawn/fls-pilot).
@@ -188,10 +195,9 @@ The rename from `flstudio-mcp` to `fls-pilot` is intentional and breaking. It av
 
 In short: `flstudio-mcp` is the respected upstream foundation; `fls-pilot` is a renamed, compatibility-breaking maintained fork with a broader client target, stricter safety/governance model, clearer API-limit documentation, and an expanded production-tooling roadmap.
 
-We are grateful for the original work in `rosasynthesiz/flstudio-mcp`. Its concepts and implementation provided the foundation that made this fork possible. Provenance and attribution are documented in `NOTICE.md`.
+We are grateful for the original work in `rosasynthesiz/flstudio-mcp`. Its concepts and implementation provided the foundation that made this fork possible. Provenance and attribution are documented in `docs/community/notice.md`.
 
 Breaking-release sequencing and migration gates are tracked in GitHub Project #7 and [release planning issue #66](https://github.com/thunderdew-dawn/fls-pilot/issues/66).
-
 
 ## Project Status
 
@@ -204,6 +210,7 @@ Public Markdown snapshots are generated from GitHub metadata by the `Sync GitHub
 * [Public changelog snapshot](docs/project/CHANGELOG.github.md)
 
 Do not edit the generated snapshot files manually. Update the GitHub source data or the renderer scripts instead.
+
 * [Release planning issue #66](https://github.com/thunderdew-dawn/fls-pilot/issues/66)
 * [Open release blockers](https://github.com/thunderdew-dawn/fls-pilot/issues?q=is%3Aissue+is%3Aopen+label%3Arelease-blocker)
 * [API-limited work](https://github.com/thunderdew-dawn/fls-pilot/issues?q=is%3Aissue+label%3Aapi-limited)
@@ -213,6 +220,6 @@ Do not edit the generated snapshot files manually. Update the GitHub source data
 * [Workflow-related work](https://github.com/thunderdew-dawn/fls-pilot/issues?q=is%3Aissue+label%3Aarea%3Aworkflow)
 * [Documentation work](https://github.com/thunderdew-dawn/fls-pilot/issues?q=is%3Aissue+label%3Aarea%3Adocs)
 * [GitHub source-of-truth items](https://github.com/thunderdew-dawn/fls-pilot/issues?q=is%3Aissue+label%3Agithub-source-of-truth)
-* [Issues and support](https://github.com/thunderdew-dawn/fls-pilot/issues), plus `SUPPORT.md`
-* [Security policy](SECURITY.md)
+* [Issues and support](https://github.com/thunderdew-dawn/fls-pilot/issues), plus `docs/community/support.md`
+* [Security policy](docs/community/security.md)
 * Generated roadmap/changelog snapshots: `docs/project/` via the `Sync GitHub Markdown Snapshots` workflow
