@@ -1,8 +1,6 @@
 # User Guide
 
-fls-pilot turns FL Studio into a controllable production workspace for MCP-compatible AI assistants. 
-
-This guide is split into focused pages for MkDocs:
+fls-pilot turns FL Studio into a controllable production workspace for MCP-compatible AI assistants. This guide is split into focused pages for MkDocs:
 
 - [Workflows](workflows.md): how users interact with the assistant, common production workflows, and safety classes.
 - [Prompts](prompts.md): reusable prompt patterns and module-specific examples.
