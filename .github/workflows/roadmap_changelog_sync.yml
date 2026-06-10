@@ -1,0 +1,57 @@
+name: Sync GitHub Markdown Snapshots
+
+on:
+  workflow_dispatch:
+  release:
+    types: [published]
+  schedule:
+    - cron: "17 4 * * 1"
+
+permissions:
+  contents: write
+  issues: read
+  pull-requests: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ secrets.PROJECTS_TOKEN || github.token }}
+      GITHUB_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Render generated snapshots
+        run: |
+          python scripts/render_github_roadmap.py --repo "$GITHUB_REPOSITORY" --output docs/project/ROADMAP.github.md
+          python scripts/render_github_changelog.py --repo "$GITHUB_REPOSITORY" --output docs/project/CHANGELOG.github.md
+
+      - name: Create or update snapshot pull request
+        run: |
+          set -euo pipefail
+          branch="automation/github-markdown-snapshots"
+          changed="$(git status --porcelain -- docs/project/ROADMAP.github.md docs/project/CHANGELOG.github.md)"
+          if [ -z "$changed" ]; then
+            echo "No generated markdown changes."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git fetch origin "$branch" || true
+          git checkout -B "$branch"
+          git add docs/project/ROADMAP.github.md docs/project/CHANGELOG.github.md
+          git commit -m "docs: sync GitHub markdown snapshots"
+          git push --force-with-lease origin "$branch"
+          existing="$(gh pr list --head "$branch" --json number --jq '.[0].number // empty')"
+          if [ -n "$existing" ]; then
+            gh pr edit "$existing" --title "docs: sync GitHub markdown snapshots" \
+              --body "Automated GitHub issue/release snapshot refresh."
+          else
+            gh pr create --head "$branch" --base main \
+              --title "docs: sync GitHub markdown snapshots" \
+              --body "Automated GitHub issue/release snapshot refresh."
+          fi
