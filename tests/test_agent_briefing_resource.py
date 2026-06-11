@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import asyncio
 
-from fls_pilot.server import build_server
+from fls_pilot.server import SERVER_INSTRUCTIONS, build_server
 
 
 def _text(resource_result) -> str:
@@ -39,7 +39,32 @@ def test_agent_briefing_resource_is_compact_and_current() -> None:
     assert "snapshot" in text
     assert "readback" in text
     assert "rollback" in text
+    for token in (
+        "scan/read-only first",
+        "explicit confirmation",
+        "one reversible change",
+        "risk level",
+        "before/after",
+        "rollback",
+        "change_id",
+        "stop",
+    ):
+        assert token in text
     assert "fl_ping" not in text
     assert "fl_get_tempo" not in text
     assert "fl_plugin_list" not in text
     assert "fl_piano_write_notes" not in text
+
+
+def test_server_instructions_include_default_safe_ux_contract() -> None:
+    for token in (
+        "scan/read-only first",
+        "risk level",
+        "explicit confirmation",
+        "one reversible change",
+        "Readback",
+        "before/after",
+        "rollback/change_id",
+        "Stop",
+    ):
+        assert token in SERVER_INSTRUCTIONS

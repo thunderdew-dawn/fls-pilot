@@ -8,6 +8,7 @@ Use this when the user wants to review the current FL Studio mix.
 - `fl://status`
 - `docs/agents/runtime-usage.md`
 - `docs/concepts/safety-contract.md`
+- `docs/concepts/default-safe-ux.md`
 
 ## Workflow
 
@@ -19,9 +20,11 @@ Use this when the user wants to review the current FL Studio mix.
    - critical mix risks
    - low-end/stereo issues
    - routing or gain-staging problems
-   - safe next actions
-6. Do not mutate FL Studio state unless the user explicitly approves a
-   rollback-backed write.
+   - exactly one safest reversible next action
+6. Include the risk level for the proposed next action.
+7. Ask for explicit confirmation before calling any write tool.
+8. If confirmed, apply at most one small reversible change, read back where
+   supported, report before/after plus rollback or `change_id`, then stop.
 
 ## Stop Conditions
 
@@ -40,5 +43,6 @@ Return:
 1. Session/bridge status.
 2. Mix review summary.
 3. Top risks in priority order.
-4. Safe next actions.
-5. Any unsupported or unverified behavior that must not be implied as complete.
+4. One proposed reversible next action with risk level.
+5. Confirmation request, or applied before/after plus rollback or `change_id`.
+6. Any unsupported or unverified behavior that must not be implied as complete.

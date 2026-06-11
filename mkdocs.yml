@@ -31,6 +31,7 @@ nav:
   - Concepts:
       - Architecture: concepts/architecture.md
       - Safety Contract: concepts/safety-contract.md
+      - Default Safe UX: concepts/default-safe-ux.md
       - API Capability and Safety Audit: concepts/api-capability-audit.md
       - Senior Developer Audit Criteria: concepts/senior-dev-audit-criteria.md
   - Engineering:
