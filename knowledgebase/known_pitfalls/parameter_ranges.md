@@ -8,9 +8,9 @@ UI values, dB, Hz, percentages, MIDI-CC, and normalized values **must not be mix
 mixer.setEqGain(5, 0, -14)
 ```
 
-**Correct Example (High-Level Wrapper):**
+**Correct Example (Public MCP domain tool with calibrated knowledge):**
 ```python
-set_internal_mixer_eq_gain_db(track=5, band=0, db=-14)
+fl_effect(action="set_eq_band", params={"track": 5, "band": 0, "gain": 0.2502})
 ```
 
 **Correct Example (API with calibrated knowledge):**

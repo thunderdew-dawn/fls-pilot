@@ -7,7 +7,7 @@ selection, indexing, readback timing, or undocumented API behavior.
 Plan API/compatibility probe for issue #<number>.
 
 Rules:
-- Read AGENTS.md, docs/agents/safety-contract.md,
+- Read AGENTS.md, docs/concepts/safety-contract.md,
   docs/agents/knowledgebase-protocol.md, docs/agents/runtime-usage.md, and the
   issue.
 - Check Knowledgebase first.
@@ -15,6 +15,6 @@ Rules:
 - Prefer read-only evidence first.
 - If a write is required, define snapshot, smallest write, readback, changelog,
   and rollback before execution.
-- Store reusable findings in Knowledgebase and ../../concepts/api-capability-audit.md when
+- Store reusable findings in Knowledgebase and docs/concepts/api-capability-audit.md when
   confirmed.
 ```

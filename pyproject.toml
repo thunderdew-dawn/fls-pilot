@@ -46,6 +46,11 @@ dev = [
     "pytest-asyncio>=0.23",
     "ruff>=0.5",
 ]
+docs = [
+    "mkdocs",
+    "mkdocs-material",
+    "pymdown-extensions",
+]
 # Audio analysis (Integration 2/3). Needs ffmpeg on PATH for MP3 decoding.
 audio = [
     "librosa>=0.10",

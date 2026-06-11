@@ -3,7 +3,6 @@
 ![version](https://img.shields.io/badge/version-3.0.0a1-blue)
 ![status](https://img.shields.io/badge/status-alpha-orange)
 [![CI](https://github.com/thunderdew-dawn/fls-pilot/actions/workflows/ci.yml/badge.svg)](https://github.com/thunderdew-dawn/fls-pilot/actions/workflows/ci.yml)
-[![CodeQL](https://github.com/thunderdew-dawn/fls-pilot/actions/workflows/codeql.yml/badge.svg)](https://github.com/thunderdew-dawn/fls-pilot/actions/workflows/codeql.yml)
 ![license](https://img.shields.io/badge/license-MIT-green)
 
 ![Python](https://img.shields.io/badge/python-3.10+-blue)
@@ -20,7 +19,7 @@
 ![LLM](https://img.shields.io/badge/LLM-Claude%20%7C%20ChatGPT%20%7C%20Cursor-blueviolet)
 ![DAW](https://img.shields.io/badge/DAW-FL%20Studio-orange)
 
-[![Documentation Status](https://fl-studio-pilot.readthedocs.io/en/latest/)
+[![Documentation Status](https://readthedocs.org/projects/fl-studio-pilot/badge/?version=latest)](https://fl-studio-pilot.readthedocs.io/en/latest/)
 
 **Rollback-first FL Studio control for MCP-compatible LLMs: AI mixing, composition, project cleanup, routing review, and production assistance through natural language.**
 
@@ -51,7 +50,7 @@ The highest-value entry points for day-to-day production work are:
 
 The full documentation is available on Read the Docs:
 
-<https://fls-pilot.readthedocs.io/>
+<https://fl-studio-pilot.readthedocs.io/en/latest/>
 
 The documentation under `/docs` is the canonical source for the Developer Contract, Knowledgebase Protocol, Engineering Standards, API limits, safety model, and token-efficient MCP design rules.
 

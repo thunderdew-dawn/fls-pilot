@@ -136,16 +136,18 @@ Current priority order:
 - Use sensible, staged commits throughout implementation.
 - Each commit should represent a backportable feature slice or a tightly scoped
   fix.
+- Follow [GitHub Workflow Governance](github-workflow-governance.md) for
+  permanent branches, short-lived branches, release lines, and tag rules.
 - Prefer small PR slices that downstream or sister projects can cherry-pick.
 - Commit messages must describe what changed and why, in English.
 - Avoid mixing unrelated formatting, cleanup, and feature work.
 - Update README, roadmap, API audit, or docs when tool behavior or safety
   guarantees change.
 - Keep the GitHub roadmap issue or milestone current as the planning source of
-  truth for open work. `../project/ROADMAP.github.md`, `../project/CHANGELOG.github.md`, and `docs/generated/`
-  are readable snapshots backed by the GitHub-to-Markdown workflow, so update
-  snapshot Markdown only intentionally or through the configured snapshot
-  workflow.
+  truth for open work. `docs/project/ROADMAP.github.md` and
+  `docs/project/CHANGELOG.github.md` are readable snapshots backed by the
+  GitHub-to-Markdown workflow, so update snapshot Markdown only intentionally or
+  through the configured snapshot workflow.
 
 ## Testing And Verification
 

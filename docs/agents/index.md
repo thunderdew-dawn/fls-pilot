@@ -11,7 +11,7 @@ For user-facing runtime workflows such as Mix Review, Routing Review, Project
 Organizer, bridge/session checks, audio analysis, or MIDI export, read:
 
 - [Runtime Usage](runtime-usage.md)
-- [Safety Contract](../concepts/safety-model.md)
+- [Safety Contract](../concepts/safety-contract.md)
 
 Use prompt files only for the active workflow:
 
@@ -25,10 +25,10 @@ For code, tests, docs, controller files, scripts, workflows, packaging, or
 Knowledgebase changes, read:
 
 - [Development Guide](development.md)
-- [Safety Contract](../concepts/safety-model.md)
+- [Safety Contract](../concepts/safety-contract.md)
 - [Knowledgebase Protocol](knowledgebase-protocol.md)
-- `../engineering/standards.md`
-- `../project/ROADMAP.github.md`
+- `docs/engineering/standards.md`
+- `docs/project/ROADMAP.github.md`
 
 ### GitHub Operations
 
@@ -36,8 +36,8 @@ For issues, PRs, roadmap planning, releases, CI, security, hotfixes, reverts,
 API probes, backports, or review-only work, read:
 
 - [GitHub Playbook](github-playbook.md)
-- `github-playbook.md`
-- `../project/ROADMAP.github.md`
+- [GitHub Workflow Governance](../engineering/github-workflow-governance.md)
+- `docs/project/ROADMAP.github.md`
 
 Then use the focused prompt file for the exact operation.
 

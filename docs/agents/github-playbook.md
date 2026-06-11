@@ -13,9 +13,12 @@ agent chats are execution surfaces, not durable planning storage.
   #7 is canonical.
 - Every non-trivial change starts with a GitHub issue or updates an existing
   one.
-- Keep `../project/ROADMAP.github.md` and `../project/CHANGELOG.github.md` as snapshots. Use generated files in
-  `docs/generated/` and the snapshot workflow for GitHub-backed views.
+- Keep `docs/project/ROADMAP.github.md` and `docs/project/CHANGELOG.github.md`
+  as generated snapshots backed by the snapshot workflow.
 - Use small PRs. Each PR should close or materially advance one issue.
+- Branching, permanent branch protection expectations, release lines, and tag
+  rules are summarized in
+  [GitHub Workflow Governance](../engineering/github-workflow-governance.md).
 - Persistent FL Studio writes still require snapshot, readback, changelog, and
   rollback. If evidence is unclear, ship read-only, dry-run, probe-only, or
   manual guidance.
@@ -42,6 +45,9 @@ agent chats are execution surfaces, not durable planning storage.
   has identified the relevant files.
 - Use GitHub labels and Project fields to route work instead of restating
   priorities in every chat.
+- Project #7 field names are case-sensitive in human-facing documentation:
+  `Status`, `Roadmap Lane`, `Priority`, `Area`, `Type`, `Safety`, `PM Track`,
+  `Risk`, `Effort`, `Blocked by`, and `PM Iteration`.
 
 ## Use Case 1: Human Wants A Local IDE Agent To Implement An Idea
 
@@ -51,11 +57,12 @@ agent chats are execution surfaces, not durable planning storage.
 2. Add the intended outcome, safety class, relevant FL API evidence, and known
    unsupported boundaries.
 3. Assign labels and Project fields:
-   - `priority:p0` through `priority:p3`
-   - `area:*`
-   - `type:*`
-   - `read-only`, `write-safe-required`, `api-dependent`, or `dry-run-only`
-4. Move the issue into the intended Project #7 lane.
+   - labels: `priority:p0` through `priority:p3`, `area:*`, `type:*`,
+     `read-only`, `write-safe-required`, `api-dependent`, or `dry-run-only`;
+   - Project fields: `Status`, `Roadmap Lane`, `Priority`, `Area`, `Type`,
+     `Safety`, and any relevant `PM Track`, `Risk`, `Effort`, `Blocked by`, or
+     `PM Iteration` value.
+4. Set `Roadmap Lane` to the intended Project #7 lane.
 5. Start the local IDE agent with the prompt below.
 
 ### Local Agent Prompt
@@ -64,7 +71,8 @@ agent chats are execution surfaces, not durable planning storage.
 Work on GitHub issue #<number> in thunderdew-dawn/fls-pilot.
 
 Rules:
-- Read AGENTS.md, ../engineering/standards.md, ../project/ROADMAP.github.md, and the issue.
+- Read AGENTS.md, docs/engineering/standards.md, docs/project/ROADMAP.github.md,
+  and the issue.
 - Treat GitHub issue/project state as the planning source of truth.
 - Do not perform FL Studio writes.
 - If the task needs live FL evidence, prepare a read-only or rollback-safe probe
@@ -169,7 +177,8 @@ PR strategy:
 <one PR or multiple PRs>
 
 GitHub field updates:
-<labels, milestone, Project #7 lane/status changes>
+<labels, milestone, Project #7 `Status`, `Roadmap Lane`, `Priority`, `Safety`,
+and PM-field changes>
 
 Rules for agents:
 - Take the first unclaimed slice.
@@ -212,7 +221,7 @@ Focus:
 ### Completion Criteria
 
 - All slices are closed, merged, or explicitly blocked in the issue.
-- Project #7 lane/status reflects reality.
+- Project #7 `Status` and `Roadmap Lane` reflect reality.
 - Snapshot docs are updated through the GitHub snapshot workflow when needed.
 
 ## Use Case 3: User Reports A Bug And An Agent Fixes It
@@ -247,7 +256,8 @@ Tasks:
 Fix GitHub bug issue #<number>.
 
 Rules:
-- Read AGENTS.md, ../engineering/standards.md, ../project/ROADMAP.github.md, and the issue.
+- Read AGENTS.md, docs/engineering/standards.md, docs/project/ROADMAP.github.md,
+  and the issue.
 - Reproduce or explain why reproduction is impossible.
 - Keep the fix minimal and scoped to the bug.
 - Do not weaken safety or rollback behavior.
@@ -309,7 +319,8 @@ Rules:
    - needs more evidence
    - duplicate
    - rejected/not planned
-3. If accepted, set labels, milestone, Project lane, priority, and safety class.
+3. If accepted, set labels, milestone, `Roadmap Lane`, `Priority`, `Safety`,
+   and any relevant PM fields.
 4. If rejected, close as not planned with a clear safety/product reason.
 5. If evidence is missing, create or link an API Probe issue.
 
@@ -324,14 +335,21 @@ Scope:
 Out of scope:
 - <what must not be implemented>
 
-Safety class:
-- <read-only | transient | write-safe required | api-dependent | dry-run-only>
+Safety:
+- <Read-only | Write-safe required | API-dependent | Mixed/manual>
 
 Planning fields:
+- Status: <Todo/Next/In progress/Done>
 - Priority: <P0/P1/P2/P3>
 - Milestone: <milestone>
-- Roadmap Lane: <Now/Next/Later>
-- Target iteration/quarter, if relevant: <value or none>
+- Roadmap Lane: <Now/Next/Later/Blocked/Done>
+- Area: <Safety/Workflow/Docs/GitHub/KB/UX/API>
+- Type: <Roadmap/Workflow/Doctor/Report/GitHub Sync>
+- PM Track: <Safety/Setup/Review/Preflight/Organizer/Governance/Research/Release/none>
+- Risk: <Low/Medium/High/API-dependent/none>
+- Effort: <number or none>
+- PM Iteration: <configured iteration or none>
+- Blocked by: <blocking issue, dependency, short reason, or none>
 
 Next step:
 - High-reasoning planning agent should produce an implementation plan and slice
@@ -400,8 +418,9 @@ Release agent prompt:
 Prepare release <version> for thunderdew-dawn/fls-pilot.
 
 Rules:
-- Inspect pyproject.toml, README.md, docs/generated/, .github/workflows/release.yml,
-  and the latest GitHub releases.
+- Inspect pyproject.toml, README.md, docs/project/ROADMAP.github.md,
+  docs/project/CHANGELOG.github.md, .github/workflows/release.yml, and the
+  latest GitHub releases.
 - Do not change FL Studio state.
 - Run Release Dry Run before tagging.
 - Verify dist metadata with twine check.
@@ -600,7 +619,7 @@ Rules:
 - Prefer read-only evidence first.
 - If a write is required, define snapshot, smallest write, readback, changelog,
   and rollback before execution.
-- Store reusable findings in Knowledgebase and ../concepts/api-capability-audit.md
+- Store reusable findings in Knowledgebase and docs/concepts/api-capability-audit.md
   when confirmed.
 ```
 
@@ -659,7 +678,7 @@ gh workflow run release_dry_run.yml --repo thunderdew-dawn/fls-pilot --ref main
 Agents must stop and ask for human decision when:
 
 - the requested behavior conflicts with `AGENTS.md` or
-  `../engineering/standards.md`;
+  `docs/engineering/standards.md`;
 - FL Studio API support, target selection, rollback, readback, or value ranges
   are unclear;
 - implementation would require prohibited automation;

@@ -1,7 +1,7 @@
 # MCP Tool Policy
 
 ## Tool Hierarchy
-1. **Use High-Level Safe Tools** (e.g. `set_internal_mixer_eq_gain_db`).
+1. **Use High-Level Safe Tools** (e.g. `fl_effect(action="set_eq_band", ...)`).
 2. **Use Calibrated Conversion Tools**, if no high-level tools are available.
 3. **Raw FL Studio API only as a Last Resort** (e.g. `mixer.setEqGain`).
 4. **Never guess normalized values!**
@@ -15,5 +15,8 @@ mixer.setEqGain(5, 0, -14)
 
 **Allowed:**
 ```python
-set_internal_mixer_eq_gain_db(track=5, band="low", db=-14)
+fl_effect(action="set_eq_band", params={"track": 5, "band": 0, "gain": 0.2502})
 ```
+
+Retired direct wrappers such as `set_internal_mixer_eq_gain_db` are not public
+MCP tools. Use the registered domain tools and verified Knowledgebase mappings.
