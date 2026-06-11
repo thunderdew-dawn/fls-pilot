@@ -48,6 +48,8 @@ snapshot -> write -> readback -> validate -> rollback on failure
 * No blind writes.
 * Every tool-level mutation is rollback-capable.
 * `audit_tool_safety.py --fail-on-gaps` runs in CI and blocks unsafe changes.
+* `audit_tool_safety.py --fail-on-missing-safety-docs --format json` runs in
+  CI and blocks missing or stale public safety annotations.
 
 ---
 

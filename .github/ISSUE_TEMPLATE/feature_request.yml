@@ -26,7 +26,7 @@ body:
       options:
         - read-only
         - transient
-        - write-safe
+        - write-safe-required
         - dry-run-only
         - api-dependent
         - unknown

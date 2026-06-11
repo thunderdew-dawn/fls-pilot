@@ -127,7 +127,7 @@ def register(mcp: FastMCP) -> None:
         "destructiveHint": False,
         "idempotentHint": True,
         "openWorldHint": True,
-        "safetyClass": "write-safe",
+        "safetyClass": "write-safe-required",
     }
 
     @mcp.tool(annotations={"title": "Get channel details", **_RO})
@@ -167,7 +167,7 @@ def register(mcp: FastMCP) -> None:
     ) -> dict:
         """Rename a channel. Snapshot + readback; rollback restores the prior name.
 
-        Safety: Write-Safe with Rollback.
+        Safety: Write-Safe-Required with Rollback.
         """
         return safety.safe_write(
             get_bridge(),
@@ -188,7 +188,7 @@ def register(mcp: FastMCP) -> None:
     ) -> dict:
         """Route a channel to a mixer track. Rollback restores the previous target.
 
-        Safety: Write-Safe with Rollback.
+        Safety: Write-Safe-Required with Rollback.
         """
         bridge = get_bridge()
         error = mixer_track_error(bridge, mixer_track, purpose="channel mixer-target assignment")
@@ -214,7 +214,7 @@ def register(mcp: FastMCP) -> None:
         This does not rename or color the mixer track; it only changes the
         channel's mixer target so rollback remains one small restore.
 
-        Safety: Write-Safe with Rollback.
+        Safety: Write-Safe-Required with Rollback.
         """
         bridge = get_bridge()
         track = _find_free_mixer_track(bridge, start_track=start_track)
@@ -280,7 +280,7 @@ def register(mcp: FastMCP) -> None:
     ) -> dict:
         """Set or clear a single step sequencer step and its parameters.
 
-        Safety: Write-Safe with Rollback.
+        Safety: Write-Safe-Required with Rollback.
         """
         params = {"step": step, "value": value}
         if velocity is not None:
@@ -321,7 +321,7 @@ def register(mcp: FastMCP) -> None:
     ) -> dict:
         """Set one step parameter with rollback-safe snapshot/readback.
 
-        Safety: Write-Safe with Rollback.
+        Safety: Write-Safe-Required with Rollback.
         """
         key = parameter.strip().lower()
         payload: dict[str, object] = {"step": step}
@@ -371,7 +371,7 @@ def register(mcp: FastMCP) -> None:
     ) -> dict:
         """Set or clear multiple steps and parameters in a single batch.
 
-        Safety: Write-Safe with Rollback.
+        Safety: Write-Safe-Required with Rollback.
         """
         validated_steps = []
         for s in steps:
@@ -421,7 +421,7 @@ def register(mcp: FastMCP) -> None:
     ) -> dict:
         """Wipe all step sequencer steps for a channel in the current pattern.
 
-        Safety: Write-Safe with Rollback.
+        Safety: Write-Safe-Required with Rollback.
         """
         bridge = get_bridge()
         selected = bridge.call(protocol.CMD_PATTERN_SELECTED)
@@ -542,7 +542,7 @@ def register(mcp: FastMCP) -> None:
     def fl_apply_audio_clip_safe_defaults() -> dict:
         """Apply safe defaults to all Audio Clips (lower volume to 25%, assign to free mixer tracks).
 
-        Safety: Write-Safe with Rollback.
+        Safety: Write-Safe-Required with Rollback.
         """
         bridge = get_bridge()
         chans = fetch_all_pages(bridge, protocol.CMD_CHANNEL_ROUTING_SUMMARY, "channels")

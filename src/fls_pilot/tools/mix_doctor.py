@@ -54,7 +54,7 @@ def register(mcp: FastMCP) -> None:
         "destructiveHint": False,
         "idempotentHint": False,
         "openWorldHint": True,
-        "safetyClass": "write-safe",
+        "safetyClass": "write-safe-required",
     }
 
     def _result(snap):
@@ -222,7 +222,7 @@ def register(mcp: FastMCP) -> None:
         to target_db. For grouping use fl_group_tracks; for EQ use
         fl_apply_eq_intent.
 
-        Safety: Write-Safe with Rollback.
+        Safety: Write-Safe-Required with Rollback.
         """
         if kind != "trim_volume":
             return {

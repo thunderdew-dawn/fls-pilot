@@ -92,6 +92,33 @@ def test_safe_write_group_success_reads_back_each_write(isolated_safety_log) -> 
     assert isolated_safety_log.recent(1)[0]["rollback_unit"] == "mute_pair"
 
 
+def test_safe_write_success_reports_rollback_guidance(isolated_safety_log) -> None:
+    bridge = GroupBridge()
+
+    result = safety.safe_write(
+        bridge,
+        tool="single_mute",
+        scope="mixer_track:1",
+        command=protocol.CMD_MIXER_SET_MUTE,
+        params={"track": 1, "state": True},
+        verify=("mute", True),
+        rollback_unit="single_mute_unit",
+        build_restore=lambda before: {
+            "command": protocol.CMD_MIXER_SET_MUTE,
+            "params": {"track": 1, "state": before["mute"]},
+        },
+    )
+
+    assert result["ok"] is True
+    assert result["change_id"].startswith("chg_")
+    assert result["before"]["mute"] is False
+    assert result["after"]["mute"] is True
+    assert result["rollback"]["change_id"] == result["change_id"]
+    assert result["rollback"]["rollback_unit"] == "single_mute_unit"
+    assert "fl_rollback_change" in result["undo"]
+    assert result["change_id"] in result["undo"]
+
+
 def test_safe_write_group_dry_run_validates_without_snapshotting(isolated_safety_log) -> None:
     bridge = GroupBridge()
     safety.set_dry_run(True)
@@ -213,6 +240,9 @@ def test_safe_write_group_successful_group_rolls_back_as_one_unit(
         rollback_unit="mute_pair",
     )
     assert result["ok"] is True
+    assert result["rollback"]["change_id"] == result["change_id"]
+    assert result["rollback"]["rollback_unit"] == "mute_pair"
+    assert "fl_rollback_last_change" in result["undo"]
 
     rollback = safety.rollback_last_change(bridge)
 

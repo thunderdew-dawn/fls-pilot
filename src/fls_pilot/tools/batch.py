@@ -31,7 +31,7 @@ def _read_only_whitelist() -> frozenset[tuple[str, str]]:
         if (
             spec.batch_eligible
             and spec.batch_category == "read_only"
-            and spec.safety_class == "read-only"
+            and spec.safety_class == operation_registry.READ_ONLY
         )
     )
 
@@ -43,7 +43,7 @@ def _persistent_write_whitelist() -> frozenset[tuple[str, str]]:
         if (
             spec.batch_eligible
             and spec.batch_category == "persistent_write"
-            and spec.safety_class == "write-safe"
+            and spec.requires_write_contract
         )
     )
 
@@ -62,7 +62,7 @@ def register(mcp: FastMCP) -> None:
             "destructiveHint": False,
             "idempotentHint": False,
             "openWorldHint": True,
-            "safetyClass": "write-safe",
+            "safetyClass": "write-safe-required",
         },
     )
     def fl_batch(
@@ -100,7 +100,7 @@ def register(mcp: FastMCP) -> None:
         runtime controls, external writes, raw protocol commands, generated
         script/code text, and Piano Roll generated-script actions are rejected.
 
-        Safety: Write-Safe with Rollback for persistent writes; Read-Only for
+        Safety: Write-Safe-Required with Rollback for persistent writes; Read-Only for
         read batches.
         """
         prepared = _prepare_batch(operations)
@@ -204,9 +204,9 @@ def _validate_batch_whitelist(item: operation_registry.PreparedOperation, index:
     key = (item.domain, item.action)
     if key in READ_ONLY_BATCH_WHITELIST or key in PERSISTENT_WRITE_BATCH_WHITELIST:
         return
-    if item.safety_class == "transient":
+    if item.safety_class == operation_registry.TRANSIENT:
         raise ValueError(f"operation {index} is transient and is not allowed in fl_batch")
-    if item.safety_class == "write-safe":
+    if item.requires_write_contract:
         raise ValueError(f"operation {index} is not whitelisted for persistent write batching")
     raise ValueError(f"operation {index} is not whitelisted for fl_batch")
 

@@ -99,7 +99,7 @@ def register(mcp: FastMCP) -> None:
         "destructiveHint": False,
         "idempotentHint": False,
         "openWorldHint": True,
-        "safetyClass": "write-safe",
+        "safetyClass": "write-safe-required",
     }
 
     @mcp.tool(annotations={"title": "Color mixer tracks", **_WR})
@@ -133,7 +133,7 @@ def register(mcp: FastMCP) -> None:
         All writes are ONE rollback unit -- fl_rollback_last_change reverts them.
         (Master is never colored.)
 
-        Safety: Write-Safe with Rollback.
+        Safety: Write-Safe-Required with Rollback.
         """
         rgb = parse_color(color)
         if rgb is None:
@@ -198,7 +198,7 @@ def register(mcp: FastMCP) -> None:
         color). Target by index or name substring. ONE rollback unit --
         fl_rollback_last_change reverts it.
 
-        Safety: Write-Safe with Rollback.
+        Safety: Write-Safe-Required with Rollback.
         """
         rgb = parse_color(color)
         if rgb is None:

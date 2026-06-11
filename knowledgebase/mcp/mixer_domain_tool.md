@@ -32,15 +32,15 @@ which validates the action and parameters using the existing
 | `get` | read-only | Single track read |
 | `get_selected` | read-only | Currently selected track |
 | `get_route` | read-only | Routing read for a track |
-| `select` | write-safe | Rollback restores prior selection |
-| `set_color` | write-safe | Accepts int or r/g/b |
-| `set_mute` | write-safe | Verify pair on mute field |
-| `set_name` | write-safe | |
-| `set_pan` | write-safe | Range -1..1 |
-| `set_route` | write-safe | Verify pair on enabled field |
-| `set_solo` | write-safe | Verify pair on solo field |
-| `set_stereo_separation` | write-safe | Range -1..1 |
-| `set_volume` | write-safe | unit: normalized or db |
+| `select` | write-safe-required | Rollback restores prior selection |
+| `set_color` | write-safe-required | Accepts int or r/g/b |
+| `set_mute` | write-safe-required | Verify pair on mute field |
+| `set_name` | write-safe-required | |
+| `set_pan` | write-safe-required | Range -1..1 |
+| `set_route` | write-safe-required | Verify pair on enabled field |
+| `set_solo` | write-safe-required | Verify pair on solo field |
+| `set_stereo_separation` | write-safe-required | Range -1..1 |
+| `set_volume` | write-safe-required | unit: normalized or db |
 
 ---
 
@@ -55,7 +55,7 @@ which validates the action and parameters using the existing
 - All writes go through `safety.safe_write` via `prepared.safe_write_kwargs`.
   This guarantees: scoped snapshot → write → readback → changelog →
   rollback restore.
-- The tool annotation is `write-safe` because the tool can execute
+- The tool annotation is `write-safe-required` because the tool can execute
   persistent writes; individual action safety is enforced by registry
   dispatch and documented in the docstring.
 

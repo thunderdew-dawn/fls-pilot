@@ -158,6 +158,8 @@ def _entry_summary(entry: dict) -> dict:
     }
     if entry.get("rollback_note"):
         out["rollback_note"] = entry.get("rollback_note")
+    if entry.get("change_id"):
+        out["undo"] = _undo_text(entry["change_id"])
     return out
 
 
@@ -261,6 +263,23 @@ def _dry_run_plan(tool, command, params):
         "ok": True,
         "dry_run": True,
         "planned": {"tool": tool, "command": command, "params": params},
+    }
+
+
+def _undo_text(change_id: str) -> str:
+    return (
+        f"call fl_rollback_change(change_id={change_id!r}) while it is the latest "
+        "change, or fl_rollback_last_change()"
+    )
+
+
+def _rollback_guidance(entry: Mapping) -> dict:
+    change_id = str(entry["change_id"])
+    return {
+        "change_id": change_id,
+        "rollback_unit": entry.get("rollback_unit") or entry.get("tool"),
+        "rollback_path": "MCP safety changelog",
+        "undo": _undo_text(change_id),
     }
 
 
@@ -449,7 +468,14 @@ def safe_write(
             "ts": time.time(),
         }
     )
-    return {"ok": True, "change_id": entry["change_id"], "before": before, "after": after}
+    return {
+        "ok": True,
+        "change_id": entry["change_id"],
+        "rollback": _rollback_guidance(entry),
+        "undo": _undo_text(entry["change_id"]),
+        "before": before,
+        "after": after,
+    }
 
 
 def safe_piano_roll_write(bridge, *, tool, params, apply):
@@ -483,9 +509,11 @@ def safe_piano_roll_write(bridge, *, tool, params, apply):
     return {
         "ok": True,
         "change_id": entry["change_id"],
+        "rollback": _rollback_guidance(entry),
+        "undo": _undo_text(entry["change_id"]),
         "before": before,
         "after": result,
-        "rollback": "fl_rollback_last_change uses FL Studio undo for this Piano Roll edit",
+        "rollback_note": "fl_rollback_last_change uses FL Studio undo for this Piano Roll edit",
     }
 
 
@@ -609,7 +637,14 @@ def safe_write_group(bridge, *, tool, scope, writes, rollback_unit=None):
             "ts": time.time(),
         }
     )
-    return {"ok": True, "change_id": entry["change_id"], "before": befores, "after": afters}
+    return {
+        "ok": True,
+        "change_id": entry["change_id"],
+        "rollback": _rollback_guidance(entry),
+        "undo": _undo_text(entry["change_id"]),
+        "before": befores,
+        "after": afters,
+    }
 
 
 def rollback_last_change(bridge):

@@ -26,7 +26,7 @@ def register(mcp: FastMCP) -> None:
         "destructiveHint": False,
         "idempotentHint": True,
         "openWorldHint": True,
-        "safetyClass": "write-safe",
+        "safetyClass": "write-safe-required",
     }
 
     # ---- Pattern Reads ------------------------------------------------------
@@ -67,7 +67,7 @@ def register(mcp: FastMCP) -> None:
     ) -> dict:
         """Make a pattern active; rollback restores the previously selected pattern.
 
-        Safety: Write-Safe with Rollback.
+        Safety: Write-Safe-Required with Rollback.
         """
         return safety.safe_write(
             get_bridge(),
@@ -88,7 +88,7 @@ def register(mcp: FastMCP) -> None:
     ) -> dict:
         """Rename a pattern; rollback restores the previous name.
 
-        Safety: Write-Safe with Rollback.
+        Safety: Write-Safe-Required with Rollback.
         """
         return safety.safe_write(
             get_bridge(),
@@ -112,7 +112,7 @@ def register(mcp: FastMCP) -> None:
     ) -> dict:
         """Set a pattern color; rollback restores the previous color integer.
 
-        Safety: Write-Safe with Rollback.
+        Safety: Write-Safe-Required with Rollback.
         """
         params: dict = {"index": index}
         if color is not None:
@@ -138,7 +138,7 @@ def register(mcp: FastMCP) -> None:
     ) -> dict:
         """Set a pattern length; rollback restores the previous length.
 
-        Safety: Write-Safe with Rollback. On FL builds where pattern length
+        Safety: Write-Safe-Required with Rollback. On FL builds where pattern length
         writes are unavailable, readback failure prevents a persistent change
         from being reported as successful.
         """
@@ -191,7 +191,7 @@ def register(mcp: FastMCP) -> None:
     ) -> dict:
         """Mute or unmute a playlist track (state=True mutes).
 
-        Safety: Write-Safe with Rollback.
+        Safety: Write-Safe-Required with Rollback.
         """
         return safety.safe_write(
             get_bridge(),
@@ -213,7 +213,7 @@ def register(mcp: FastMCP) -> None:
     ) -> dict:
         """Solo or unsolo a playlist track (state=True solos).
 
-        Safety: Write-Safe with Rollback.
+        Safety: Write-Safe-Required with Rollback.
         """
         return safety.safe_write(
             get_bridge(),
@@ -235,7 +235,7 @@ def register(mcp: FastMCP) -> None:
     ) -> dict:
         """Rename a playlist track.
 
-        Safety: Write-Safe with Rollback.
+        Safety: Write-Safe-Required with Rollback.
         """
         return safety.safe_write(
             get_bridge(),
@@ -262,7 +262,7 @@ def register(mcp: FastMCP) -> None:
     ) -> dict:
         """Set color for a playlist track.
 
-        Safety: Write-Safe with Rollback.
+        Safety: Write-Safe-Required with Rollback.
         """
         params: dict = {"index": index}
         if color is not None:
@@ -291,7 +291,7 @@ def register(mcp: FastMCP) -> None:
     ) -> dict:
         """Select or deselect a playlist track.
 
-        Safety: Write-Safe with Rollback.
+        Safety: Write-Safe-Required with Rollback.
         """
         return safety.safe_write(
             get_bridge(),

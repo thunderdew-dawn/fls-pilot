@@ -31,4 +31,4 @@ Return:
 1. Current routing risks.
 2. Bus/send/grouping issues.
 3. Proposed cleanup steps.
-4. Which steps are read-only, dry-run, or write-safe required.
+4. Which steps are read-only, dry-run, or write-safe-required.

@@ -17,6 +17,35 @@ from . import protocol
 SafetyClass = str
 BatchCategory = str
 
+READ_ONLY = "read-only"
+TRANSIENT = "transient"
+SERVER_STATE = "server-state"
+EXTERNAL_WRITE = "external-write"
+WRITE_SAFE_REQUIRED = "write-safe-required"
+FORBIDDEN = "forbidden"
+
+_VALID_SAFETY_CLASSES = frozenset(
+    {
+        READ_ONLY,
+        TRANSIENT,
+        SERVER_STATE,
+        EXTERNAL_WRITE,
+        WRITE_SAFE_REQUIRED,
+        FORBIDDEN,
+    }
+)
+_PERSISTENT_WRITE_CLASSES = frozenset({WRITE_SAFE_REQUIRED})
+
+
+def contract_safety_class(safety_class: SafetyClass) -> SafetyClass:
+    """Return the issue-level safety vocabulary for an internal class."""
+
+    return safety_class
+
+
+def is_persistent_write_safety_class(safety_class: SafetyClass) -> bool:
+    return safety_class in _PERSISTENT_WRITE_CLASSES
+
 
 class OperationValidationError(ValueError):
     """Raised when an operation id or operation parameters are invalid."""
@@ -55,6 +84,14 @@ class PreparedOperation:
     @property
     def safety_class(self) -> SafetyClass:
         return self.spec.safety_class
+
+    @property
+    def contract_safety_class(self) -> SafetyClass:
+        return self.spec.contract_safety_class
+
+    @property
+    def requires_write_contract(self) -> bool:
+        return self.spec.requires_write_contract
 
     @property
     def batch_eligible(self) -> bool:
@@ -120,9 +157,45 @@ class OperationSpec:
     batch_eligible: bool = False
     batch_category: BatchCategory = "excluded"
 
+    def __post_init__(self) -> None:
+        if self.safety_class not in _VALID_SAFETY_CLASSES:
+            raise OperationValidationError(
+                f"operation {self.domain}.{self.action} has invalid safety class "
+                f"{self.safety_class!r}"
+            )
+        if self.requires_write_contract:
+            if self.snapshot_scope_builder is None:
+                raise OperationValidationError(
+                    f"persistent write operation {self.domain}.{self.action} "
+                    "requires a snapshot scope"
+                )
+            if self.restore_builder is None:
+                raise OperationValidationError(
+                    f"persistent write operation {self.domain}.{self.action} "
+                    "requires a restore builder"
+                )
+            if self.batch_eligible and self.batch_category != "persistent_write":
+                raise OperationValidationError(
+                    f"persistent write operation {self.domain}.{self.action} "
+                    "must use persistent_write batch category"
+                )
+        elif self.batch_category == "persistent_write":
+            raise OperationValidationError(
+                f"non-write operation {self.domain}.{self.action} cannot use "
+                "persistent_write batch category"
+            )
+
     @property
     def key(self) -> tuple[str, str]:
         return (self.domain, self.action)
+
+    @property
+    def contract_safety_class(self) -> SafetyClass:
+        return contract_safety_class(self.safety_class)
+
+    @property
+    def requires_write_contract(self) -> bool:
+        return is_persistent_write_safety_class(self.safety_class)
 
     def prepare(self, params: Mapping[str, Any]) -> PreparedOperation:
         validated = self.validator(params)
@@ -972,7 +1045,7 @@ def _read_spec(
     return OperationSpec(
         domain=domain,
         action=action,
-        safety_class="read-only",
+        safety_class=READ_ONLY,
         validator=validator,
         command_builder=lambda params: _cmd(command, params),
         batch_eligible=True,
@@ -990,7 +1063,7 @@ def _transient_spec(
     return OperationSpec(
         domain=domain,
         action=action,
-        safety_class="transient",
+        safety_class=TRANSIENT,
         validator=validator,
         command_builder=lambda params: _cmd(command, params),
         batch_eligible=False,
@@ -1011,7 +1084,7 @@ def _persistent_write_spec(
     return OperationSpec(
         domain=domain,
         action=action,
-        safety_class="write-safe",
+        safety_class=WRITE_SAFE_REQUIRED,
         validator=validator,
         command_builder=lambda params: _cmd(command, params),
         snapshot_scope_builder=snapshot_scope_builder,
@@ -1512,14 +1585,22 @@ def list_operations() -> list[OperationSpec]:
 
 __all__ = [
     "BatchCategory",
+    "EXTERNAL_WRITE",
+    "FORBIDDEN",
     "OPERATION_REGISTRY",
     "OperationCommand",
     "OperationRegistry",
     "OperationSpec",
     "OperationValidationError",
     "PreparedOperation",
+    "READ_ONLY",
+    "SERVER_STATE",
     "SafetyClass",
+    "TRANSIENT",
+    "WRITE_SAFE_REQUIRED",
+    "contract_safety_class",
     "get_operation",
+    "is_persistent_write_safety_class",
     "list_operations",
     "prepare_operation",
 ]

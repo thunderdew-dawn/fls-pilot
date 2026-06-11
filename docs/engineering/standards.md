@@ -158,6 +158,8 @@ Expected checks for production-suite work:
 
 - Compile checks for touched Python code.
 - `scripts/audit_tool_safety.py --fail-on-gaps`.
+- `scripts/audit_tool_safety.py --fail-on-missing-safety-docs --format json`
+  when public tool annotations or Safety docstrings can be affected.
 - Focused script tests for changed areas.
 - Rollback-safe live smoke tests when FL Studio is available.
 - Tool registration checks when the FastMCP surface changes.

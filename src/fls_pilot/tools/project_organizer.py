@@ -60,7 +60,7 @@ def register(mcp: FastMCP) -> None:
         "destructiveHint": False,
         "idempotentHint": True,
         "openWorldHint": True,
-        "safetyClass": "write-safe",
+        "safetyClass": "write-safe-required",
     }
 
     @mcp.tool(annotations={"title": "Analyze Project Organization", **_RO})
@@ -155,7 +155,7 @@ def register(mcp: FastMCP) -> None:
     ) -> dict:
         """Apply a batch of names and colors in one rollback unit.
 
-        Safety: Write-Safe with Rollback.
+        Safety: Write-Safe-Required with Rollback.
         """
         bridge = get_bridge()
         writes = []
@@ -208,7 +208,7 @@ def register(mcp: FastMCP) -> None:
     ) -> dict:
         """Batch apply standardized names across the project.
 
-        Safety: Write-Safe with Rollback.
+        Safety: Write-Safe-Required with Rollback.
         """
         bridge = get_bridge()
         writes = []
@@ -248,7 +248,7 @@ def register(mcp: FastMCP) -> None:
     ) -> dict:
         """Batch apply standardized colors across the project. Hex should be e.g. '#FF0000'.
 
-        Safety: Write-Safe with Rollback.
+        Safety: Write-Safe-Required with Rollback.
         """
         bridge = get_bridge()
         writes = []

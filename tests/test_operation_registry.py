@@ -90,8 +90,64 @@ def test_registry_covers_transport_mixer_and_channel_specs() -> None:
     }
     assert classes[("transport", "play")] == "transient"
     assert classes[("transport", "get_tempo")] == "read-only"
-    assert classes[("mixer", "set_volume")] == "write-safe"
-    assert classes[("plugin", "set_param")] == "write-safe"
+    assert classes[("mixer", "set_volume")] == "write-safe-required"
+    assert classes[("plugin", "set_param")] == "write-safe-required"
+
+
+def test_write_safe_required_is_canonical_contract_term() -> None:
+    spec = operations.get_operation("mixer", "set_volume")
+    prepared = operations.prepare_operation("mixer", "set_volume", {"track": 1, "value": 0.5})
+
+    assert spec.safety_class == operations.WRITE_SAFE_REQUIRED
+    assert spec.contract_safety_class == operations.WRITE_SAFE_REQUIRED
+    assert spec.requires_write_contract is True
+    assert prepared.contract_safety_class == operations.WRITE_SAFE_REQUIRED
+    assert prepared.requires_write_contract is True
+    assert operations.contract_safety_class("write-safe-required") == "write-safe-required"
+    assert operations.is_persistent_write_safety_class("write-safe-required") is True
+    assert operations.is_persistent_write_safety_class("write-safe") is False
+    assert operations.is_persistent_write_safety_class("read-only") is False
+
+
+def test_legacy_write_safe_class_is_rejected() -> None:
+    with pytest.raises(operations.OperationValidationError, match="invalid safety class"):
+        operations.OperationSpec(
+            domain="bad",
+            action="legacy_write",
+            safety_class="write-safe",
+            validator=lambda _params: {},
+            command_builder=lambda _params: operations.OperationCommand(
+                command=protocol.CMD_SET_TEMPO,
+                params={"bpm": 120.0},
+            ),
+        )
+
+
+def test_persistent_write_specs_must_declare_snapshot_and_restore() -> None:
+    with pytest.raises(operations.OperationValidationError, match="requires a snapshot scope"):
+        operations.OperationSpec(
+            domain="bad",
+            action="write",
+            safety_class=operations.WRITE_SAFE_REQUIRED,
+            validator=lambda _params: {},
+            command_builder=lambda _params: operations.OperationCommand(
+                command=protocol.CMD_SET_TEMPO,
+                params={"bpm": 120.0},
+            ),
+        )
+
+    with pytest.raises(operations.OperationValidationError, match="requires a restore builder"):
+        operations.OperationSpec(
+            domain="bad",
+            action="write",
+            safety_class=operations.WRITE_SAFE_REQUIRED,
+            validator=lambda _params: {},
+            command_builder=lambda _params: operations.OperationCommand(
+                command=protocol.CMD_SET_TEMPO,
+                params={"bpm": 120.0},
+            ),
+            snapshot_scope_builder=lambda _params: "tempo",
+        )
 
 
 def test_batch_categories_keep_transient_controls_out_of_persistent_batches() -> None:

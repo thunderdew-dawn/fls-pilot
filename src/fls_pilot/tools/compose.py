@@ -65,7 +65,7 @@ def register(mcp: FastMCP) -> None:
         "destructiveHint": True,
         "idempotentHint": False,
         "openWorldHint": True,
-        "safetyClass": "write-safe",
+        "safetyClass": "write-safe-required",
     }
 
     @mcp.tool(annotations={"title": "Write a raga/scale MELODY", **_WR})
@@ -92,7 +92,7 @@ def register(mcp: FastMCP) -> None:
         the user the notes/swaras BEFORE calling. Needs the Piano roll open +
         MCP_Apply armed once this session (see the note-bridge setup).
 
-        Safety: Write-Safe with Rollback.
+        Safety: Write-Safe-Required with Rollback.
         """
         return {
             "ok": True,
@@ -121,7 +121,7 @@ def register(mcp: FastMCP) -> None:
         raga/scale (give simultaneous notes the SAME time_bars). Tool selects the
         channel + writes. SHOW the user the chords BEFORE calling.
 
-        Safety: Write-Safe with Rollback.
+        Safety: Write-Safe-Required with Rollback.
         """
         return {
             "ok": True,

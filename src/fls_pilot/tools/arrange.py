@@ -26,7 +26,7 @@ def register(mcp: FastMCP) -> None:
         "destructiveHint": False,
         "idempotentHint": False,
         "openWorldHint": True,
-        "safetyClass": "write-safe",
+        "safetyClass": "write-safe-required",
     }
 
     @mcp.tool(annotations={"title": "New named pattern (selects it)", **_WR})
@@ -35,7 +35,7 @@ def register(mcp: FastMCP) -> None:
     ) -> dict:
         """Create + select + name the next empty pattern. Rollback uses FL undo.
 
-        Safety: Write-Safe with Rollback.
+        Safety: Write-Safe-Required with Rollback.
         """
         return safety.safe_write(
             get_bridge(),
@@ -52,7 +52,7 @@ def register(mcp: FastMCP) -> None:
     ) -> dict:
         """Make a channel active; rollback restores the previously selected channel.
 
-        Safety: Write-Safe with Rollback.
+        Safety: Write-Safe-Required with Rollback.
         """
         return safety.safe_write(
             get_bridge(),
@@ -73,7 +73,7 @@ def register(mcp: FastMCP) -> None:
     ) -> dict:
         """Clone a pattern and rename the clone. Rollback uses FL undo.
 
-        Safety: Write-Safe with Rollback.
+        Safety: Write-Safe-Required with Rollback.
         """
         return safety.safe_write(
             get_bridge(),
@@ -91,7 +91,7 @@ def register(mcp: FastMCP) -> None:
     ) -> dict:
         """Add a named timeline marker at a bar. Rollback uses FL undo.
 
-        Safety: Write-Safe with Rollback.
+        Safety: Write-Safe-Required with Rollback.
         """
         return safety.safe_write(
             get_bridge(),

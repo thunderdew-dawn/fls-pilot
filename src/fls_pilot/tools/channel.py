@@ -29,7 +29,7 @@ def register(mcp: FastMCP) -> None:
             "destructiveHint": True,
             "idempotentHint": False,
             "openWorldHint": True,
-            "safetyClass": "write-safe",
+            "safetyClass": "write-safe-required",
         },
     )
     def fl_channel(
@@ -82,7 +82,7 @@ def register(mcp: FastMCP) -> None:
         The ``get_steps`` action reads the step sequencer grid for a channel;
         ``set_steps`` writes and rollbacks the full grid atomically.
 
-        Safety: Write-Safe with Rollback for persistent writes; Read-Only
+        Safety: Write-Safe-Required with Rollback for persistent writes; Read-Only
         for channel reads.
         """
         resolved = params or {}
@@ -98,7 +98,7 @@ def register(mcp: FastMCP) -> None:
 
         bridge = get_bridge()
 
-        if prepared.safety_class == "write-safe":
+        if prepared.requires_write_contract:
             # set_steps requires resolving the current pattern when none supplied.
             if action == "set_steps" and "pattern" not in resolved:
                 selected = _bridge_call(bridge, protocol.CMD_PATTERN_SELECTED)

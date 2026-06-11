@@ -103,7 +103,7 @@ def register(mcp: FastMCP) -> None:
         "destructiveHint": False,
         "idempotentHint": True,
         "openWorldHint": True,
-        "safetyClass": "write-safe",
+        "safetyClass": "write-safe-required",
     }
 
     @mcp.tool(annotations={"title": "List plugins on a mixer track", **_RO})
@@ -169,7 +169,7 @@ def register(mcp: FastMCP) -> None:
         change is logged and undo-able via fl_rollback_last_change. Returns
         before/after plus the resolved {index, name}.
 
-        Safety: Write-Safe with Rollback. This only configures already-loaded
+        Safety: Write-Safe-Required with Rollback. This only configures already-loaded
         plugins; plugin loading remains manual.
         """
         bridge = get_bridge()

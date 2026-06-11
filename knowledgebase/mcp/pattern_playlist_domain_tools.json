@@ -46,7 +46,7 @@
     }
   ],
   "known_pitfalls": [
-    "fl_pattern and fl_playlist are annotated write-safe because each public function can perform persistent writes; individual action safety is enforced by registry dispatch and documented in docstrings.",
+    "fl_pattern and fl_playlist are annotated write-safe-required because each public function can perform persistent writes; individual action safety is enforced by registry dispatch and documented in docstrings.",
     "Playlist scope is track metadata/control only.",
     "Playlist clip placement, movement, deletion, and editing remain unsupported.",
     "Pattern deletion remains unsupported.",

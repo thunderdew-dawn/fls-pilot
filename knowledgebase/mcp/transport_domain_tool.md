@@ -12,7 +12,7 @@
 - **Source/Method**: Focused pytest coverage and static safety/registration audits in the local repo.
 - **Valid Ranges**: Registry validation currently allows tempo `10..999` BPM, time-signature denominators `4` or `8`, and non-negative song position values in exactly one of `beats`, `ms`, or `ticks`.
 - **Example**: `fl_transport(action="ping")`; `fl_transport(action="set_tempo", params={"bpm": 128})`
-- **Known Pitfalls**: The tool's annotation is `write-safe` because the same public function can perform persistent writes; read-only and transient action safety is action-specific in the implementation and docstring.
+- **Known Pitfalls**: The tool's annotation is `write-safe-required` because the same public function can perform persistent writes; read-only and transient action safety is action-specific in the implementation and docstring.
 - **Reproduction Steps**: Run `.venv/bin/python -m pytest tests/test_transport_domain.py`.
 - **Open Questions**: Live FL Studio smoke was not run for this slice; behavior mirrors existing legacy transport wrappers and registry specs.
 - **Next Recommended Action**: Run slice 15 final release docs and audit.

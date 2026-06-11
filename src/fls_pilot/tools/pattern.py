@@ -26,7 +26,7 @@ def register(mcp: FastMCP) -> None:
             "destructiveHint": True,
             "idempotentHint": False,
             "openWorldHint": True,
-            "safetyClass": "write-safe",
+            "safetyClass": "write-safe-required",
         },
     )
     def fl_pattern(
@@ -63,7 +63,7 @@ def register(mcp: FastMCP) -> None:
         The ``list`` action is paginated automatically so all patterns are
         returned in a single response.
 
-        Safety: Write-Safe with Rollback for persistent writes; Read-Only
+        Safety: Write-Safe-Required with Rollback for persistent writes; Read-Only
         for pattern reads. Pattern deletion is intentionally unsupported.
         """
         try:
@@ -72,7 +72,7 @@ def register(mcp: FastMCP) -> None:
             raise ValueError(str(exc)) from exc
 
         bridge = get_bridge()
-        if prepared.safety_class == "write-safe":
+        if prepared.requires_write_contract:
             return safety.safe_write(
                 bridge,
                 **prepared.safe_write_kwargs(tool=f"pattern_{prepared.action}"),

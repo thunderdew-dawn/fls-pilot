@@ -412,7 +412,7 @@ def register(mcp: FastMCP) -> None:
         "destructiveHint": False,
         "idempotentHint": True,
         "openWorldHint": True,
-        "safetyClass": "write-safe",
+        "safetyClass": "write-safe-required",
     }
 
     # ---- Legacy Tool Names (Aliased/Kept for Backwards Compatibility) -------
@@ -424,7 +424,7 @@ def register(mcp: FastMCP) -> None:
             "destructiveHint": True,
             "idempotentHint": False,
             "openWorldHint": True,
-            "safetyClass": "write-safe",
+            "safetyClass": "write-safe-required",
         }
     )
     def fl_write_piano_roll_notes(
@@ -437,7 +437,7 @@ def register(mcp: FastMCP) -> None:
     ) -> dict:
         """Legacy write notes wrapper. Use fl_piano_write_notes instead.
 
-        Safety: Write-Safe with Rollback. Piano Roll writes are undo-backed;
+        Safety: Write-Safe-Required with Rollback. Piano Roll writes are undo-backed;
         note readback to MCP remains API-limited.
         """
         return fl_piano_write_notes(notes, mode, quantize)
@@ -449,7 +449,7 @@ def register(mcp: FastMCP) -> None:
     ) -> dict:
         """Legacy quantize wrapper. Use fl_piano_quantize instead.
 
-        Safety: Write-Safe with Rollback. Piano Roll writes are undo-backed;
+        Safety: Write-Safe-Required with Rollback. Piano Roll writes are undo-backed;
         note readback to MCP remains API-limited.
         """
         return fl_piano_quantize(grid_bars, snap_ends)
@@ -463,7 +463,7 @@ def register(mcp: FastMCP) -> None:
             "destructiveHint": True,
             "idempotentHint": False,
             "openWorldHint": True,
-            "safetyClass": "write-safe",
+            "safetyClass": "write-safe-required",
         }
     )
     def fl_piano_roll(
@@ -503,7 +503,7 @@ def register(mcp: FastMCP) -> None:
         ``general.undoUp``. Note and marker readback remain API-limited; use
         ``get_notes`` or ``probe_return_channel`` to return that explicit limit.
 
-        Safety: Write-Safe with Rollback for generated-script writes; Read-Only
+        Safety: Write-Safe-Required with Rollback for generated-script writes; Read-Only
         for readback-limit reports. Piano Roll actions are intentionally not
         eligible for generic persistent ``fl_batch`` writes.
         """
@@ -516,7 +516,7 @@ def register(mcp: FastMCP) -> None:
             "destructiveHint": True,
             "idempotentHint": False,
             "openWorldHint": True,
-            "safetyClass": "write-safe",
+            "safetyClass": "write-safe-required",
         }
     )
     def fl_piano_write_notes(
@@ -540,7 +540,7 @@ def register(mcp: FastMCP) -> None:
     ) -> dict:
         """Write notes into the currently active pattern's Piano roll.
 
-        Safety: Write-Safe with Rollback. The generated Piano Roll script uses
+        Safety: Write-Safe-Required with Rollback. The generated Piano Roll script uses
         FL undo for rollback; note readback to MCP remains API-limited.
         """
         arr = [n.model_dump() for n in notes]
@@ -595,7 +595,7 @@ def register(mcp: FastMCP) -> None:
     ) -> dict:
         """Write a named chord into the Piano roll at the active pattern.
 
-        Safety: Write-Safe with Rollback. The generated Piano Roll script uses
+        Safety: Write-Safe-Required with Rollback. The generated Piano Roll script uses
         FL undo for rollback; note readback to MCP remains API-limited.
         """
         try:
@@ -658,7 +658,7 @@ def register(mcp: FastMCP) -> None:
     ) -> dict:
         """Clear all notes in the currently active pattern's Piano roll.
 
-        Safety: Write-Safe with Rollback. The generated Piano Roll script uses
+        Safety: Write-Safe-Required with Rollback. The generated Piano Roll script uses
         FL undo for rollback; note readback to MCP remains API-limited.
         """
         bridge = get_bridge()
@@ -689,7 +689,7 @@ def register(mcp: FastMCP) -> None:
     ) -> dict:
         """Quantize the notes in the active Piano roll.
 
-        Safety: Write-Safe with Rollback. The generated Piano Roll script uses
+        Safety: Write-Safe-Required with Rollback. The generated Piano Roll script uses
         FL undo for rollback; note readback to MCP remains API-limited.
         """
         bridge = get_bridge()
@@ -729,7 +729,7 @@ def register(mcp: FastMCP) -> None:
     ) -> dict:
         """Transpose all notes in the active pattern's Piano roll.
 
-        Safety: Write-Safe with Rollback. The generated Piano Roll script uses
+        Safety: Write-Safe-Required with Rollback. The generated Piano Roll script uses
         FL undo for rollback; note readback to MCP remains API-limited.
         """
         bridge = get_bridge()
@@ -760,7 +760,7 @@ def register(mcp: FastMCP) -> None:
     ) -> dict:
         """Duplicate all notes in the active Piano roll forward by a bar offset.
 
-        Safety: Write-Safe with Rollback. The generated Piano Roll script uses
+        Safety: Write-Safe-Required with Rollback. The generated Piano Roll script uses
         FL undo for rollback; note readback to MCP remains API-limited.
         """
         bridge = get_bridge()
@@ -793,7 +793,7 @@ def register(mcp: FastMCP) -> None:
     ) -> dict:
         """Apply a linear velocity ramp over note order in the active Piano roll.
 
-        Safety: Write-Safe with Rollback. The generated Piano Roll script uses
+        Safety: Write-Safe-Required with Rollback. The generated Piano Roll script uses
         FL undo for rollback; note readback to MCP remains API-limited.
         """
         bridge = get_bridge()
@@ -847,7 +847,7 @@ def register(mcp: FastMCP) -> None:
     ) -> dict:
         """Add one marker in the active Piano roll.
 
-        Safety: Write-Safe with Rollback. The generated Piano Roll script uses
+        Safety: Write-Safe-Required with Rollback. The generated Piano Roll script uses
         FL undo for rollback; marker readback to MCP remains API-limited.
         """
         bridge = get_bridge()
@@ -889,7 +889,7 @@ def register(mcp: FastMCP) -> None:
     ) -> dict:
         """Add a time-signature marker in the active Piano roll.
 
-        Safety: Write-Safe with Rollback. The generated Piano Roll script uses
+        Safety: Write-Safe-Required with Rollback. The generated Piano Roll script uses
         FL undo for rollback; marker readback to MCP remains API-limited.
         """
         bridge = get_bridge()
@@ -932,7 +932,7 @@ def register(mcp: FastMCP) -> None:
     ) -> dict:
         """Clear all markers in the active Piano roll.
 
-        Safety: Write-Safe with Rollback. The generated Piano Roll script uses
+        Safety: Write-Safe-Required with Rollback. The generated Piano Roll script uses
         FL undo for rollback; marker readback to MCP remains API-limited.
         """
         bridge = get_bridge()

@@ -1,0 +1,58 @@
+{
+  "date": "2026-06-11",
+  "agent_author": "Codex",
+  "topic": "Canonical write-safety contract for persistent FL Studio changes",
+  "affected_file_api": [
+    "src/fls_pilot/operations.py",
+    "src/fls_pilot/safety.py",
+    "scripts/audit_tool_safety.py",
+    "FastMCP tool annotations"
+  ],
+  "context": "GitHub issue #63 made the persistent-write contract a v3.0 P0 release blocker. This branch is a breaking fork release, so legacy write-safe vocabulary was removed from current public annotations and registry specs.",
+  "observation": "Persistent FL Studio project mutations use the canonical write-safe-required class. Operation-registry specs reject persistent-write classes without snapshot and restore builders. safe_write and safe_write_group return before/after state plus change_id, rollback unit, and undo guidance. The static audit reports write-safe-required and --fail-on-gaps fails for both direct write gaps and unresolved needs-review tools.",
+  "tested_values": [
+    "read-only",
+    "transient",
+    "server-state",
+    "external-write",
+    "write-safe-required",
+    "direct unsafe CMD_MIXER_SELECT_TRACK",
+    "safe CMD_SET_TEMPO",
+    "legacy write-safe registry class",
+    "grouped mixer mute writes"
+  ],
+  "result": {
+    "confidence": "implementation_verified",
+    "static_audit_summary": {
+      "write-safe-required": 84,
+      "read-only": 71,
+      "transient": 5,
+      "server-state": 4,
+      "external-write": 2,
+      "write-gap": 0,
+      "needs-review": 0
+    }
+  },
+  "confidence_level": "implementation_verified",
+  "source_method": [
+    "scripts/audit_tool_safety.py --fail-on-gaps",
+    "scripts/audit_tool_safety.py --fail-on-missing-safety-docs --format json",
+    "tests/test_operation_registry.py",
+    "tests/test_safe_write_group.py",
+    "tests/test_tool_safety_audit.py"
+  ],
+  "reproduction_steps": [
+    ".venv/bin/python scripts/audit_tool_safety.py --fail-on-gaps",
+    ".venv/bin/python scripts/audit_tool_safety.py --fail-on-missing-safety-docs --format json",
+    ".venv/bin/python -m pytest tests/test_operation_registry.py tests/test_safe_write_group.py tests/test_tool_safety_audit.py"
+  ],
+  "known_pitfalls": [
+    "Historical KB and verification-history entries may still mention write-safe as past evidence; current code and docs use write-safe-required.",
+    "Piano Roll writes remain undo-backed and cannot provide structured note readback until a return channel is proven.",
+    "Offline tests verify the contract shape; live FL Studio smoke testing still matters for API/build-specific behavior."
+  ],
+  "open_questions": [
+    "Repeat rollback-safe live smoke tests when FL Studio is available for any changed persistent-write behavior."
+  ],
+  "next_recommended_action": "Keep future persistent-write tools registry-backed, annotated write-safe-required, and covered by the safety audit."
+}

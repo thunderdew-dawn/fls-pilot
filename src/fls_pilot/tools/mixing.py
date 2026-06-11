@@ -191,7 +191,7 @@ def register(mcp: FastMCP) -> None:
         "destructiveHint": False,
         "idempotentHint": False,
         "openWorldHint": True,
-        "safetyClass": "write-safe",
+        "safetyClass": "write-safe-required",
     }
 
     @mcp.tool(annotations={"title": "Apply an EQ mixing intent", **_WR})
@@ -217,7 +217,7 @@ def register(mcp: FastMCP) -> None:
         Sets type/freq/gain/width as one undo-able group; returns the band used
         and FL's readback strings. Revert with fl_rollback_last_change.
 
-        Safety: Write-Safe with Rollback.
+        Safety: Write-Safe-Required with Rollback.
         """
         bridge = get_bridge()
 
@@ -334,7 +334,7 @@ def register(mcp: FastMCP) -> None:
         """Musical reverb moves on a Fruity Reeverb 2 (decay/wet/high-cut), as one
         undo-able group. Returns readback strings. Revert: fl_rollback_last_change.
 
-        Safety: Write-Safe with Rollback.
+        Safety: Write-Safe-Required with Rollback.
         """
         bridge = get_bridge()
         pname = _plugin_name_at(bridge, track, slot)
@@ -423,7 +423,7 @@ def register(mcp: FastMCP) -> None:
         feedback-cut), as one undo-able group. Feedback is clamped <=100% unless
         intensity>0.9 (warns on self-oscillation risk). Returns readback strings.
 
-        Safety: Write-Safe with Rollback.
+        Safety: Write-Safe-Required with Rollback.
         """
         bridge = get_bridge()
         pname = _plugin_name_at(bridge, track, slot)
@@ -532,7 +532,7 @@ def register(mcp: FastMCP) -> None:
         starting point, not exact gain-reduction); stopped -> preset fallback +
         a note. Returns readback + the measured level / chosen threshold.
 
-        Safety: Write-Safe with Rollback.
+        Safety: Write-Safe-Required with Rollback.
         """
         bridge = get_bridge()
         pname = _plugin_name_at(bridge, track, slot)

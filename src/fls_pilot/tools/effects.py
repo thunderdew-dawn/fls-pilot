@@ -35,7 +35,7 @@ def register(mcp: FastMCP) -> None:
         "destructiveHint": False,
         "idempotentHint": True,
         "openWorldHint": True,
-        "safetyClass": "write-safe",
+        "safetyClass": "write-safe-required",
     }
 
     @mcp.tool(annotations={"title": "Get effect slot details", **_RO})
@@ -93,7 +93,7 @@ def register(mcp: FastMCP) -> None:
     ) -> dict:
         """Set one slot mix amount. Rollback restores the previous mix.
 
-        Safety: Write-Safe with Rollback.
+        Safety: Write-Safe-Required with Rollback.
         """
         bridge = get_bridge()
         error = mixer_track_error(bridge, track, purpose="effect slot mix write")
@@ -137,7 +137,7 @@ def register(mcp: FastMCP) -> None:
     ) -> dict:
         """Enable or bypass all effect slots on a track. Rollback restores prior state.
 
-        Safety: Write-Safe with Rollback.
+        Safety: Write-Safe-Required with Rollback.
         """
         bridge = get_bridge()
         error = mixer_track_error(bridge, track, purpose="effect slot enabled write")
@@ -164,7 +164,7 @@ def register(mcp: FastMCP) -> None:
     ) -> dict:
         """Enable or bypass one effect slot. Rollback restores prior enabled state.
 
-        Safety: Write-Safe with Rollback.
+        Safety: Write-Safe-Required with Rollback.
         """
         bridge = get_bridge()
         error = mixer_track_error(bridge, track, purpose="effect slot enabled write")
@@ -211,7 +211,7 @@ def register(mcp: FastMCP) -> None:
     ) -> dict:
         """Set one native EQ band parameter set. Rollback restores all three bands.
 
-        Safety: Write-Safe with Rollback. Native EQ type/high-pass writes are
+        Safety: Write-Safe-Required with Rollback. Native EQ type/high-pass writes are
         documented-unconfirmed on FL Studio Producer Edition v25.2.5 build
         5055; use this only where readback verifies the changed parameter.
         """

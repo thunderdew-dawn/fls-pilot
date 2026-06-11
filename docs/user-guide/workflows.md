@@ -32,7 +32,7 @@ Use fl_mixer with action set_name on track 8, then fl_mixer with action set_colo
 | Safety class | Meaning |
 |---|---|
 | `read-only` | Reads FL Studio, files, or server context without mutating the project. |
-| `write-safe` | Mutates FL Studio through the safety layer with snapshot, readback, changelog, and rollback. |
+| `write-safe-required` | Mutates FL Studio through the safety layer with snapshot, readback, changelog, and rollback. |
 | `transient` | Controls runtime state such as playback or song position; it should not persist in the project. |
 | `server-state` | Changes MCP server state, safety history, dry-run mode, or rollback state. |
 | `external-write` | Writes outside FL Studio, such as a MIDI file or exported change log. |
