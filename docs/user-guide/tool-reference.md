@@ -20,7 +20,7 @@ tool call. They are intentionally capped so automatic context reads stay small.
 ## Full Tool Reference
 
 The current public MCP surface registers 87 tools: 41 `read-only`, 33
-`write-safe`, 4 `server-state`, 2 `external-write`, and 7 Knowledgebase tools
+`write-safe-required`, 4 `server-state`, 2 `external-write`, and 7 Knowledgebase tools
 registered outside the static annotation pattern.
 
 ### Phase 1: Ideation & Composition Tools
@@ -34,8 +34,8 @@ registered outside the static annotation pattern.
 #### Scale Composition
 | Tool | Safety | What it does |
 |---|---|---|
-| `fl_write_raga_melody` | `write-safe` | Writes a generated scale or raga melody through the Piano Roll bridge. |
-| `fl_write_raga_chords` | `write-safe` | Writes scale-aware chords through the Piano Roll bridge. |
+| `fl_write_raga_melody` | `write-safe-required` | Writes a generated scale or raga melody through the Piano Roll bridge. |
+| `fl_write_raga_chords` | `write-safe-required` | Writes scale-aware chords through the Piano Roll bridge. |
 | `fl_scale_list` | `read-only` | Lists supported scales, modes, ragas, and related scale families. |
 | `fl_scale_get` | `read-only` | Returns intervals and note mapping for a selected scale. |
 
@@ -44,33 +44,33 @@ registered outside the static annotation pattern.
 #### Arrangement
 | Tool | Safety | What it does |
 |---|---|---|
-| `fl_arrange_new_pattern` | `write-safe` | Creates a new named pattern and selects it. |
-| `fl_arrange_select_channel` | `write-safe` | Selects the Channel Rack channel used as the note-bridge target. |
-| `fl_arrange_clone_pattern` | `write-safe` | Clones a pattern, including notes where FL exposes that path. |
-| `fl_arrange_add_marker` | `write-safe` | Adds a section marker at a bar. |
+| `fl_arrange_new_pattern` | `write-safe-required` | Creates a new named pattern and selects it. |
+| `fl_arrange_select_channel` | `write-safe-required` | Selects the Channel Rack channel used as the note-bridge target. |
+| `fl_arrange_clone_pattern` | `write-safe-required` | Clones a pattern, including notes where FL exposes that path. |
+| `fl_arrange_add_marker` | `write-safe-required` | Adds a section marker at a bar. |
 
 ### Phase 3 & 4: Diagnosis & Preparation Tools
 
 #### Channel & Audio Clips
 | Tool | Safety | What it does |
 |---|---|---|
-| `fl_channel` | `write-safe` | Consolidated Channel Rack domain tool. Actions include list, get, get_selected, get_steps, classify, select, set_color, set_mute, set_mixer_target, set_name, set_pan, set_solo, set_steps, and set_volume. |
+| `fl_channel` | `write-safe-required` | Consolidated Channel Rack domain tool. Actions include list, get, get_selected, get_steps, classify, select, set_color, set_mute, set_mixer_target, set_name, set_pan, set_solo, set_steps, and set_volume. |
 | `fl_detect_unassigned_channels` | `read-only` | Finds channels that likely need mixer-track assignment. |
-| `fl_assign_channel_to_free_mixer_track` | `write-safe` | Finds a free mixer track and assigns a channel to it. |
+| `fl_assign_channel_to_free_mixer_track` | `write-safe-required` | Finds a free mixer track and assigns a channel to it. |
 | `fl_inspect_audio_clips` | `read-only` | Scans Audio Clips for routing, naming, and volume issues. |
 | `fl_plan_audio_clip_safe_defaults` | `read-only` | Plans safe defaults (volume normalization, free track routing) for Audio Clips. |
-| `fl_apply_audio_clip_safe_defaults` | `write-safe` | Applies safe volume limits and routing to Audio Clips with manual checklists for Stretch/Normalize. |
+| `fl_apply_audio_clip_safe_defaults` | `write-safe-required` | Applies safe volume limits and routing to Audio Clips with manual checklists for Stretch/Normalize. |
 
 #### Project Organizer & Color
 | Tool | Safety | What it does |
 |---|---|---|
 | `fl_analyze_project_organization` | `read-only` | Finds unnamed, uncolored, and ungrouped channels. |
 | `fl_plan_project_cleanup` | `read-only` | Plans naming and coloring fixes. |
-| `fl_apply_project_cleanup_step` | `write-safe` | Applies a batch of specific name and color fixes. |
-| `fl_apply_naming_standard` | `write-safe` | Batch applies a naming schema (e.g., psytrance) across channels and buses. |
-| `fl_apply_color_standard` | `write-safe` | Batch applies a color schema (e.g., psytrance) across channels and buses. |
-| `fl_set_track_color` | `write-safe` | Colors one or more mixer tracks by color name or hex value. |
-| `fl_set_channel_color` | `write-safe` | Colors one or more Channel Rack channels by color name or hex value. |
+| `fl_apply_project_cleanup_step` | `write-safe-required` | Applies a batch of specific name and color fixes. |
+| `fl_apply_naming_standard` | `write-safe-required` | Batch applies a naming schema (e.g., psytrance) across channels and buses. |
+| `fl_apply_color_standard` | `write-safe-required` | Batch applies a color schema (e.g., psytrance) across channels and buses. |
+| `fl_set_track_color` | `write-safe-required` | Colors one or more mixer tracks by color name or hex value. |
+| `fl_set_channel_color` | `write-safe-required` | Colors one or more Channel Rack channels by color name or hex value. |
 
 ### Phase 5: Signal Flow & Routing Tools
 
@@ -82,16 +82,16 @@ registered outside the static annotation pattern.
 | `fl_detect_cleanup_candidates` | `read-only` | Finds likely routing or organization cleanup candidates. |
 | `fl_review_routing` | `read-only` | Analyzes structural routing issues like unrouted channels or generators skipping groups. |
 | `fl_plan_routing_cleanup` | `read-only` | Proposes renaming and routing fixes for structural issues. |
-| `fl_apply_routing_cleanup` | `write-safe` | Executes batch routing fixes. |
-| `fl_apply_bus_layout` | `write-safe` | Routes sources to newly created grouped buses (e.g., in 10-track blocks). |
-| `fl_group_tracks` | `write-safe` | Routes selected tracks into a named bus as one grouped rollback unit. |
+| `fl_apply_routing_cleanup` | `write-safe-required` | Executes batch routing fixes. |
+| `fl_apply_bus_layout` | `write-safe-required` | Routes sources to newly created grouped buses (e.g., in 10-track blocks). |
+| `fl_group_tracks` | `write-safe-required` | Routes selected tracks into a named bus as one grouped rollback unit. |
 
 #### Bulk Control
 | Tool | Safety | What it does |
 |---|---|---|
-| `fl_solo_tracks` | `write-safe` | Solos a resolved group of mixer tracks as one reversible operation. |
-| `fl_mute_tracks` | `write-safe` | Mutes a resolved group of mixer tracks as one reversible operation. |
-| `fl_clear_mute_solo` | `write-safe` | Clears mixer mute and solo states in one grouped rollback unit. |
+| `fl_solo_tracks` | `write-safe-required` | Solos a resolved group of mixer tracks as one reversible operation. |
+| `fl_mute_tracks` | `write-safe-required` | Mutes a resolved group of mixer tracks as one reversible operation. |
+| `fl_clear_mute_solo` | `write-safe-required` | Clears mixer mute and solo states in one grouped rollback unit. |
 
 ### Phase 6: Sound Design Tools
 
@@ -110,8 +110,8 @@ registered outside the static annotation pattern.
 #### Plugin & Effect Slots
 | Tool | Safety | What it does |
 |---|---|---|
-| `fl_plugin` | `write-safe` | Consolidated already-loaded plugin domain tool for list, list_params, get_param, and set_param. Plugin loading stays manual. |
-| `fl_effect` | `write-safe` | Consolidated effect-slot and native EQ domain tool. Actions include get_slot, list_slots, get_track_slots_enabled, set_slot_enabled, set_slot_mix, set_track_slots_enabled, get_eq, and set_eq_band. |
+| `fl_plugin` | `write-safe-required` | Consolidated already-loaded plugin domain tool for list, list_params, get_param, and set_param. Plugin loading stays manual. |
+| `fl_effect` | `write-safe-required` | Consolidated effect-slot and native EQ domain tool. Actions include get_slot, list_slots, get_track_slots_enabled, set_slot_enabled, set_slot_mix, set_track_slots_enabled, get_eq, and set_eq_band. |
 
 ### Phase 7: Mixing & Dynamics Tools
 
@@ -120,7 +120,7 @@ registered outside the static annotation pattern.
 |---|---|---|
 | `fl_review_mix` | `read-only` | Scans the mix and reports concrete issues with evidence and proposed fixes. |
 | `fl_review_low_end_stereo` | `read-only` | Reports bass/sub mono-compatibility, stereo-width metadata risks, low-end layering, and Master headroom as manual-safe guidance. |
-| `fl_apply_mix_adjustment` | `write-safe` | Applies one gated Mix Review fix through the safety layer. |
+| `fl_apply_mix_adjustment` | `write-safe-required` | Applies one gated Mix Review fix through the safety layer. |
 | `fl_mix_watch_start` | `read-only` | Starts full-song peak watching for better level evidence. |
 | `fl_mix_watch_status` | `read-only` | Reports current peak-watch status. |
 | `fl_mix_watch_stop` | `read-only` | Stops peak watching and returns a diagnosis. |
@@ -130,11 +130,11 @@ registered outside the static annotation pattern.
 #### Mixing Intents
 | Tool | Safety | What it does |
 |---|---|---|
-| `fl_apply_eq_intent` | `write-safe` | Applies a musical EQ intent to a target plugin or native EQ path. |
-| `fl_apply_reverb_intent` | `write-safe` | Applies a calibrated reverb intent to an already-loaded plugin. |
-| `fl_apply_delay_intent` | `write-safe` | Applies a calibrated delay intent to an already-loaded plugin. |
+| `fl_apply_eq_intent` | `write-safe-required` | Applies a musical EQ intent to a target plugin or native EQ path. |
+| `fl_apply_reverb_intent` | `write-safe-required` | Applies a calibrated reverb intent to an already-loaded plugin. |
+| `fl_apply_delay_intent` | `write-safe-required` | Applies a calibrated delay intent to an already-loaded plugin. |
 | `fl_get_track_level` | `read-only` | Reads a mixer track's current level in dB. |
-| `fl_apply_compression_intent` | `write-safe` | Applies a calibrated compression intent, optionally level-aware. |
+| `fl_apply_compression_intent` | `write-safe-required` | Applies a calibrated compression intent, optionally level-aware. |
 
 #### Knowledgebase
 | Tool | Safety | What it does |
@@ -168,12 +168,12 @@ registered outside the static annotation pattern.
 #### Domain, Batch & Safety
 | Tool | Safety | What it does |
 |---|---|---|
-| `fl_transport` | `write-safe` | Consolidated transport domain tool. Actions include ping, get_tempo, set_tempo, get_play_state, play, stop, toggle_play, record, get_song_position, set_song_position, get_time_signature, and set_time_signature. Runtime controls are transient; tempo and time-signature writes use rollback. |
-| `fl_mixer` | `write-safe` | Consolidated mixer domain tool. Actions include list, get, get_selected, get_route, select, set_color, set_mute, set_name, set_pan, set_route, set_solo, set_stereo_separation, and set_volume. |
-| `fl_pattern` | `write-safe` | Consolidated pattern domain tool. Actions include list, get, get_length, get_selected, find_empty, select, rename, set_color, and set_length. |
-| `fl_playlist` | `write-safe` | Consolidated playlist-track domain tool. Actions include list, get, select, set_color, set_mute, set_name, and set_solo. Playlist clip editing is not supported. |
-| `fl_piano_roll` | `write-safe` | Consolidated Piano Roll domain tool for undo-backed note writes, transforms, markers, and explicit readback-limit reports. |
-| `fl_batch` | `write-safe` | Runs strict-whitelisted registry read batches or homogeneous persistent-write batches through one named rollback unit. |
+| `fl_transport` | `write-safe-required` | Consolidated transport domain tool. Actions include ping, get_tempo, set_tempo, get_play_state, play, stop, toggle_play, record, get_song_position, set_song_position, get_time_signature, and set_time_signature. Runtime controls are transient; tempo and time-signature writes use rollback. |
+| `fl_mixer` | `write-safe-required` | Consolidated mixer domain tool. Actions include list, get, get_selected, get_route, select, set_color, set_mute, set_name, set_pan, set_route, set_solo, set_stereo_separation, and set_volume. |
+| `fl_pattern` | `write-safe-required` | Consolidated pattern domain tool. Actions include list, get, get_length, get_selected, find_empty, select, rename, set_color, and set_length. |
+| `fl_playlist` | `write-safe-required` | Consolidated playlist-track domain tool. Actions include list, get, select, set_color, set_mute, set_name, and set_solo. Playlist clip editing is not supported. |
+| `fl_piano_roll` | `write-safe-required` | Consolidated Piano Roll domain tool for undo-backed note writes, transforms, markers, and explicit readback-limit reports. |
+| `fl_batch` | `write-safe-required` | Runs strict-whitelisted registry read batches or homogeneous persistent-write batches through one named rollback unit. |
 | `fl_get_project_state` | `read-only` | Reads project-level state such as tempo, time signature, and counts. |
 | `fl_mixer_get_levels` | `read-only` | Reads mixer peak levels. |
 | `fl_take_snapshot` | `server-state` | Captures MCP safety-layer snapshot data for inspection. |

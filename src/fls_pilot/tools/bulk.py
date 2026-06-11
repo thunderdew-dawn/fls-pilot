@@ -79,7 +79,7 @@ def register(mcp: FastMCP) -> None:
         "destructiveHint": False,
         "idempotentHint": False,
         "openWorldHint": True,
-        "safetyClass": "write-safe",
+        "safetyClass": "write-safe-required",
     }
 
     @mcp.tool(annotations={"title": "Solo a group of tracks", **_WR})
@@ -103,7 +103,7 @@ def register(mcp: FastMCP) -> None:
         mute-the-rest (reliable; FL's multi-solo is inconsistent). Reverse with
         fl_clear_mute_solo. One rollback unit.
 
-        Safety: Write-Safe with Rollback.
+        Safety: Write-Safe-Required with Rollback.
         """
         if not category and not tracks:
             return {"ok": False, "error": "give a category or a tracks list"}
@@ -157,7 +157,7 @@ def register(mcp: FastMCP) -> None:
         """Mute a group of tracks (leaves the others as they are). Use category or
         explicit tracks. One rollback unit; reverse with fl_clear_mute_solo.
 
-        Safety: Write-Safe with Rollback.
+        Safety: Write-Safe-Required with Rollback.
         """
         if not category and not tracks:
             return {"ok": False, "error": "give a category or a tracks list"}
@@ -189,7 +189,7 @@ def register(mcp: FastMCP) -> None:
         """Unmute and unsolo every mixer track (reset). The universal undo for the
         bulk solo/mute tools.
 
-        Safety: Write-Safe with Rollback.
+        Safety: Write-Safe-Required with Rollback.
         """
         b = get_bridge()
         ts = _tracks(b)

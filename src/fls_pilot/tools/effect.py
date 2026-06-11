@@ -27,7 +27,7 @@ def register(mcp: FastMCP) -> None:
             "destructiveHint": True,
             "idempotentHint": False,
             "openWorldHint": True,
-            "safetyClass": "write-safe",
+            "safetyClass": "write-safe-required",
         },
     )
     def fl_effect(
@@ -70,7 +70,7 @@ def register(mcp: FastMCP) -> None:
         evidence and are only safe where readback verifies the change; plugin
         loading, insertion, removal, and full chain restore are not supported.
 
-        Safety: Write-Safe with Rollback for persistent writes; Read-Only for
+        Safety: Write-Safe-Required with Rollback for persistent writes; Read-Only for
         effect and native EQ reads.
         """
         resolved = params or {}
@@ -96,7 +96,7 @@ def register(mcp: FastMCP) -> None:
             if error is not None:
                 return error
 
-        if prepared.safety_class == "write-safe":
+        if prepared.requires_write_contract:
             return safety.safe_write(
                 bridge,
                 **prepared.safe_write_kwargs(tool=f"{domain}_{prepared.action}"),

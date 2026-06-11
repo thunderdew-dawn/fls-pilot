@@ -27,7 +27,7 @@ EXPECTED_REGISTERED_SAFETY_SUMMARY = {
     "read-only": 41,
     "server-state": 4,
     "unannotated": 7,
-    "write-safe": 33,
+    "write-safe-required": 33,
 }
 EXPECTED_STATIC_SAFETY_SUMMARY = {
     "external-write": 2,
@@ -35,7 +35,7 @@ EXPECTED_STATIC_SAFETY_SUMMARY = {
     "server-state": 4,
     "transient": 5,
     "write-gap": 0,
-    "write-safe": 84,
+    "write-safe-required": 84,
 }
 
 

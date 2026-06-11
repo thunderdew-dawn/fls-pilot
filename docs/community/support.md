@@ -7,7 +7,7 @@ Use the GitHub issue forms for normal support and compatibility reports:
 - FL build compatibility: include the controller build marker and the smallest
   rollback-safe reproduction path.
 - Workflow requests: describe the musical workflow and whether the requested
-  action should be read-only, transient, write-safe, dry-run-only, or
+  action should be read-only, transient, write-safe-required, dry-run-only, or
   API-dependent.
 - API probes: use probe-only or rollback-safe evidence and update the
   Knowledgebase when behavior is confirmed.

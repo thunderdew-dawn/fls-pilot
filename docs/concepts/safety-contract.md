@@ -17,6 +17,32 @@ Multi-step persistent changes must be one named rollback unit unless the split
 is explicit and documented. Piano Roll writes stay undo-backed and must state
 readback limits.
 
+## Safety Classes
+
+Public MCP tools and internal registry operations use these safety classes:
+
+- `read-only`: reads FL Studio, files, or server context only.
+- `transient`: controls runtime/session state such as playback or playhead
+  position; it must fail safely but does not require project rollback.
+- `server-state`: changes MCP server-local state, changelog, dry-run, or
+  rollback state.
+- `external-write`: writes outside the FL project, for example MIDI export or
+  changelog export.
+- `write-safe-required`: persistent FL Studio project mutation; it must enter
+  through the safety layer and satisfy the write gates.
+- `forbidden`: must not ship as a user-facing tool on this branch.
+
+`write-safe-required` is the canonical class name. New public annotations,
+operation-registry specs, docs, and audits must not use the legacy
+`write-safe` name.
+
+Persistent writes may enter through only:
+
+- `safety.safe_write(...)`
+- `safety.safe_write_group(...)`
+- `safety.safe_piano_roll_write(...)` for undo-backed Piano Roll generated
+  scripts with explicit readback limits.
+
 ## Stop And Fallback Rules
 
 - Do not guess normalized values, dB/Hz mappings, REC event IDs, track indices,

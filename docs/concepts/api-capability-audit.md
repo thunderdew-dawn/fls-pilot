@@ -54,13 +54,15 @@ Run the local audit before adding write tools:
 .venv/bin/python scripts/audit_tool_safety.py
 ```
 
-The current branch has no static write gaps; this is the PR gate:
+The current branch has no static write gaps or unresolved `needs-review`
+tools; this is the PR gate:
 
 ```bash
 .venv/bin/python scripts/audit_tool_safety.py --fail-on-gaps
 ```
 
-That command should pass today and fail if a new unsafe write tool is added.
+That command should pass today and fail if a new unsafe or unclassified tool is
+added.
 For historical context, the pre-fix ratchet was:
 
 ```bash
@@ -79,9 +81,14 @@ The audit statically classifies FastMCP tools as:
 - `transient`: runtime action that should not persist in the project.
 - `external-write`: writes outside FL, for example MIDI file export.
 - `server-state`: changes MCP/server state only.
-- `write-safe`: uses `safety.safe_write` or `safety.safe_write_group`.
+- `write-safe-required`: uses `safety.safe_write`,
+  `safety.safe_write_group`, or the established Piano Roll safety path.
 - `write-gap`: mutates FL without the rollback contract.
 - `needs-review`: cannot be confidently classified statically.
+
+`write-safe-required` is the canonical class name for persistent FL writes.
+The legacy `write-safe` name is not accepted for new operation-registry specs
+or public tool annotations.
 
 The initial gaps on this branch were older direct-write tools:
 
@@ -123,29 +130,32 @@ Not currently supported:
   possible track, verify count/readback, restore/delete/undo immediately, and
   record the exact FL build and rollback result before promoting the capability.
 
-The current baseline, regenerated on 2026-06-07, reports:
+The current baseline, regenerated on 2026-06-11, reports:
 
 - 87 registered public FastMCP tools with 87 unique public names after v2.0
   legacy low-level alias removal.
 - 166 statically audited tool definitions.
-- 33 registered `write-safe` tools.
+- 33 registered `write-safe-required` tools.
 - 0 `write-gap` tools.
+- 0 `needs-review` tools.
 - 41 registered `read-only` tools.
 - 4 `server-state` tools.
 - 2 `external-write` tools.
+- 5 registered `transient` tools.
 - 7 registered tools are not covered by the static AST audit because they are
   registered via direct `mcp.tool()(fn)` calls without safety annotations.
 - 86 statically audited legacy low-level tool definitions remain in source for
   helper/test compatibility but are intentionally absent from public
   registration.
 
-`--fail-on-gaps` is the current no-regression gate.
+`--fail-on-gaps` is the current no-regression gate for `write-gap` and
+`needs-review` findings.
 `scripts/check_tool_registration_baseline.py` is the registration baseline
 check. The previous duplicate `project_doctor_tools.register(mcp)` call was
 removed as behavior-preserving registration cleanup.
 
 The v2.0 internal operation registry skeleton was added on 2026-06-04 without
-public MCP registration changes. It describes existing write-safe mixer,
+public MCP registration changes. It describes existing write-safe-required mixer,
 channel, and tempo primitives for later validation and batching work; it does
 not add new FL Studio API capability claims.
 

@@ -143,7 +143,7 @@ def register(mcp: FastMCP) -> None:
         "destructiveHint": False,
         "idempotentHint": True,
         "openWorldHint": True,
-        "safetyClass": "write-safe",
+        "safetyClass": "write-safe-required",
     }
 
     @mcp.tool(annotations={"title": "Get mixer track routing", **_RO})
@@ -194,7 +194,7 @@ def register(mcp: FastMCP) -> None:
         """Enable/disable a send from src -> dst (calls afterRoutingChanged on the
         FL side). Snapshot + readback; undo with fl_rollback_last_change.
 
-        Safety: Write-Safe with Rollback.
+        Safety: Write-Safe-Required with Rollback.
         """
         bridge = get_bridge()
         for track, purpose in ((src, "mixer route source"), (dst, "mixer route destination")):
@@ -228,7 +228,7 @@ def register(mcp: FastMCP) -> None:
         direct -> Master OFF; bus -> Master ON; optional bus rename. Applied as
         ONE rollback unit -- fl_rollback_last_change undoes the whole grouping.
 
-        Safety: Write-Safe with Rollback. The routing and optional rename are
+        Safety: Write-Safe-Required with Rollback. The routing and optional rename are
         persisted as one named rollback unit.
         """
         bridge = get_bridge()
@@ -383,7 +383,7 @@ def register(mcp: FastMCP) -> None:
     ) -> dict:
         """Apply multiple routing changes and track renames in one rollback unit.
 
-        Safety: Write-Safe with Rollback.
+        Safety: Write-Safe-Required with Rollback.
         """
         bridge = get_bridge()
         writes = []
@@ -428,7 +428,7 @@ def register(mcp: FastMCP) -> None:
         - Prefer buses before their group when that fits the project.
         - Keep UI-only routing and plugin insertion manual.
 
-        Safety: Write-Safe with Rollback.
+        Safety: Write-Safe-Required with Rollback.
         """
         bridge = get_bridge()
         writes = []

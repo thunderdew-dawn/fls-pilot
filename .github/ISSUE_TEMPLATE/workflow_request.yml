@@ -24,7 +24,7 @@ body:
     id: proposed-path
     attributes:
       label: Proposed safe tool path
-      description: Which read-only, transient, or write-safe steps should be involved?
+      description: Which read-only, transient, or write-safe-required steps should be involved?
     validations:
       required: false
   - type: dropdown

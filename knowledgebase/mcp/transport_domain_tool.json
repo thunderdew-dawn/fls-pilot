@@ -42,7 +42,7 @@
     }
   ],
   "known_pitfalls": [
-    "The tool's annotation is write-safe because the same public function can perform persistent writes; read-only and transient action safety is action-specific in the implementation and docstring.",
+    "The tool's annotation is write-safe-required because the same public function can perform persistent writes; read-only and transient action safety is action-specific in the implementation and docstring.",
     "Live FL Studio smoke was not run in this slice."
   ],
   "reproduction_steps": [

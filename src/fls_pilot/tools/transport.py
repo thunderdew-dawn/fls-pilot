@@ -46,7 +46,7 @@ def register(mcp: FastMCP) -> None:
             "destructiveHint": True,
             "idempotentHint": False,
             "openWorldHint": True,
-            "safetyClass": "write-safe",
+            "safetyClass": "write-safe-required",
         },
     )
     def fl_transport(
@@ -73,7 +73,7 @@ def register(mcp: FastMCP) -> None:
         controls such as play, stop, record, and song-position moves are
         transient and do not persist project state.
 
-        Safety: Write-Safe with Rollback for persistent writes; Transient
+        Safety: Write-Safe-Required with Rollback for persistent writes; Transient
         Runtime Control for playback controls; Read-Only for transport reads.
         """
         if action == "ping":
@@ -85,7 +85,7 @@ def register(mcp: FastMCP) -> None:
             raise ValueError(str(exc)) from exc
 
         bridge = get_bridge()
-        if prepared.safety_class == "write-safe":
+        if prepared.requires_write_contract:
             return safety.safe_write(
                 bridge,
                 **prepared.safe_write_kwargs(tool=f"transport_{prepared.action}"),
@@ -122,7 +122,7 @@ def register(mcp: FastMCP) -> None:
             "destructiveHint": False,
             "idempotentHint": True,
             "openWorldHint": True,
-            "safetyClass": "write-safe",
+            "safetyClass": "write-safe-required",
         },
     )
     def fl_set_tempo(
@@ -132,7 +132,7 @@ def register(mcp: FastMCP) -> None:
     ) -> dict:
         """Set the FL Studio project tempo. Snapshot + readback; rollback restores BPM.
 
-        Safety: Write-Safe with Rollback.
+        Safety: Write-Safe-Required with Rollback.
         """
         return safety.safe_write(
             get_bridge(),
@@ -288,7 +288,7 @@ def register(mcp: FastMCP) -> None:
             "destructiveHint": False,
             "idempotentHint": True,
             "openWorldHint": True,
-            "safetyClass": "write-safe",
+            "safetyClass": "write-safe-required",
         },
     )
     def fl_set_time_signature(
@@ -302,7 +302,7 @@ def register(mcp: FastMCP) -> None:
     ) -> dict:
         """Set the project time signature. Snapshot + readback; rollback restores it.
 
-        Safety: Write-Safe with Rollback.
+        Safety: Write-Safe-Required with Rollback.
         """
         if denominator not in (4, 8):
             return {

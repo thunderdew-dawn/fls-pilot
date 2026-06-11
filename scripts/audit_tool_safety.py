@@ -25,12 +25,15 @@ PROTOCOL = ROOT / "src" / "fls_pilot" / "protocol.py"
 
 WRITE_CONSTANTS = {
     "CMD_SET_TEMPO",
+    "CMD_SET_TIME_SIG",
     "CMD_GENERAL_UNDO",
     "CMD_MIXER_SET_VOLUME",
     "CMD_MIXER_SET_PAN",
     "CMD_MIXER_SET_MUTE",
     "CMD_MIXER_SET_SOLO",
     "CMD_MIXER_SET_NAME",
+    "CMD_MIXER_SELECT_TRACK",
+    "CMD_MIXER_SET_STEREO_SEP",
     "CMD_CHANNEL_SET_VOLUME",
     "CMD_CHANNEL_SET_PAN",
     "CMD_CHANNEL_SET_MUTE",
@@ -38,17 +41,40 @@ WRITE_CONSTANTS = {
     "CMD_CHANNEL_SELECT",
     "CMD_CHANNEL_SET_NAME",
     "CMD_CHANNEL_SET_TARGET",
+    "CMD_CHANNEL_SET_STEPS",
     "CMD_PATTERN_SELECT",
     "CMD_PATTERN_RENAME",
+    "CMD_PATTERN_SET_COLOR",
+    "CMD_PATTERN_SET_LENGTH",
+    "CMD_PLAYLIST_SET_MUTE",
+    "CMD_PLAYLIST_SET_SOLO",
+    "CMD_PLAYLIST_SET_NAME",
+    "CMD_PLAYLIST_SET_COLOR",
+    "CMD_PLAYLIST_SELECT_TRACK",
     "CMD_MIXER_SET_ROUTE",
     "CMD_MIXER_SET_COLOR",
     "CMD_CHANNEL_SET_COLOR",
+    "CMD_MIXER_SET_SLOT_MIX",
+    "CMD_MIXER_SET_TRACK_SLOTS",
+    "CMD_MIXER_SET_SLOT_ENABLED",
+    "CMD_MIXER_SET_EQ",
     "CMD_PLUGIN_SET_PARAM",
     "CMD_PLUGIN_PRESET",
     "CMD_ARRANGE_NEW_PATTERN",
     "CMD_ARRANGE_CLONE_PATTERN",
     "CMD_ARRANGE_ADD_MARKER",
     "CMD_API_PROBE",  # has marker_add/undo modes; treat user-facing use as review.
+}
+
+SAFETY_CLASS_TO_CONTRACT = {
+    "read-only": "read-only",
+    "transient": "transient",
+    "external-write": "external-write",
+    "server-state": "server-state",
+    "write-safe-required": "write-safe-required",
+    "write-gap": "write-gap",
+    "needs-review": "needs-review",
+    "forbidden": "forbidden",
 }
 
 TRANSIENT_CONSTANTS = {
@@ -97,6 +123,7 @@ class ToolAudit:
     read_only_hint: bool | None
     destructive_hint: bool | None
     safety_class_annotation: str | None
+    contract_safety_class: str
     has_safety_doc: bool
     status: str
     evidence: str
@@ -110,6 +137,7 @@ class ToolAudit:
             "read_only_hint": self.read_only_hint,
             "destructive_hint": self.destructive_hint,
             "safety_class_annotation": self.safety_class_annotation,
+            "contract_safety_class": self.contract_safety_class,
             "has_safety_doc": self.has_safety_doc,
             "status": self.status,
             "evidence": self.evidence,
@@ -269,7 +297,7 @@ def _classify_tool(
     if fn.name in EXTERNAL_WRITE_TOOLS:
         return "external-write", "; ".join(evidence_bits) or "writes outside FL"
     if has_safe:
-        return "write-safe", "; ".join(evidence_bits)
+        return "write-safe-required", "; ".join(evidence_bits)
     if has_apply_notes:
         return "write-gap", "; ".join(evidence_bits)
     if "write" in classes:
@@ -291,10 +319,15 @@ def _expected_safety_class(status: str) -> str:
         "transient": "transient",
         "external-write": "external-write",
         "server-state": "server-state",
-        "write-safe": "write-safe",
+        "write-safe-required": "write-safe-required",
         "write-gap": "write-gap",
         "needs-review": "needs-review",
+        "forbidden": "forbidden",
     }.get(status, status)
+
+
+def _contract_safety_class(status: str) -> str:
+    return SAFETY_CLASS_TO_CONTRACT.get(status, status)
 
 
 def audit_file(path: Path) -> list[ToolAudit]:
@@ -337,6 +370,7 @@ def audit_file(path: Path) -> list[ToolAudit]:
                 read_only_hint=annotations.get("readOnlyHint"),
                 destructive_hint=annotations.get("destructiveHint"),
                 safety_class_annotation=safety_class,
+                contract_safety_class=_contract_safety_class(status),
                 has_safety_doc="Safety:" in doc,
                 status=status,
                 evidence=evidence,
@@ -357,13 +391,16 @@ def print_markdown(audits: list[ToolAudit]) -> None:
     for key in sorted(counts):
         print(f"- `{key}`: {counts[key]}")
     print()
-    print("| Status | Tool | Location | Evidence |")
-    print("|---|---|---|---|")
+    print("| Status | Contract | Tool | Location | Evidence |")
+    print("|---|---|---|---|---|")
     for audit in sorted(audits, key=lambda a: (a.status, _rel(a.path), a.line)):
         location = f"{_rel(audit.path)}:{audit.line}"
         evidence = audit.evidence.replace("|", "\\|")
         title = f" ({audit.title})" if audit.title else ""
-        print(f"| `{audit.status}` | `{audit.name}`{title} | `{location}` | {evidence} |")
+        print(
+            f"| `{audit.status}` | `{audit.contract_safety_class}` | "
+            f"`{audit.name}`{title} | `{location}` | {evidence} |"
+        )
 
 
 def count_by_status(audits: list[ToolAudit]) -> dict[str, int]:
@@ -386,7 +423,9 @@ def print_json(audits: list[ToolAudit]) -> None:
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
-        "--fail-on-gaps", action="store_true", help="Exit non-zero if write gaps are found."
+        "--fail-on-gaps",
+        action="store_true",
+        help="Exit non-zero if write gaps or unresolved needs-review tools are found.",
     )
     parser.add_argument(
         "--max-write-gaps", type=int, help="Exit non-zero if write gaps exceed this baseline."
@@ -416,7 +455,7 @@ def main() -> int:
         print_markdown(audits)
 
     gap_count = count_by_status(audits).get("write-gap", 0)
-    if args.fail_on_gaps and any(a.status == "write-gap" for a in audits):
+    if args.fail_on_gaps and any(a.status in {"write-gap", "needs-review"} for a in audits):
         return 1
     if args.fail_on_missing_safety_docs:
         missing = [

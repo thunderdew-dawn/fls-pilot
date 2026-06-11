@@ -431,7 +431,7 @@ def register(mcp: FastMCP) -> None:
                 "2. Treat MCP readbacks, diagnostics, and the changelog as the authoritative state, NOT your conversation history.",
                 "3. Follow the prioritization strategy below. Pick the highest priority issue category.",
                 "4. Explain the evidence for that specific issue to the user.",
-                "5. Propose exactly ONE fix using an available write-safe tool (e.g. fl_apply_bus_layout, fl_apply_naming_standard, fl_apply_audio_clip_safe_defaults).",
+                "5. Propose exactly ONE fix using an available write-safe-required tool (e.g. fl_apply_bus_layout, fl_apply_naming_standard, fl_apply_audio_clip_safe_defaults).",
                 "6. Ask for the user's approval.",
                 "7. Apply the fix. Then immediately read back the affected state and show the before/after result.",
                 "8. Offer to rollback (via fl_rollback_last_change) or continue to the next issue.",

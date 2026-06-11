@@ -33,7 +33,7 @@ def register(mcp: FastMCP) -> None:
         "destructiveHint": False,
         "idempotentHint": True,
         "openWorldHint": True,
-        "safetyClass": "write-safe",
+        "safetyClass": "write-safe-required",
     }
 
     # ---- reads ----------------------------------------------------------
@@ -71,7 +71,7 @@ def register(mcp: FastMCP) -> None:
     ) -> dict:
         """Set a mixer track volume. unit='db' uses 0.8=unity (0 dB).
 
-        Safety: Write-Safe with Rollback.
+        Safety: Write-Safe-Required with Rollback.
         """
         bridge = get_bridge()
         error = mixer_track_error(bridge, track, purpose="mixer volume write")
@@ -96,7 +96,7 @@ def register(mcp: FastMCP) -> None:
     ) -> dict:
         """Set a mixer track's pan position (-1 left .. +1 right).
 
-        Safety: Write-Safe with Rollback.
+        Safety: Write-Safe-Required with Rollback.
         """
         bridge = get_bridge()
         error = mixer_track_error(bridge, track, purpose="mixer pan write")
@@ -118,7 +118,7 @@ def register(mcp: FastMCP) -> None:
     def fl_set_mixer_mute(track: Annotated[int, Field(ge=0)], state: bool) -> dict:
         """Mute or unmute a mixer track (state=True mutes).
 
-        Safety: Write-Safe with Rollback.
+        Safety: Write-Safe-Required with Rollback.
         """
         bridge = get_bridge()
         error = mixer_track_error(bridge, track, purpose="mixer mute write")
@@ -141,7 +141,7 @@ def register(mcp: FastMCP) -> None:
     def fl_set_mixer_solo(track: Annotated[int, Field(ge=0)], state: bool) -> dict:
         """Solo or unsolo a mixer track (state=True solos).
 
-        Safety: Write-Safe with Rollback.
+        Safety: Write-Safe-Required with Rollback.
         """
         bridge = get_bridge()
         error = mixer_track_error(bridge, track, purpose="mixer solo write")
@@ -164,7 +164,7 @@ def register(mcp: FastMCP) -> None:
     def fl_set_mixer_name(track: Annotated[int, Field(ge=0)], name: str) -> dict:
         """Rename a mixer track.
 
-        Safety: Write-Safe with Rollback.
+        Safety: Write-Safe-Required with Rollback.
         """
         bridge = get_bridge()
         error = mixer_track_error(bridge, track, purpose="mixer name write")
@@ -191,7 +191,7 @@ def register(mcp: FastMCP) -> None:
     ) -> dict:
         """Set a channel-rack channel's volume. unit='db' uses 0.8=unity (0 dB).
 
-        Safety: Write-Safe with Rollback.
+        Safety: Write-Safe-Required with Rollback.
         """
         return safety.safe_write(
             get_bridge(),
@@ -212,7 +212,7 @@ def register(mcp: FastMCP) -> None:
     ) -> dict:
         """Set a channel-rack channel's pan position (-1 left .. +1 right).
 
-        Safety: Write-Safe with Rollback.
+        Safety: Write-Safe-Required with Rollback.
         """
         return safety.safe_write(
             get_bridge(),
@@ -230,7 +230,7 @@ def register(mcp: FastMCP) -> None:
     def fl_set_channel_mute(channel: Annotated[int, Field(ge=0)], state: bool) -> dict:
         """Mute or unmute a channel-rack channel (state=True mutes).
 
-        Safety: Write-Safe with Rollback.
+        Safety: Write-Safe-Required with Rollback.
         """
         return safety.safe_write(
             get_bridge(),
@@ -249,7 +249,7 @@ def register(mcp: FastMCP) -> None:
     def fl_set_channel_solo(channel: Annotated[int, Field(ge=0)], state: bool) -> dict:
         """Solo or unsolo a channel-rack channel (state=True solos).
 
-        Safety: Write-Safe with Rollback.
+        Safety: Write-Safe-Required with Rollback.
         """
         return safety.safe_write(
             get_bridge(),
@@ -295,7 +295,7 @@ def register(mcp: FastMCP) -> None:
     ) -> dict:
         """Set a mixer track volume. unit='db' uses 0.8=unity (0 dB).
 
-        Safety: Write-Safe with Rollback.
+        Safety: Write-Safe-Required with Rollback.
         """
         return fl_set_mixer_volume(track=track, value=value, unit=unit)
 
@@ -306,7 +306,7 @@ def register(mcp: FastMCP) -> None:
     ) -> dict:
         """Set a mixer track's pan position (-1 left .. +1 right).
 
-        Safety: Write-Safe with Rollback.
+        Safety: Write-Safe-Required with Rollback.
         """
         return fl_set_mixer_pan(track=track, value=value)
 
@@ -314,7 +314,7 @@ def register(mcp: FastMCP) -> None:
     def fl_mixer_set_mute(track: Annotated[int, Field(ge=0)], state: bool) -> dict:
         """Mute or unmute a mixer track (state=True mutes).
 
-        Safety: Write-Safe with Rollback.
+        Safety: Write-Safe-Required with Rollback.
         """
         return fl_set_mixer_mute(track=track, state=state)
 
@@ -322,7 +322,7 @@ def register(mcp: FastMCP) -> None:
     def fl_mixer_set_solo(track: Annotated[int, Field(ge=0)], state: bool) -> dict:
         """Solo or unsolo a mixer track (state=True solos).
 
-        Safety: Write-Safe with Rollback.
+        Safety: Write-Safe-Required with Rollback.
         """
         return fl_set_mixer_solo(track=track, state=state)
 
@@ -332,7 +332,7 @@ def register(mcp: FastMCP) -> None:
     ) -> dict:
         """Select a mixer track to drive UI focus; rollback restores the previous selection.
 
-        Safety: Write-Safe with Rollback.
+        Safety: Write-Safe-Required with Rollback.
         """
         bridge = get_bridge()
         error = mixer_track_error(bridge, track, purpose="mixer track selection")
@@ -374,7 +374,7 @@ def register(mcp: FastMCP) -> None:
     ) -> dict:
         """Enable/disable a send from src to dst; rollback restores the prior route state.
 
-        Safety: Write-Safe with Rollback.
+        Safety: Write-Safe-Required with Rollback.
         """
         bridge = get_bridge()
         for track, purpose in ((src, "mixer route source"), (dst, "mixer route destination")):
@@ -424,7 +424,7 @@ def register(mcp: FastMCP) -> None:
     ) -> dict:
         """Set a mixer track's stereo separation (-1.0 mono .. 1.0 fully separated).
 
-        Safety: Write-Safe with Rollback. Some FL builds execute this command
+        Safety: Write-Safe-Required with Rollback. Some FL builds execute this command
         without persistent readback; safe_write prevents unverified success.
         """
         bridge = get_bridge()
@@ -486,7 +486,7 @@ def register(mcp: FastMCP) -> None:
 
         Safety: Read-Only.
         """
-        history = safety.change_history(limit, include_payload=False).get("history", [])
+        history = safety.change_history(limit, include_payload=False).get("entries", [])
 
         if not history:
             return {"summary": "No changes recorded."}
@@ -497,13 +497,16 @@ def register(mcp: FastMCP) -> None:
             id_ = h.get("change_id", "?")
             tool = h.get("tool", "?")
             unit = h.get("rollback_unit", "")
-            is_batch = h.get("is_group", False)
+            is_batch = h.get("group", False)
 
             markdown += f"| `{id_}` | {ts} | {tool} | {unit} | {'Yes' if is_batch else 'No'} |\n"
 
         return {
             "markdown_table": markdown,
-            "note": "Use fl_rollback_change(change_id) to undo the most recent valid change.",
+            "note": (
+                "Use fl_rollback_change(change_id) while the change is latest, or "
+                "fl_rollback_last_change() to undo the latest recorded change."
+            ),
         }
 
     @mcp.tool(
@@ -549,7 +552,7 @@ def register(mcp: FastMCP) -> None:
         """Undo the most recent write by replaying its pre-change snapshot.
 
         Safety: Server-State. This is the MCP rollback path for prior
-        write-safe changes and only operates from recorded restore payloads.
+        write-safe-required changes and only operates from recorded restore payloads.
         """
         return safety.rollback_last_change(get_bridge())
 
@@ -571,7 +574,7 @@ def register(mcp: FastMCP) -> None:
         Only the latest entry is accepted to avoid unsafe non-LIFO rollback.
 
         Safety: Server-State. This is the MCP rollback path for prior
-        write-safe changes and only permits LIFO rollback by change id.
+        write-safe-required changes and only permits LIFO rollback by change id.
         """
         return safety.rollback_change(get_bridge(), change_id)
 

@@ -38,15 +38,15 @@ data server-side.
 | `get_selected` | read-only | Currently selected channel |
 | `get_steps` | read-only | Step sequencer grid read |
 | `classify` | read-only | Groups channels by type (AudioClip, Sampler, etc.) |
-| `select` | write-safe | Rollback restores prior selection |
-| `set_color` | write-safe | Accepts int or r/g/b |
-| `set_mute` | write-safe | Verify pair on mute field |
-| `set_mixer_target` | write-safe | Verify pair on target_fx_track |
-| `set_name` | write-safe | |
-| `set_pan` | write-safe | Range -1..1 |
-| `set_solo` | write-safe | Verify pair on solo field |
-| `set_steps` | write-safe | Full grid snapshot/restore per channel+pattern |
-| `set_volume` | write-safe | unit: normalized or db |
+| `select` | write-safe-required | Rollback restores prior selection |
+| `set_color` | write-safe-required | Accepts int or r/g/b |
+| `set_mute` | write-safe-required | Verify pair on mute field |
+| `set_mixer_target` | write-safe-required | Verify pair on target_fx_track |
+| `set_name` | write-safe-required | |
+| `set_pan` | write-safe-required | Range -1..1 |
+| `set_solo` | write-safe-required | Verify pair on solo field |
+| `set_steps` | write-safe-required | Full grid snapshot/restore per channel+pattern |
+| `set_volume` | write-safe-required | unit: normalized or db |
 
 ---
 
@@ -63,7 +63,7 @@ data server-side.
 - `classify` calls `fetch_all_pages` on `CMD_CHANNEL_ROUTING_SUMMARY` and
   groups results by `type.label`. This preserves the previous channel
   classification behavior through the domain tool.
-- The tool annotation is `write-safe` because the tool can execute
+- The tool annotation is `write-safe-required` because the tool can execute
   persistent writes; individual action safety is enforced by registry
   dispatch and documented in the docstring.
 - Legacy low-level channel aliases for details, naming, mixer assignment, and

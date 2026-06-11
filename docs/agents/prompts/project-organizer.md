@@ -33,4 +33,4 @@ Return:
 1. Current organization summary.
 2. Proposed groups/routes/colors/names.
 3. Safe step queue.
-4. Rollback/readback notes for any write-safe step.
+4. Rollback/readback notes for any write-safe-required step.

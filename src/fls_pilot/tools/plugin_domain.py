@@ -37,7 +37,7 @@ def register(mcp: FastMCP) -> None:
             "destructiveHint": True,
             "idempotentHint": False,
             "openWorldHint": True,
-            "safetyClass": "write-safe",
+            "safetyClass": "write-safe-required",
         },
     )
     def fl_plugin(
@@ -70,7 +70,7 @@ def register(mcp: FastMCP) -> None:
         Plugin loading, insertion, removal, and preset navigation writes are
         intentionally not exposed; loading stays manual.
 
-        Safety: Write-Safe with Rollback for ``set_param``; Read-Only for
+        Safety: Write-Safe-Required with Rollback for ``set_param``; Read-Only for
         plugin and parameter reads.
         """
         if action in _PLUGIN_LOADING_ACTIONS:
@@ -108,7 +108,7 @@ def register(mcp: FastMCP) -> None:
                 return {"ok": False, "error": str(exc)}
             resolved["param"] = idx
             prepared = _prepare("plugin", action, resolved)
-            if prepared.safety_class == "write-safe":
+            if prepared.requires_write_contract:
                 result = safety.safe_write(
                     bridge,
                     **prepared.safe_write_kwargs(tool=f"plugin_{prepared.action}"),
