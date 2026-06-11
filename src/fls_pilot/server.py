@@ -175,6 +175,14 @@ REQUIREMENTS
          the MCP server.
   5. Call fl_transport(action="ping") first to verify the bridge is healthy.
 
+DEFAULT SAFE UX FOR WRITE-CAPABLE WORKFLOWS
+  - scan/read-only first; explain findings before proposing writes.
+  - Propose exactly one reversible change with a risk level.
+  - Ask for explicit confirmation before any persistent write.
+  - After confirmation, apply one reversible change only.
+  - Readback where supported; report before/after plus rollback/change_id.
+  - Stop after the verified change and wait for user direction.
+
 LIMITS YOU SHOULD KNOW ABOUT (these are FL API limitations, not server bugs)
   - Cannot load new VST/AU plugin instances. You can only control plugins
     that already exist in the project.
@@ -183,7 +191,7 @@ LIMITS YOU SHOULD KNOW ABOUT (these are FL API limitations, not server bugs)
   - Tempo writes are sometimes ignored if FL is in a modal dialog.
   - Prefer consolidated domain tools such as fl_transport, fl_mixer,
     fl_channel, fl_pattern, fl_playlist, fl_effect, fl_plugin, fl_piano_roll,
-    and fl_batch. Legacy low-level aliases are not registered in v1.2.
+    and fl_batch. Legacy low-level aliases are not registered in v3.
 
 When the user asks for something outside these limits, explain the limit
 clearly rather than retrying.

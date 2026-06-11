@@ -43,6 +43,22 @@ Persistent writes may enter through only:
 - `safety.safe_piano_roll_write(...)` for undo-backed Piano Roll generated
   scripts with explicit readback limits.
 
+## Default Safe UX
+
+User-facing workflows must expose the write-safety contract as a conservative
+assistant flow:
+
+1. Scan/read-only first.
+2. Explain findings in normal user language.
+3. Propose exactly one safest reversible next action with a risk level.
+4. Ask for explicit confirmation before any persistent write.
+5. Apply at most one reversible change or one named rollback unit.
+6. Read back affected state where supported.
+7. Report before/after plus rollback or `change_id` where available.
+8. Stop and wait for user direction.
+
+See [Default Safe UX](default-safe-ux.md) for the risk levels and report shape.
+
 ## Stop And Fallback Rules
 
 - Do not guess normalized values, dB/Hz mappings, REC event IDs, track indices,

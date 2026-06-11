@@ -5,8 +5,10 @@ This page collects useful user prompts for working with fls-pilot. Users do not 
 ## Module Examples
 
 Each example is a user prompt. The assistant may call several tools behind the
-scenes, and write tools should be described before execution when the change is
-not trivial.
+scenes. For workflows that may write to FL Studio, the default behavior is to
+scan/read-only first, propose one reversible action with a risk level, ask for
+explicit confirmation, apply at most one approved change, read back where
+supported, report before/after plus rollback or `change_id`, then stop.
 
 ### Transport And Bridge
 
@@ -37,8 +39,8 @@ Typical tools: `fl_get_project_state`, `fl_mixer`,
 Prompt:
 
 ```text
-Find channels that are not routed to mixer tracks, assign the kick to a free
-track, and write a four-on-the-floor kick pattern.
+Find channels that are not routed to mixer tracks. Propose the safest one-track
+routing fix with a risk level, but do not apply it until I confirm.
 ```
 
 Typical tools: `fl_detect_unassigned_channels`,
@@ -49,8 +51,8 @@ Typical tools: `fl_detect_unassigned_channels`,
 Prompt:
 
 ```text
-Create a named intro pattern, clone my main groove for the drop, color the drop
-pattern red, and add section markers at bars 1, 17, and 33.
+Review my pattern and playlist metadata first. Propose one low-risk reversible
+organization change, ask for confirmation, then stop.
 ```
 
 Typical tools: `fl_arrange_new_pattern`, `fl_arrange_clone_pattern`,
@@ -61,8 +63,8 @@ Typical tools: `fl_arrange_new_pattern`, `fl_arrange_clone_pattern`,
 Prompt:
 
 ```text
-Write an 8-bar melody in D Dorian to the selected channel, then quantize it to
-1/16 notes.
+Prepare an 8-bar D Dorian melody plan for the selected channel. Tell me the
+risk level and wait for confirmation before writing to the Piano Roll.
 ```
 
 Typical tools: `fl_scale_get`, `fl_piano_roll`, or the higher-level
@@ -73,8 +75,8 @@ Typical tools: `fl_scale_get`, `fl_piano_roll`, or the higher-level
 Prompt:
 
 ```text
-Find the EQ on the lead vocal, reduce harshness around 3 kHz, then show the
-before and after parameter values.
+Find the EQ on the lead vocal and propose one rollback-safe harshness reduction
+around 3 kHz. Include the risk level and wait for confirmation.
 ```
 
 Typical tools: `fl_plugin`, `fl_apply_eq_intent`.
@@ -87,7 +89,7 @@ Prompt:
 
 ```text
 Run Mix Review, explain the top three problems, and apply only the safest
-headroom fix first.
+headroom fix first after I confirm the exact proposed change.
 ```
 
 Typical tools: `fl_review_mix`, `fl_review_low_end_stereo`, `fl_gain_stage`,
@@ -98,8 +100,8 @@ Typical tools: `fl_review_mix`, `fl_review_low_end_stereo`, `fl_gain_stage`,
 Prompt:
 
 ```text
-Group all drum tracks into a Drums bus, mute the bass group for comparison,
-then undo the mute when I say so.
+Review routing first. Propose one low-risk rollback-safe routing change with a
+risk level and wait for confirmation before applying it.
 ```
 
 Typical tools: `fl_detect_cleanup_candidates`, `fl_group_tracks`,
@@ -130,6 +132,23 @@ Typical tools: `fl_analyze_audio`, `fl_suggest_preset`,
 `fl_setup_chain`, `fl_export_midi`.
 
 ## Useful Prompt Patterns
+
+### Safety-First Examples
+
+```text
+Scan my mix first. Do not change anything yet. Tell me the safest next action,
+its risk level, and offer only one reversible fix.
+```
+
+```text
+Review the routing first. Give me a read-only diagnosis and one low-risk
+rollback-safe routing change to approve.
+```
+
+```text
+Prepare this project for export. Report blockers first, use dry-run planning,
+and stop before applying anything.
+```
 
 ```text
 Scan first, do not change anything yet.

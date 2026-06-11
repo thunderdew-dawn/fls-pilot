@@ -118,6 +118,11 @@ _WORKFLOWS = [
 ]
 
 _SAFETY_RULES = [
+    "Default safe UX: scan/read-only first, explain findings, then propose one "
+    "reversible change with a risk level.",
+    "Before any write, ask for explicit confirmation of the exact change.",
+    "After confirmation, apply one reversible change only, readback where "
+    "supported, report before/after plus rollback/change_id, then stop.",
     "Use Knowledgebase evidence before values, ranges, REC events, plugin params, or MIDI data.",
     "Prefer workflow/domain tools over legacy one-off aliases or raw FL API calls.",
     "No persistent FL write without snapshot, smallest write, readback, changelog, "

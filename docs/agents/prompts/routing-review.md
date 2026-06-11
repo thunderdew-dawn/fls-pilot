@@ -9,6 +9,7 @@ or send/return structure in the current FL Studio project.
 - `fl://status`
 - `docs/agents/runtime-usage.md`
 - `docs/concepts/safety-contract.md`
+- `docs/concepts/default-safe-ux.md`
 
 ## Workflow
 
@@ -16,8 +17,11 @@ or send/return structure in the current FL Studio project.
 2. Use read-only state first.
 3. Run `fl_review_routing`.
 4. If cleanup is requested, run `fl_plan_routing_cleanup` before any mutation.
-5. Treat cleanup as a plan unless the user explicitly approves a rollback-backed
-   write step.
+5. Treat cleanup as a plan unless the user explicitly approves one exact
+   rollback-backed write step.
+6. Include a risk level for the proposed routing change.
+7. After one approved write, read back where supported, report before/after plus
+   rollback or `change_id`, then stop.
 
 ## Stop Conditions
 
@@ -30,5 +34,6 @@ Return:
 
 1. Current routing risks.
 2. Bus/send/grouping issues.
-3. Proposed cleanup steps.
-4. Which steps are read-only, dry-run, or write-safe-required.
+3. One proposed cleanup step with risk level.
+4. Whether the step is read-only, dry-run, or write-safe-required.
+5. Confirmation request, or applied before/after plus rollback or `change_id`.

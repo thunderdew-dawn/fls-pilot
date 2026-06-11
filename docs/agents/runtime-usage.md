@@ -14,7 +14,11 @@ checks.
    or large tool calls.
 4. Choose a current workflow/domain tool. Avoid raw FL API calls and removed
    one-off aliases.
-5. For writes, plan the rollback unit before mutation.
+5. For write-capable workflows, scan/read-only first, propose exactly one
+   reversible next action with a risk level, and ask for explicit confirmation
+   before mutation.
+6. After one approved write, read back where supported, report before/after plus
+   rollback or `change_id`, then stop and wait for user direction.
 
 ## Tool-Choice Matrix
 
@@ -50,6 +54,9 @@ checks.
 
 - The selected tool path is current and Knowledgebase-informed.
 - Writes, if any, are rollback-backed and verified by readback where supported.
+- Write-capable workflows presented a risk level, asked for explicit
+  confirmation, applied only one reversible change per confirmation, and stopped
+  after the before/after report.
 - Unsupported API behavior is stated as a limit, not implied as completed work.
 - Docs, roadmap/API audit, and Knowledgebase are updated when public MCP
   behavior changes.
