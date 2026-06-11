@@ -51,7 +51,7 @@ The highest-value entry points for day-to-day production work are:
 
 The full documentation is available on Read the Docs:
 
-<https://fl-studio-pilot.readthedocs.io/en/latest/>
+<https://fl-studio-pilot.readthedocs.io/en/v3-alpha/>
 
 The documentation under `/docs` is the canonical source for the Developer Contract, Knowledgebase Protocol, Engineering Standards, API limits, safety model, and token-efficient MCP design rules.
 
