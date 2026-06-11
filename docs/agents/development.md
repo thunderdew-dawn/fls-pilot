@@ -26,9 +26,9 @@ For GitHub planning, issue/PR work, roadmap execution, releases, dependency upda
   patterns, tests, safety layer, protocol constants, controller handlers, and
   registration style.
 - For implementation work, explicitly inspect the relevant parts of
-  `../project/ROADMAP.github.md`, `../concepts/api-capability-audit.md`, `src/fls_pilot/safety.py`,
-  `src/fls_pilot/protocol.py`, the FL controller script, existing tool modules,
-  and focused tests/scripts before editing.
+  `docs/project/ROADMAP.github.md`, `docs/concepts/api-capability-audit.md`,
+  `src/fls_pilot/safety.py`, `src/fls_pilot/protocol.py`, the FL controller
+  script, existing tool modules, and focused tests/scripts before editing.
 - For non-trivial implementation slices, produce a short implementation plan
   before editing and confirm the slice is dependency-correct and rollback-safe.
 - Before building anything new, check whether the functionality already exists

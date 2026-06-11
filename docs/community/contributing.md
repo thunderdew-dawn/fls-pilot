@@ -10,8 +10,9 @@ This repository is the maintained `thunderdew-dawn/fls-pilot` fork of
 `rosasynthesiz/flstudio-mcp`. The 3.0 line intentionally uses the breaking
 `fls-pilot` package, command, and import names with no old aliases.
 Contributions should follow this fork's rollback-first safety layer,
-API-evidence discipline, and GitHub roadmap project. `../project/ROADMAP.github.md` is a readable
-snapshot, not the planning source of truth for open work.
+API-evidence discipline, and GitHub roadmap project.
+`docs/project/ROADMAP.github.md` is a readable snapshot, not the planning source
+of truth for open work.
 
 ## Code of Conduct
 

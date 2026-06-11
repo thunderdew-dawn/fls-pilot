@@ -8,7 +8,7 @@ or send/return structure in the current FL Studio project.
 - `fl://agent-briefing`
 - `fl://status`
 - `docs/agents/runtime-usage.md`
-- `docs/agents/safety-contract.md`
+- `docs/concepts/safety-contract.md`
 
 ## Workflow
 

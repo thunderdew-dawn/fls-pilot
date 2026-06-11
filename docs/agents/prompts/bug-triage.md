@@ -7,8 +7,8 @@ Triage GitHub bug issue #<number>.
 
 Tasks:
 - Read AGENTS.md, docs/agents/github-playbook.md,
-  docs/agents/safety-contract.md, ../../engineering/standards.md, ../../project/ROADMAP.github.md,
-  and the issue.
+  docs/concepts/safety-contract.md, docs/engineering/standards.md,
+  docs/project/ROADMAP.github.md, and the issue.
 - Classify as reproducible, needs-info, duplicate, expected API limitation, or
   real defect.
 - Identify the smallest affected surface.
