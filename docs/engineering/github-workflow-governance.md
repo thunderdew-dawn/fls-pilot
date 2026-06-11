@@ -296,12 +296,13 @@ v3 renames and structure changes can make a clean cherry-pick unsafe.
 ## Required Checks And Workflows
 
 The repository uses GitHub Actions for quality, safety, project governance, and
-release automation.
+release automation. CodeQL runs through GitHub Code Scanning Default Setup; do
+not add a second advanced CodeQL workflow while Default Setup is enabled.
 
 | Workflow | Purpose |
 |---|---|
 | `CI` | Installs the package, compiles Python, runs hard Ruff checks, anti-vibe audit, tool registration baseline, tool safety audits, mock bridge smoke test, and offline tests |
-| `CodeQL` | Performs security analysis |
+| `CodeQL / Default Setup` | Performs security analysis |
 | `Project Automation` | Adds and syncs issues in Project #7 |
 | `Project Fingerprint` | Verifies required Project #7 invariants |
 | `Release Dry Run` | Builds and validates distributions without publishing a release |

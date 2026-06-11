@@ -3,7 +3,6 @@
 ![version](https://img.shields.io/badge/version-3.0.0a1-blue)
 ![status](https://img.shields.io/badge/status-alpha-orange)
 [![CI](https://github.com/thunderdew-dawn/fls-pilot/actions/workflows/ci.yml/badge.svg)](https://github.com/thunderdew-dawn/fls-pilot/actions/workflows/ci.yml)
-[![CodeQL](https://github.com/thunderdew-dawn/fls-pilot/actions/workflows/codeql.yml/badge.svg)](https://github.com/thunderdew-dawn/fls-pilot/actions/workflows/codeql.yml)
 ![license](https://img.shields.io/badge/license-MIT-green)
 
 ![Python](https://img.shields.io/badge/python-3.10+-blue)
