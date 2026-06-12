@@ -119,6 +119,18 @@ For release validation, smoke-test both MCP transports explicitly:
 fls-pilot-doctor --all-transports
 ```
 
+To export a local read-only dashboard page:
+
+```bash
+fls-pilot-dashboard
+```
+
+The dashboard writes a static HTML/CSS/JS page under `scratch/dashboard/site`
+when run from this repository. It reads bridge/project/resource state only,
+clearly marks unavailable or API-limited data, and does not modify FL Studio.
+Use `fls-pilot-dashboard --serve --open` to view it through a local browser
+server.
+
 ## Documentation
 
 The full documentation is available on Read the Docs:

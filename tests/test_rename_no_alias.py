@@ -19,6 +19,8 @@ def test_console_scripts_have_no_old_aliases() -> None:
     assert scripts == {
         "fls-pilot": "fls_pilot.server:main",
         "fls-pilot-daemon": "fls_pilot.daemon:main",
+        "fls-pilot-dashboard": "fls_pilot.dashboard:main",
+        "fls-pilot-doctor": "fls_pilot.doctor:main",
     }
     assert "fl-studio-mcp" not in scripts
     assert "fl-studio-mcp-daemon" not in scripts

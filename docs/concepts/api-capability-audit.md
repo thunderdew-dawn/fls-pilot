@@ -163,6 +163,14 @@ heartbeat freshness, controller ping/build-marker readback, and local
 TCP daemon/bridge, and the FL Studio controller script as separate findings so
 transport success is not treated as project readiness.
 
+The `fls-pilot-dashboard` CLI was added for v3/alpha as a read-only local
+status page export. It is not a public MCP tool and does not add FL Studio
+write capability. Its collector is limited to existing bridge/resource status
+reads, MCP safety changelog reads, and generated static HTML/CSS/JS output. It
+must mark unavailable and API-limited data separately from live bridge data and
+must not use project mutation, setup mutation, render/save/open automation, or
+playlist clip editing.
+
 The v2.0 internal operation registry skeleton was added on 2026-06-04 without
 public MCP registration changes. It describes existing write-safe-required mixer,
 channel, and tempo primitives for later validation and batching work; it does

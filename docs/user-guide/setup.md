@@ -74,7 +74,23 @@ For release validation across both MCP transports:
 fls-pilot-doctor --all-transports
 ```
 
-## 5. Connect to your MCP Client
+## 5. Open the Local Dashboard
+
+Export the read-only local dashboard:
+
+```shell
+fls-pilot-dashboard
+```
+
+The dashboard uses existing read-only bridge and resource reads. It separates
+live bridge data from unavailable or API-limited signals and never applies FL
+Studio project changes. To serve it locally and open a browser:
+
+```shell
+fls-pilot-dashboard --serve --open
+```
+
+## 6. Connect to your MCP Client
 
 ### Option A: Claude Desktop, Cursor, or other stdio clients
 
@@ -115,7 +131,7 @@ ChatGPT Desktop does not support local stdio subprocesses and requires a remote/
     - **URL**: `http://localhost:8080/sse`
     - Click **Save**.
 
-## 6. Arm the Note Bridge (Per Session)
+## 7. Arm the Note Bridge (Per Session)
 
 Open the FL Studio Piano Roll, click the arrow menu (top-left), and run **MCP_Apply** once from the **File > Script** menu. This arms the note bridge for composition tools.
 
