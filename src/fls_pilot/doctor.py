@@ -16,8 +16,10 @@ import socket
 import subprocess
 import sys
 import time
+from collections.abc import Callable
 from dataclasses import asdict, dataclass
 from datetime import timedelta
+from typing import Any
 
 from . import __version__, connection, protocol, pyscript_gen
 from .runtime_config import DEFAULT_SSE_HOST, DEFAULT_SSE_PORT
@@ -54,6 +56,18 @@ class MCPServerConfig:
     smoke_timeout_seconds: float
     transport_error: str | None = None
     sse_port_error: str | None = None
+
+
+@dataclass(frozen=True)
+class TCPDaemonConfig:
+    transport: str
+    transport_source: str
+    active: bool
+    host: str
+    host_source: str
+    port: int | None
+    port_source: str
+    port_error: str | None = None
 
 
 def _check_importable(module_name: str) -> bool:
@@ -152,6 +166,55 @@ def resolve_mcp_server_config(
     )
 
 
+def resolve_tcp_daemon_config(
+    *,
+    bridge_transport: str | None = None,
+    tcp_host: str | None = None,
+    tcp_port: int | str | None = None,
+) -> TCPDaemonConfig:
+    """Resolve bridge TCP daemon settings from explicit values, env, and defaults."""
+    raw_transport, transport_source = _source_for_cli_env_default(
+        bridge_transport,
+        "FLS_PILOT_TRANSPORT",
+        "direct",
+        "--bridge-transport",
+    )
+    transport = str(raw_transport).strip().lower()
+
+    raw_host, host_source = _source_for_cli_env_default(
+        tcp_host,
+        "FLS_PILOT_TCP_HOST",
+        connection.DEFAULT_TCP_HOST,
+        "--tcp-host",
+    )
+    raw_port, port_source = _source_for_cli_env_default(
+        tcp_port,
+        "FLS_PILOT_TCP_PORT",
+        connection.DEFAULT_TCP_PORT,
+        "--tcp-port",
+    )
+
+    port_error = None
+    try:
+        resolved_port = int(raw_port)
+        if resolved_port <= 0 or resolved_port > 65535:
+            raise ValueError("port must be between 1 and 65535")
+    except (TypeError, ValueError) as exc:
+        resolved_port = None
+        port_error = f"Invalid FLS_PILOT_TCP_PORT: {raw_port!r}: {exc}"
+
+    return TCPDaemonConfig(
+        transport=transport,
+        transport_source=transport_source,
+        active=transport == "tcp",
+        host=str(raw_host),
+        host_source=host_source,
+        port=resolved_port,
+        port_source=port_source,
+        port_error=port_error,
+    )
+
+
 def check_python_environment() -> list[Finding]:
     """Check Python version and fls-pilot importability."""
     py_ver = sys.version.split(" ")[0]
@@ -238,7 +301,11 @@ def check_optional_dependencies() -> list[Finding]:
     return findings
 
 
-def check_midi_ports() -> list[Finding]:
+def check_midi_ports(
+    *,
+    severity: str = "blocker",
+    failed_status: str = "failed",
+) -> list[Finding]:
     """Check loopMIDI / IAC Driver port availability without changing ports."""
     try:
         ports = connection.list_ports()
@@ -246,8 +313,8 @@ def check_midi_ports() -> list[Finding]:
         return [
             Finding(
                 component="MIDI/IAC/loopMIDI Ports",
-                severity="blocker",
-                status="failed",
+                severity=severity,
+                status=failed_status,
                 evidence=f"Failed to list MIDI ports: {exc}",
                 remediation="Ensure mido and python-rtmidi are installed for this platform.",
                 config_source="system",
@@ -279,8 +346,8 @@ def check_midi_ports() -> list[Finding]:
         return [
             Finding(
                 component="MIDI/IAC/loopMIDI Ports",
-                severity="blocker",
-                status="failed",
+                severity=severity,
+                status=failed_status,
                 evidence=f"Missing expected ports: {', '.join(missing)}",
                 remediation=remedy,
                 config_source="env: FLS_PILOT_PORT_TO_FL / FLS_PILOT_PORT_FROM_FL",
@@ -290,7 +357,7 @@ def check_midi_ports() -> list[Finding]:
     return [
         Finding(
             component="MIDI/IAC/loopMIDI Ports",
-            severity="blocker",
+            severity=severity,
             status="ok",
             evidence=f"Found output {port_to_fl!r} and input {port_from_fl!r}.",
             remediation="",
@@ -299,31 +366,29 @@ def check_midi_ports() -> list[Finding]:
     ]
 
 
-def check_tcp_daemon() -> list[Finding]:
+def check_tcp_daemon(config: TCPDaemonConfig | None = None) -> list[Finding]:
     """Check the optional TCP daemon/bridge without treating it as the MCP server."""
-    is_tcp_configured = os.environ.get("FLS_PILOT_TRANSPORT", "midi").lower() == "tcp"
-    host = os.environ.get("FLS_PILOT_TCP_HOST", connection.DEFAULT_TCP_HOST)
-    port_str = os.environ.get("FLS_PILOT_TCP_PORT", str(connection.DEFAULT_TCP_PORT))
+    config = config or resolve_tcp_daemon_config()
+    is_tcp_configured = config.active
+    host = config.host
     severity = "blocker" if is_tcp_configured else "advisory"
     failed_status = "failed" if is_tcp_configured else "manual_check"
 
-    try:
-        port = int(port_str)
-    except ValueError:
+    if config.port is None:
         return [
             Finding(
                 component="TCP Daemon / Bridge",
                 severity=severity,
                 status=failed_status,
-                evidence=f"Invalid FLS_PILOT_TCP_PORT: {port_str!r}",
+                evidence=config.port_error or "Invalid TCP daemon port.",
                 remediation="Set FLS_PILOT_TCP_PORT to a valid integer.",
-                config_source="env: FLS_PILOT_TCP_PORT",
+                config_source=config.port_source,
             )
         ]
 
     bridge = None
     try:
-        bridge = connection.TCPBridge(host, port)
+        bridge = connection.TCPBridge(host, config.port)
         is_alive = bridge.is_alive()
     except OSError as exc:
         return [
@@ -332,14 +397,14 @@ def check_tcp_daemon() -> list[Finding]:
                 severity=severity,
                 status=failed_status,
                 evidence=(
-                    f"Daemon not reachable at {host}:{port}. "
+                    f"Daemon not reachable at {host}:{config.port}. "
                     f"TCP bridge mode active: {is_tcp_configured}. Error: {exc}"
                 ),
                 remediation=(
                     "Run 'fls-pilot-daemon' in a normal terminal when "
                     "FLS_PILOT_TRANSPORT=tcp is configured."
                 ),
-                config_source="env: FLS_PILOT_TCP_HOST / FLS_PILOT_TCP_PORT",
+                config_source=f"{config.host_source}; {config.port_source}",
             )
         ]
     except Exception as exc:
@@ -348,9 +413,9 @@ def check_tcp_daemon() -> list[Finding]:
                 component="TCP Daemon / Bridge",
                 severity=severity,
                 status=failed_status,
-                evidence=f"Daemon health check failed at {host}:{port}: {exc}",
+                evidence=f"Daemon health check failed at {host}:{config.port}: {exc}",
                 remediation="Check daemon logs and TCP bridge configuration.",
-                config_source="env: FLS_PILOT_TCP_HOST / FLS_PILOT_TCP_PORT",
+                config_source=f"{config.host_source}; {config.port_source}",
             )
         ]
     finally:
@@ -365,11 +430,11 @@ def check_tcp_daemon() -> list[Finding]:
                 severity=severity,
                 status=failed_status,
                 evidence=(
-                    f"Daemon responded at {host}:{port}, but its FL bridge is "
+                    f"Daemon responded at {host}:{config.port}, but its FL bridge is "
                     f"not alive. TCP bridge mode active: {is_tcp_configured}."
                 ),
                 remediation="Check daemon logs, MIDI ports, and FL controller heartbeat.",
-                config_source="env: FLS_PILOT_TCP_HOST / FLS_PILOT_TCP_PORT",
+                config_source=f"{config.host_source}; {config.port_source}",
             )
         ]
 
@@ -378,9 +443,9 @@ def check_tcp_daemon() -> list[Finding]:
             component="TCP Daemon / Bridge",
             severity=severity,
             status="ok",
-            evidence=f"Daemon responding and bridge alive at {host}:{port}.",
+            evidence=f"Daemon responding and bridge alive at {host}:{config.port}.",
             remediation="",
-            config_source="env: FLS_PILOT_TCP_HOST / FLS_PILOT_TCP_PORT",
+            config_source=f"{config.host_source}; {config.port_source}",
         )
     ]
 
@@ -396,10 +461,14 @@ def _probe_not_run(component: str, reason: str) -> Finding:
     )
 
 
-def check_fl_controller() -> list[Finding]:
+def check_fl_controller(
+    *,
+    bridge_factory: Callable[[], Any] | None = None,
+    config_source: str = "FL bridge",
+) -> list[Finding]:
     """Check FL Studio controller reachability, heartbeat, and read-only ping."""
     try:
-        bridge = connection.get_bridge()
+        bridge = bridge_factory() if bridge_factory is not None else connection.get_bridge()
     except connection.FLPortMissing as exc:
         return [
             Finding(
@@ -408,7 +477,7 @@ def check_fl_controller() -> list[Finding]:
                 status="failed",
                 evidence=f"Bridge could not open MIDI/TCP path: {exc}",
                 remediation="Create/configure the MIDI ports or TCP daemon before checking FL.",
-                config_source="FL bridge",
+                config_source=config_source,
             ),
             _probe_not_run("Heartbeat Freshness", "bridge path is unavailable."),
             _probe_not_run("Read-only Ping/Status", "bridge path is unavailable."),
@@ -421,7 +490,7 @@ def check_fl_controller() -> list[Finding]:
                 status="failed",
                 evidence=f"Bridge initialization error: {exc}",
                 remediation="Check daemon, local bridge setup, and Python dependencies.",
-                config_source="FL bridge",
+                config_source=config_source,
             ),
             _probe_not_run("Heartbeat Freshness", "bridge initialization failed."),
             _probe_not_run("Read-only Ping/Status", "bridge initialization failed."),
@@ -916,6 +985,9 @@ def run_all_checks(
     server_transport: str | None = None,
     sse_host: str | None = None,
     sse_port: int | str | None = None,
+    bridge_transport: str | None = None,
+    tcp_host: str | None = None,
+    tcp_port: int | str | None = None,
     smoke_timeout_seconds: float = DEFAULT_MCP_SMOKE_TIMEOUT_SECONDS,
 ) -> list[Finding]:
     """Run all Setup Doctor checks with dependency gating."""
@@ -926,8 +998,13 @@ def run_all_checks(
         all_transports=all_transports,
         smoke_timeout_seconds=smoke_timeout_seconds,
     )
+    tcp_config = resolve_tcp_daemon_config(
+        bridge_transport=bridge_transport,
+        tcp_host=tcp_host,
+        tcp_port=tcp_port,
+    )
     findings: list[Finding] = []
-    is_tcp_configured = os.environ.get("FLS_PILOT_TRANSPORT", "midi").lower() == "tcp"
+    is_tcp_configured = tcp_config.active
 
     findings.extend(check_python_environment())
     core_findings = check_core_dependencies()
@@ -969,11 +1046,15 @@ def run_all_checks(
 
     core_skip = "Core dependencies missing; run 'pip install fls-pilot' first."
     if core_ok:
-        midi_findings = check_midi_ports()
+        midi_findings = (
+            check_midi_ports(severity="advisory", failed_status="manual_check")
+            if is_tcp_configured
+            else check_midi_ports()
+        )
         findings.extend(midi_findings)
         midi_ok = not _any_blocker_failed(midi_findings)
 
-        tcp_findings = check_tcp_daemon()
+        tcp_findings = check_tcp_daemon(tcp_config)
         findings.extend(tcp_findings)
         tcp_ok = all(f.status == "ok" for f in tcp_findings)
     else:
@@ -985,8 +1066,16 @@ def run_all_checks(
     if not core_ok:
         findings.append(_deferred_finding("FL Studio Controller Script", "blocker", core_skip))
     elif is_tcp_configured:
-        if tcp_ok:
-            findings.extend(check_fl_controller())
+        if tcp_ok and tcp_config.port is not None:
+            findings.extend(
+                check_fl_controller(
+                    bridge_factory=lambda: connection.TCPBridge(
+                        tcp_config.host,
+                        tcp_config.port,
+                    ),
+                    config_source=f"TCP daemon {tcp_config.host}:{tcp_config.port}",
+                )
+            )
         else:
             findings.append(
                 _deferred_finding(

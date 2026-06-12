@@ -8,6 +8,7 @@ import functools
 import json
 import shutil
 import webbrowser
+from collections.abc import Callable
 from datetime import datetime, timezone
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from importlib import resources
@@ -41,7 +42,11 @@ def default_output_dir(cwd: Path | None = None) -> Path:
     return base / "fls-pilot-dashboard-site"
 
 
-def collect_dashboard_snapshot(*, offline: bool = False) -> dict[str, Any]:
+def collect_dashboard_snapshot(
+    *,
+    offline: bool = False,
+    bridge_factory: Callable[[], Any] | None = None,
+) -> dict[str, Any]:
     """Collect a compact read-only snapshot for the local dashboard.
 
     The collector intentionally uses existing read-only bridge commands and
@@ -63,7 +68,7 @@ def collect_dashboard_snapshot(*, offline: bool = False) -> dict[str, Any]:
 
     bridge = None
     try:
-        bridge = connection.get_bridge()
+        bridge = bridge_factory() if bridge_factory is not None else connection.get_bridge()
         wait = getattr(bridge, "wait_for_heartbeat", None)
         if callable(wait):
             wait(timeout=1.0)

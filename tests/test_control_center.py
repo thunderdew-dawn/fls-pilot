@@ -49,6 +49,42 @@ def test_status_groups_doctor_findings(monkeypatch):
     assert status["readiness"]["read_only_review_ready"] is True
 
 
+def test_status_uses_selected_tcp_endpoint_for_doctor_and_dashboard(monkeypatch):
+    findings = [
+        _finding("TCP Daemon / Bridge"),
+        _finding("FL Studio Controller Script"),
+    ]
+    doctor_calls = []
+    dashboard_calls = []
+
+    class FakeTCPBridge:
+        def __init__(self, host, port):  # noqa: ANN001
+            self.host = host
+            self.port = port
+
+    def fake_run_all_checks(**kwargs):  # noqa: ANN003, ANN202
+        doctor_calls.append(kwargs)
+        return findings
+
+    def fake_dashboard_snapshot(**kwargs):  # noqa: ANN003, ANN202
+        bridge = kwargs["bridge_factory"]()
+        dashboard_calls.append((bridge.host, bridge.port))
+        return {"bridge": {"state": "live"}, "project": {}}
+
+    monkeypatch.setattr(control_center.doctor, "run_all_checks", fake_run_all_checks)
+    monkeypatch.setattr(control_center, "collect_dashboard_snapshot", fake_dashboard_snapshot)
+    monkeypatch.setattr(control_center, "TCPBridge", FakeTCPBridge)
+    state = _state()
+    state.daemon_fallback_port = 9788
+
+    control_center.collect_status(state)
+
+    assert doctor_calls[0]["bridge_transport"] == "tcp"
+    assert doctor_calls[0]["tcp_host"] == "127.0.0.1"
+    assert doctor_calls[0]["tcp_port"] == 9788
+    assert dashboard_calls == [("127.0.0.1", 9788)]
+
+
 def test_manual_checkpoint_is_user_confirmed(monkeypatch):
     monkeypatch.setattr(control_center.doctor, "run_all_checks", lambda **_: [])
     state = _state()

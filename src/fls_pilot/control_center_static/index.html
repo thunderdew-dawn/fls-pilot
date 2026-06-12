@@ -1,71 +1,204 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>fls-pilot Control Center</title>
-    <link rel="stylesheet" href="styles.css" />
-  </head>
-  <body>
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>fls-pilot Control Center</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+
+<body>
+  <div class="app-shell">
     <header class="topbar">
-      <div>
-        <h1>fls-pilot Control Center</h1>
-        <p id="readiness">Loading status...</p>
+      <div class="brand">
+        <span class="brand-mark-wrap">
+          <img src="assets/fls-pilot-logo-wide.png" alt="" class="brand-mark" />
+        </span>
+        <span class="brand-name">fls-pilot</span>
+        <span class="brand-subtitle">Control Center</span>
       </div>
-      <button id="refresh" type="button">Refresh status</button>
+      <div class="topbar-status" aria-label="Dashboard status">
+        <span class="pill pill-live" id="bridge-pill">Loading</span>
+        <span class="pill pill-version" id="version-pill">...</span>
+        <span class="divider"></span>
+        <span class="last-refresh">Last Refresh</span>
+        <span class="clock" id="refresh-time">--:--:--</span>
+        <button class="icon-button" id="refresh-button" type="button" title="Reload dashboard data">
+          <span aria-hidden="true">&#x21bb;</span>
+          <span class="sr-only">Reload dashboard data</span>
+        </button>
+      </div>
     </header>
 
-    <nav class="tabs" aria-label="Control Center sections">
-      <button class="tab active" data-tab="setup" type="button">Setup</button>
-      <button class="tab" data-tab="runtime" type="button">Runtime</button>
-      <button class="tab" data-tab="clients" type="button">Client Setup</button>
-      <button class="tab" data-tab="support" type="button">Support</button>
-    </nav>
+    <aside class="sidebar" aria-label="Dashboard navigation">
+      <nav class="nav-list">
+        <button class="nav-item active" type="button" data-target="project_data">
+          <span aria-hidden="true">&#x25a4;</span><span>Live Data</span>
+        </button>
+        <button class="nav-item" type="button" data-target="runtime">
+          <span aria-hidden="true">&#x25b6;</span><span>Servers</span>
+        </button>
+        <button class="nav-item" type="button" data-target="clients">
+          <span aria-hidden="true">&#x25a2;</span><span>AI Clients</span>
+        </button>
+        <button class="nav-item" type="button" data-target="setup">
+          <span aria-hidden="true">&#x2699;</span><span>Setup</span>
+        </button>
+        <button class="nav-item" type="button" data-target="support">
+          <span aria-hidden="true">&#x26A0;</span><span>Support</span>
+        </button>
 
-    <main>
-      <section id="setup" class="panel active">
-        <div class="section-heading">
-          <h2>Guided Setup</h2>
+      </nav>
+      <div class="connection-card">
+        <span class="shield" aria-hidden="true">&#x25c7;</span>
+        <div>
+          <span class="eyebrow">Connected To</span>
+          <strong id="connected-target">FL Studio</strong>
+          <span id="connected-version">Local daemon API</span>
+        </div>
+        <span class="connection-dot" id="connection-dot"></span>
+      </div>
+    </aside>
+
+    <main class="dashboard" id="setup" style="display: none;">
+      <section class="hero">
+        <div>
+          <h1>Guided Setup</h1>
           <p>Setup checks are read-only and do not modify FL Studio projects.</p>
         </div>
-        <div id="setup-steps" class="grid"></div>
       </section>
+      <section class="grid" id="setup-steps"></section>
+    </main>
 
-      <section id="runtime" class="panel">
-        <div class="section-heading">
-          <h2>Runtime</h2>
+    <main class="dashboard" id="runtime" style="display: none;">
+      <section class="hero">
+        <div>
+          <h1>Servers</h1>
           <p>Start and stop only processes launched by this Control Center.</p>
         </div>
-        <div class="actions">
-          <button id="start-daemon" type="button">Start daemon</button>
-          <button id="stop-daemon" type="button">Stop daemon</button>
-          <button id="start-sse" type="button">Start SSE server</button>
-          <button id="stop-sse" type="button">Stop SSE server</button>
-        </div>
-        <div id="runtime-status" class="grid"></div>
       </section>
 
-      <section id="clients" class="panel">
-        <div class="section-heading">
-          <h2>Client Setup</h2>
+      <section class="grid" id="runtime-status"></section>
+    </main>
+
+    <main class="dashboard" id="clients" style="display: none;">
+      <section class="hero">
+        <div>
+          <h1>AI Clients</h1>
           <p>Copy these values into your MCP client. Config files are not edited automatically.</p>
         </div>
-        <div id="client-snippets" class="snippets"></div>
       </section>
+      <section class="grid" id="client-snippets"></section>
+    </main>
 
-      <section id="support" class="panel">
-        <div class="section-heading">
-          <h2>Support Report</h2>
+    <main class="dashboard" id="support" style="display: none;">
+      <section class="hero">
+        <div>
+          <h1>Support Report</h1>
           <p>Use this when reporting setup problems.</p>
         </div>
-        <div class="actions">
-          <button id="copy-report" type="button">Copy setup report</button>
-          <button id="download-report" type="button">Download setup report</button>
+        <div style="display: flex; gap: 12px;">
+          <button class="ghost-button" id="copy-report" type="button">Copy setup report</button>
+          <button class="ghost-button" id="download-report" type="button">Download setup report</button>
         </div>
-        <pre id="setup-report"></pre>
+      </section>
+      <pre id="setup-report" class="panel"
+        style="padding: 16px; margin-top: 16px; color: #a5b4fc; white-space: pre-wrap; font-family: monospace;"></pre>
+    </main>
+
+    <main class="dashboard" id="project_data" style="display: block; position: relative;">
+      <div id="disconnected-overlay" class="disconnected-overlay" style="display: none;">
+        <div class="disconnected-content">
+          <p>currently disconnected... try Setup for diagnosis and trouble shooting</p>
+        </div>
+      </div>
+      <section class="hero">
+        <div>
+          <h1>Live Data</h1>
+          <p>Live project metrics and evidence feed.</p>
+        </div>
+      </section>
+      <section class="grid" id="project-data-grid">
+        <article class="panel panel-project">
+          <div class="panel-heading">
+            <span class="panel-index">1</span>
+            <h2>Project Snapshot</h2>
+            <span class="panel-icon" aria-hidden="true">&#x25a4;</span>
+          </div>
+          <div class="counter-grid">
+            <div><strong id="tempo-value">N/A</strong><span>BPM</span></div>
+            <div><strong id="channel-count">N/A</strong><span>Channels</span></div>
+            <div><strong id="mixer-count">N/A</strong><span>Mixer</span></div>
+            <div><strong id="pattern-count">N/A</strong><span>Patterns</span></div>
+            <div><strong id="playlist-count">N/A</strong><span>Playlist Tracks</span></div>
+          </div>
+        </article>
+
+        <article class="panel transport-panel">
+          <div class="panel-heading">
+            <span class="panel-index">2</span>
+            <h2>Transport</h2>
+          </div>
+          <div class="transport-layout">
+            <dl class="transport-stats">
+              <div>
+                <dt>Position</dt>
+                <dd id="song-position">N/A</dd>
+              </div>
+              <div>
+                <dt>Record</dt>
+                <dd id="record-state" class="small-pill">N/A</dd>
+              </div>
+            </dl>
+            <div class="status-orb" id="status-orb" aria-hidden="true">
+              <span></span>
+            </div>
+          </div>
+          <div class="wave-bars" aria-hidden="true"></div>
+        </article>
+
+        <article class="panel" id="safety">
+          <div class="panel-heading">
+            <span class="panel-index">3</span>
+            <h2>Safety</h2>
+            <span class="panel-icon" aria-hidden="true">&#x2662;</span>
+          </div>
+          <ul class="safety-list">
+            <li><span>Read-only Dashboard</span><strong id="read-only-state">YES</strong></li>
+            <li><span>Rollback Available</span><strong id="rollback-state">N/A</strong></li>
+            <li><span>Dry-run Available</span><strong id="dry-run-state">YES</strong></li>
+          </ul>
+        </article>
+
+        <article class="panel evidence-panel" id="evidence">
+          <div class="panel-heading">
+            <span class="panel-index">4</span>
+            <h2>Evidence Feed</h2>
+          </div>
+          <div class="evidence-table" id="evidence-table"></div>
+        </article>
       </section>
     </main>
 
-    <script src="app.js"></script>
-  </body>
+    <footer class="statusbar">
+      <div>
+        <span aria-hidden="true">&#x25a3;</span>
+        <strong>Mode: CONTROL CENTER</strong>
+        <span>Manage your FL Studio pilot infrastructure.</span>
+      </div>
+      <div id="footer-cc-port" style="margin-left: auto; font-size: 11px; opacity: 0.8;"></div>
+    </footer>
+  </div>
+
+  <div id="loading-overlay" class="loading-overlay" style="display: none;">
+    <div class="loading-content">
+      <div class="spinner"></div>
+      <p id="loading-text">performing tests ...</p>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+
 </html>

@@ -21,8 +21,9 @@ from importlib import resources
 from pathlib import Path
 from typing import Any
 
-from . import __version__, doctor
-from .connection import DEFAULT_TCP_HOST, DEFAULT_TCP_PORT
+from . import doctor
+from .connection import DEFAULT_TCP_HOST, DEFAULT_TCP_PORT, TCPBridge
+from .dashboard import collect_dashboard_snapshot
 from .runtime_config import (
     DEFAULT_CONTROL_CENTER_HOST,
     DEFAULT_CONTROL_CENTER_PORT,
@@ -42,6 +43,24 @@ MANUAL_CHECKPOINTS = {
     "ran_mcp_apply",
     "granted_macos_accessibility",
 }
+
+
+def _read_project_version() -> str:
+    try:
+        project_root = Path(__file__).resolve().parent.parent.parent
+        pyproject_path = project_root / "pyproject.toml"
+        if pyproject_path.exists():
+            for line in pyproject_path.read_text("utf-8").splitlines():
+                if line.startswith("version = "):
+                    return line.split("=", 1)[1].strip().strip('"').strip("'")
+    except Exception:
+        pass
+    from . import __version__
+    return __version__
+
+
+PROJECT_VERSION = _read_project_version()
+
 
 
 @dataclass
@@ -97,11 +116,15 @@ class ControlCenterState:
 def collect_status(state: ControlCenterState, *, refresh: bool = True) -> dict[str, Any]:
     """Collect Control Center status without mutating FL Studio project state."""
     with state.lock:
+        daemon_host, daemon_port = _selected_daemon_endpoint(state)
         if refresh or not state.last_findings:
             state.last_findings = doctor.run_all_checks(
                 server_transport="stdio",
                 sse_host=state.sse_host,
                 sse_port=state.sse_port,
+                bridge_transport="tcp",
+                tcp_host=daemon_host,
+                tcp_port=daemon_port,
                 smoke_timeout_seconds=1.5,
             )
         findings = [finding.to_dict() for finding in state.last_findings]
@@ -109,8 +132,12 @@ def collect_status(state: ControlCenterState, *, refresh: bool = True) -> dict[s
         readiness = _readiness(state.last_findings, state.checkpoints)
         process_state = _process_status(state)
         ports = _port_state(state)
+        dashboard_data = collect_dashboard_snapshot(
+            offline=False,
+            bridge_factory=lambda: TCPBridge(daemon_host, daemon_port),
+        )
         return {
-            "version": __version__,
+            "version": PROJECT_VERSION,
             "generated_at": _now_iso(),
             "platform": {
                 "system": platform.system(),
@@ -131,6 +158,7 @@ def collect_status(state: ControlCenterState, *, refresh: bool = True) -> dict[s
             "checkpoints": dict(state.checkpoints),
             "processes": process_state,
             "snippets": client_snippets(state),
+            "dashboard": dashboard_data,
         }
 
 
@@ -274,6 +302,8 @@ def _handler_factory(state: ControlCenterState):
                 self._serve_static("app.js", "application/javascript; charset=utf-8")
             elif self.path == "/styles.css":
                 self._serve_static("styles.css", "text/css; charset=utf-8")
+            elif self.path.startswith("/assets/") and self.path.endswith(".png"):
+                self._serve_static(self.path.lstrip("/"), "image/png")
             elif self.path == "/api/status":
                 self._json(collect_status(state))
             elif self.path == "/api/client-snippets":

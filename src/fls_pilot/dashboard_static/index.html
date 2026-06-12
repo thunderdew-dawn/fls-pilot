@@ -9,11 +9,6 @@
   <body>
     <div class="app-shell">
       <header class="topbar">
-        <div class="window-controls" aria-hidden="true">
-          <span class="dot dot-red"></span>
-          <span class="dot dot-yellow"></span>
-          <span class="dot dot-green"></span>
-        </div>
         <div class="brand">
           <span class="brand-mark-wrap">
             <img src="assets/fls-pilot-logo-wide.png" alt="" class="brand-mark" />
@@ -46,15 +41,6 @@
           <button class="nav-item" type="button" data-target="mixer">
             <span aria-hidden="true">&#x2261;</span><span>Mixer</span>
           </button>
-          <button class="nav-item" type="button" data-target="playlist">
-            <span aria-hidden="true">&#x2637;</span><span>Playlist</span>
-          </button>
-          <button class="nav-item" type="button" data-target="channels">
-            <span aria-hidden="true">&#x22ee;</span><span>Channels</span>
-          </button>
-          <button class="nav-item" type="button" data-target="patterns">
-            <span aria-hidden="true">&#x2317;</span><span>Patterns</span>
-          </button>
           <button class="nav-item" type="button" data-target="routing">
             <span aria-hidden="true">&#x2387;</span><span>Routing</span>
           </button>
@@ -85,7 +71,7 @@
         </section>
 
         <section class="grid">
-          <article class="panel panel-bridge" id="project">
+          <article class="panel panel-bridge">
             <div class="panel-heading">
               <span class="panel-index">1</span>
               <h2>Bridge Health</h2>
@@ -108,7 +94,7 @@
             <p class="panel-note" id="bridge-detail"></p>
           </article>
 
-          <article class="panel panel-project">
+          <article class="panel panel-project" id="project">
             <div class="panel-heading">
               <span class="panel-index">2</span>
               <h2>Project Snapshot</h2>
