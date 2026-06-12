@@ -1,7 +1,9 @@
 # Security Policy
 
-The full security policy is maintained in the documentation site.
+The full security policy is maintained in the documentation site:
 
-See: [docs/community/security.md](docs/community/security.md)
+- [docs/community/security.md](docs/community/security.md)
 
-Please do not report sensitive security issues in public issues. Follow the reporting instructions in the linked policy.
+Please do **not** report sensitive security issues in public GitHub issues.
+
+For security vulnerabilities, follow the reporting instructions in the linked policy. If you are unsure whether something is security-sensitive, treat it as sensitive and do not disclose details publicly.
