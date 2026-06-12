@@ -96,31 +96,23 @@ function render() {
   renderClients();
   renderProjectData();
   renderConnection();
+
+  if (hasLiveFlData() && !window.successOverlayShown) {
+    const overlay = document.getElementById("success-overlay");
+    if (overlay) {
+      overlay.style.display = "flex";
+      window.successOverlayShown = true;
+    }
+  }
 }
 
 function renderSetup() {
   const container = document.getElementById("setup-steps");
   container.innerHTML = "";
-  renderSetupSuccess(container);
   renderGuidedTroubleshooting(container);
   for (const item of setupLayers) {
     container.appendChild(card(item.title, groupStatus(item.group), groupText(item.group)));
   }
-}
-
-function renderSetupSuccess(container) {
-  if (!hasLiveFlData()) return;
-  const node = card(
-    "Congratulations, setup is up and running.",
-    "OK",
-    "FL Studio values are readable. Check out Live Data for live information and AI Clients to set up LLM agents to use FL Studio Pilot.",
-    [
-      { text: "Live Data", disabled: false, onclick: () => selectDashboard("project_data") },
-      { text: "AI Clients", disabled: false, onclick: () => selectDashboard("clients") }
-    ]
-  );
-  node.classList.add("setup-success-layer");
-  container.appendChild(node);
 }
 
 function renderGuidedTroubleshooting(container) {

@@ -190,6 +190,20 @@
     </footer>
   </div>
 
+  <div id="success-overlay" class="loading-overlay" style="display: none; z-index: 10000; backdrop-filter: blur(8px);">
+    <article class="panel setup-success-layer" style="max-width: 480px; margin: 20px; box-shadow: 0 40px 100px rgba(0,0,0,0.6);">
+      <div class="panel-heading">
+        <h2 style="font-size: 18px;">Congratulations, setup is up and running.</h2>
+        <span class="evidence-state" style="margin-left: auto; font-size: 11px; color: #70fba0; background: rgba(27, 228, 126, 0.14); border: 1px solid rgba(54, 244, 152, 0.44); border-radius: 8px; padding: 2px 10px;">OK</span>
+      </div>
+      <p class="panel-note" style="margin: 20px 26px; white-space: pre-wrap; line-height: 1.5;">FL Studio values are readable. Check out Live Data for live information and AI Clients to set up LLM agents to use FL Studio Pilot.</p>
+      <div style="padding: 0 26px 20px; display: flex; gap: 8px;">
+        <button class="ghost-button" onclick="document.getElementById('success-overlay').style.display='none'; selectDashboard('project_data')">Live Data</button>
+        <button class="ghost-button" onclick="document.getElementById('success-overlay').style.display='none'; selectDashboard('clients')">AI Clients</button>
+      </div>
+    </article>
+  </div>
+
   <div id="loading-overlay" class="loading-overlay" style="display: none;">
     <div class="loading-content">
       <div class="spinner"></div>
