@@ -15,7 +15,10 @@
 
 ## 2. Install the Controller Script & Server
 
-### Windows
+### Default Installation (.venv)
+Recommended for development and AI agents.
+
+**Windows**:
 
 ```batchfile
 git clone https://github.com/thunderdew-dawn/fls-pilot
@@ -23,7 +26,7 @@ cd fls-pilot
 scripts\install_windows.bat
 ```
 
-### macOS
+**macOS**:
 
 ```shell
 git clone https://github.com/thunderdew-dawn/fls-pilot
@@ -32,14 +35,24 @@ chmod +x scripts/install_macos.sh
 ./scripts/install_macos.sh
 ```
 
-These scripts will copy the controller script, install the server (on macOS inside a `.venv` virtual environment; on Windows in your active Python environment), verify that the MIDI ports are online, and pre-seed the note-bridge script (`MCP_Apply.pyscript`) inside your FL Studio user data directory.
+These scripts will copy the controller script, install the server into an isolated `.venv` virtual environment, verify that the MIDI ports are online, and pre-seed the note-bridge script (`MCP_Apply.pyscript`) inside your FL Studio user data directory.
+
+### Global CLI Installation (pipx)
+If you prefer to install the server globally as a CLI application (e.g., to run `fls-pilot-daemon` without path prefixes), you can opt-in to `pipx`:
+
+- Windows: `scripts\install_windows.bat --pipx`
+- macOS: `./scripts/install_macos.sh --pipx`
+
+If `pipx` is not installed on your system, the script will abort. You can ask the installer to attempt to install `pipx` for you by adding `--install-pipx`:
+- `scripts\install_windows.bat --pipx --install-pipx`
 
 > [!IMPORTANT]
 > **macOS Accessibility Permissions**: Since the note-writing tool simulates keyboard shortcuts (`Cmd+Opt+Y`) via `pyautogui` to trigger script runs in FL Studio, the application executing the MCP server (e.g., your terminal, iTerm, Warp, or your MCP client app like Claude Desktop/ChatGPT) must be granted Accessibility permissions. Go to **System Settings > Privacy & Security > Accessibility** and ensure the app you are running is enabled.
 
 For optional audio/melody analysis extras:
-- Windows: `pip install -e ".[audio,audio-accurate]"`
-- macOS: `.venv/bin/pip install -e ".[audio,audio-accurate]"`
+- Windows (.venv): `.venv\Scripts\pip install -e ".[audio,audio-accurate]"`
+- macOS (.venv): `.venv/bin/pip install -e ".[audio,audio-accurate]"`
+- Global (pipx): `pipx inject fls-pilot ".[audio,audio-accurate]"`
 
 ## 3. Configure FL Studio (All Platforms)
 
@@ -53,8 +66,9 @@ For optional audio/melody analysis extras:
 
 Before starting write-capable workflows, run the read-only Setup Doctor:
 
-- **Windows**: `fls-pilot-doctor`
-- **macOS**: `.venv/bin/fls-pilot-doctor`
+- **Windows (.venv)**: `.venv\Scripts\fls-pilot-doctor`
+- **macOS (.venv)**: `.venv/bin/fls-pilot-doctor`
+*(If you installed via pipx, simply run `fls-pilot-doctor`)*
 
 Review `--- BLOCKERS ---` first. The Doctor reports MCP stdio/SSE transport,
 TCP daemon/bridge health, MIDI ports, FL controller heartbeat, read-only ping,
@@ -63,35 +77,40 @@ is not mistaken for full project readiness.
 
 For machine-readable output:
 
-- **Windows**: `fls-pilot-doctor --format json`
-- **macOS**: `.venv/bin/fls-pilot-doctor --format json`
+- **Windows (.venv)**: `.venv\Scripts\fls-pilot-doctor --format json`
+- **macOS (.venv)**: `.venv/bin/fls-pilot-doctor --format json`
+*(If you installed via pipx, simply run `fls-pilot-doctor --format json`)*
 
 For release validation across both MCP transports:
 
-- **Windows**: `fls-pilot-doctor --all-transports`
-- **macOS**: `.venv/bin/fls-pilot-doctor --all-transports`
+- **Windows (.venv)**: `.venv\Scripts\fls-pilot-doctor --all-transports`
+- **macOS (.venv)**: `.venv/bin/fls-pilot-doctor --all-transports`
+*(If you installed via pipx, simply run `fls-pilot-doctor --all-transports`)*
 
 ## 5. Open the Local Dashboard
 
 Export the read-only local dashboard:
 
-- **Windows**: `fls-pilot-dashboard`
-- **macOS**: `.venv/bin/fls-pilot-dashboard`
+- **Windows (.venv)**: `.venv\Scripts\fls-pilot-dashboard`
+- **macOS (.venv)**: `.venv/bin/fls-pilot-dashboard`
+*(If you installed via pipx, simply run `fls-pilot-dashboard`)*
 
 The dashboard uses existing read-only bridge and resource reads. It separates
 live bridge data from unavailable or API-limited signals and never applies FL
 Studio project changes. To serve it locally and open a browser:
 
-- **Windows**: `fls-pilot-dashboard --serve --open`
-- **macOS**: `.venv/bin/fls-pilot-dashboard --serve --open`
+- **Windows (.venv)**: `.venv\Scripts\fls-pilot-dashboard --serve --open`
+- **macOS (.venv)**: `.venv/bin/fls-pilot-dashboard --serve --open`
+*(If you installed via pipx, simply run `fls-pilot-dashboard --serve --open`)*
 
 ## 6. Connect to your MCP Client
 
 ### Option A: Claude Desktop, Cursor, or other stdio clients
 
 1. Start the MIDI bridge daemon (recommended so MIDI ports are held by a stable background process):
-    - Windows: Run `fls-pilot-daemon`
-    - macOS: Run `.venv/bin/fls-pilot-daemon`
+    - Windows (.venv): Run `.venv\Scripts\fls-pilot-daemon`
+    - macOS (.venv): Run `.venv/bin/fls-pilot-daemon`
+    *(If using pipx, run `fls-pilot-daemon`)*
 2. Configure your client (e.g., Claude Desktop). Add this to your configuration file (Windows: `%APPDATA%\Claude\claude_desktop_config.json`, macOS: `~/Library/Application Support/Claude/claude_desktop_config.json`):
     
     ```json
@@ -107,18 +126,20 @@ Studio project changes. To serve it locally and open a browser:
     }
     ```
     
-    *(Note: On Windows, use `fls-pilot` for the command instead of the `.venv` path if installed globally.)*
+    *(Note: On Windows, use `.venv\\Scripts\\fls-pilot` if using the default installation, or just `fls-pilot` if installed via pipx.)*
 
 ### Option B: ChatGPT Desktop (SSE)
 
 ChatGPT Desktop does not support local stdio subprocesses and requires a remote/SSE connection:
 
 1. Start the MIDI bridge daemon in a terminal:
-    - Windows: `fls-pilot-daemon`
-    - macOS: `.venv/bin/fls-pilot-daemon`
+    - Windows (.venv): `.venv\Scripts\fls-pilot-daemon`
+    - macOS (.venv): `.venv/bin/fls-pilot-daemon`
+    *(If using pipx, run `fls-pilot-daemon`)*
 2. Start the MCP server with the SSE transport in another terminal:
-    - Windows: `set FLS_PILOT_TRANSPORT=tcp && fls-pilot --sse --port 8080`
-    - macOS: `export FLS_PILOT_TRANSPORT=tcp && .venv/bin/fls-pilot --sse --port 8080`
+    - Windows (.venv): `set FLS_PILOT_TRANSPORT=tcp && .venv\Scripts\fls-pilot --sse --port 8080`
+    - macOS (.venv): `export FLS_PILOT_TRANSPORT=tcp && .venv/bin/fls-pilot --sse --port 8080`
+    *(If using pipx, run `fls-pilot --sse --port 8080`)*
 3. Enable Developer Mode in ChatGPT Desktop (Settings > Developer).
 4. Go to **Settings > Developer > MCP**, click **Add New Server**:
     - **Name**: `FL Studio`

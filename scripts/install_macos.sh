@@ -21,29 +21,69 @@ mkdir -p "$TARGET"
 cp "$REPO_ROOT/fl_controller/FLStudioPilot/device_FLStudioPilot.py" "$TARGET/"
 echo "  Installed to $TARGET"
 
+USE_PIPX=0
+INSTALL_PIPX=0
+
+for arg in "$@"; do
+  case $arg in
+    --pipx)
+      USE_PIPX=1
+      shift
+      ;;
+    --install-pipx)
+      INSTALL_PIPX=1
+      shift
+      ;;
+    *)
+      # Ignore unknown options
+      shift
+      ;;
+  esac
+done
+
 echo
-echo "[2/4] Installing the MCP server (editable)..."
+echo "[2/4] Installing the MCP server..."
 if ! command -v python3 >/dev/null 2>&1; then
   echo "  python3 not found. Install Python 3.10+ and re-run."
   exit 1
 fi
 cd "$REPO_ROOT"
 
-if [[ -z "${VIRTUAL_ENV:-}" ]]; then
-  if [[ ! -d ".venv" ]]; then
-    echo "  Creating virtual environment (.venv)..."
-    python3 -m venv .venv
+if [[ "$USE_PIPX" -eq 1 ]]; then
+  if ! command -v pipx >/dev/null 2>&1; then
+    if [[ "$INSTALL_PIPX" -eq 1 ]]; then
+      echo "  pipx not found. Attempting to install via pip..."
+      python3 -m pip install --user pipx
+      python3 -m pipx ensurepath
+      echo "  WARNING: PATH changes may require restarting your terminal!"
+      export PATH="$HOME/.local/bin:$PATH"
+    else
+      echo "  pipx not found. Install pipx manually or run this script with --install-pipx."
+      exit 1
+    fi
   fi
-  echo "  Activating virtual environment (.venv)..."
-  source .venv/bin/activate
+  echo "  Installing via pipx (editable)..."
+  pipx install --force --editable .
+else
+  if [[ -z "${VIRTUAL_ENV:-}" ]]; then
+    if [[ ! -d ".venv" ]]; then
+      echo "  Creating virtual environment (.venv)..."
+      python3 -m venv .venv
+    fi
+    echo "  Activating virtual environment (.venv)..."
+    source .venv/bin/activate
+  fi
+  python3 -m pip install --upgrade pip >/dev/null
+  python3 -m pip install -e .
 fi
-
-python3 -m pip install --upgrade pip >/dev/null
-python3 -m pip install -e .
 
 echo
 echo "[3/4] Seeding the note-bridge pyscript (MCP_Apply)..."
-python3 -c "import os, fls_pilot.pyscript_gen as g; os.makedirs(g.PIANO_ROLL_SCRIPTS_DIR, exist_ok=True); print('  Seeded ' + g.write_apply_script([], mode='append'))" || echo "  Note: Could not pre-seed MCP_Apply. Non-fatal -- daemon will write it on first note-write."
+if [[ "$USE_PIPX" -eq 1 ]]; then
+  PYTHONPATH=src python3 -c "import os, fls_pilot.pyscript_gen as g; os.makedirs(g.PIANO_ROLL_SCRIPTS_DIR, exist_ok=True); print('  Seeded ' + g.write_apply_script([], mode='append'))" || echo "  Note: Could not pre-seed MCP_Apply. Non-fatal -- daemon will write it on first note-write."
+else
+  python3 -c "import os, fls_pilot.pyscript_gen as g; os.makedirs(g.PIANO_ROLL_SCRIPTS_DIR, exist_ok=True); print('  Seeded ' + g.write_apply_script([], mode='append'))" || echo "  Note: Could not pre-seed MCP_Apply. Non-fatal -- daemon will write it on first note-write."
+fi
 
 echo
 echo "[4/4] Checking for IAC Driver ports..."
@@ -57,6 +97,14 @@ if not missing:
 else:
     print(f"  Missing ports: {missing}")
 PYEOF
+
+if [[ "$USE_PIPX" -eq 1 ]]; then
+  CMD_DAEMON="fls-pilot-daemon"
+  CMD_SERVER="fls-pilot"
+else
+  CMD_DAEMON="$REPO_ROOT/.venv/bin/fls-pilot-daemon"
+  CMD_SERVER="$REPO_ROOT/.venv/bin/fls-pilot"
+fi
 
 cat <<EOF
 
@@ -80,12 +128,12 @@ Next steps:
 
 To use with Claude Desktop, Cursor, or other stdio clients:
   1. Start the daemon (holds the MIDI ports):
-     $REPO_ROOT/.venv/bin/fls-pilot-daemon
+     $CMD_DAEMON
   2. Add this to your client's config (e.g. for Claude Desktop: ~/Library/Application Support/Claude/claude_desktop_config.json):
   {
     "mcpServers": {
       "fl-studio": {
-        "command": "$REPO_ROOT/.venv/bin/fls-pilot",
+        "command": "$CMD_SERVER",
         "env": {
           "FLS_PILOT_TRANSPORT": "tcp"
         }
@@ -95,10 +143,10 @@ To use with Claude Desktop, Cursor, or other stdio clients:
 
 To use with ChatGPT Desktop (SSE):
   1. Start the daemon (holds the MIDI ports):
-     $REPO_ROOT/.venv/bin/fls-pilot-daemon
+     $CMD_DAEMON
   2. In another terminal, run the MCP server with SSE transport:
      export FLS_PILOT_TRANSPORT=tcp
-     $REPO_ROOT/.venv/bin/fls-pilot --sse --port 8080
+     $CMD_SERVER --sse --port 8080
   3. Open ChatGPT Desktop, go to Settings > Developer > MCP, click "Add New Server":
      - Name: FL Studio
      - URL: http://localhost:8080/sse

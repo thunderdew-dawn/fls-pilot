@@ -65,7 +65,7 @@ The highest-value entry points for day-to-day production work are:
 
 ```batchfile
 scripts\install_windows.bat        :: Windows: controller + server + note bridge
-fls-pilot-daemon                   :: start the bridge, keep it running
+.venv\Scripts\fls-pilot-daemon     :: start the bridge, keep it running
 ```
 
 ```shell
@@ -98,8 +98,9 @@ Before starting any write-capable workflows, follow these steps to verify your i
 
 1. **Install the package** (ensure virtual environment is active).
 2. **Run Setup Doctor** to get human-readable feedback:
-   - **Windows**: `fls-pilot-doctor`
-   - **macOS**: `.venv/bin/fls-pilot-doctor`
+   - **Windows (.venv)**: `.venv\Scripts\fls-pilot-doctor`
+   - **macOS (.venv)**: `.venv/bin/fls-pilot-doctor`
+   *(If you installed via pipx, simply run `fls-pilot-doctor`)*
 3. **Review `--- BLOCKERS ---` first**.
 4. **Verify MCP transport**: Ensure the default `stdio` (or `SSE/HTTP` if configured) handshake succeeds.
 5. **Verify Daemon**: *Only* required if you are using TCP bridge mode. If using direct MIDI, ignore daemon warnings.
@@ -108,24 +109,27 @@ Before starting any write-capable workflows, follow these steps to verify your i
 
 For JSON output (useful for MCP clients or CI), run:
 
-- **Windows**: `fls-pilot-doctor --format json`
-- **macOS**: `.venv/bin/fls-pilot-doctor --format json`
+- **Windows (.venv)**: `.venv\Scripts\fls-pilot-doctor --format json`
+- **macOS (.venv)**: `.venv/bin/fls-pilot-doctor --format json`
+*(If you installed via pipx, simply run `fls-pilot-doctor --format json`)*
 
 For release validation, smoke-test both MCP transports explicitly:
 
-- **Windows**: `fls-pilot-doctor --all-transports`
-- **macOS**: `.venv/bin/fls-pilot-doctor --all-transports`
+- **Windows (.venv)**: `.venv\Scripts\fls-pilot-doctor --all-transports`
+- **macOS (.venv)**: `.venv/bin/fls-pilot-doctor --all-transports`
+*(If you installed via pipx, simply run `fls-pilot-doctor --all-transports`)*
 
 To export a local read-only dashboard page:
 
-- **Windows**: `fls-pilot-dashboard`
-- **macOS**: `.venv/bin/fls-pilot-dashboard`
+- **Windows (.venv)**: `.venv\Scripts\fls-pilot-dashboard`
+- **macOS (.venv)**: `.venv/bin/fls-pilot-dashboard`
+*(If you installed via pipx, simply run `fls-pilot-dashboard`)*
 
 The dashboard writes a static HTML/CSS/JS page under `scratch/dashboard/site`
 when run from this repository. It reads bridge/project/resource state only,
 clearly marks unavailable or API-limited data, and does not modify FL Studio.
-Use `fls-pilot-dashboard --serve --open` (or `.venv/bin/fls-pilot-dashboard --serve --open` on macOS) to view it through a local browser
-server.
+Use `.venv\Scripts\fls-pilot-dashboard --serve --open` (or `.venv/bin/fls-pilot-dashboard --serve --open` on macOS) to view it through a local browser
+server. *(If you installed via pipx, simply run `fls-pilot-dashboard --serve --open`)*
 
 ## Documentation
 
