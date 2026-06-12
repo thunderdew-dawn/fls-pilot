@@ -111,21 +111,15 @@ button {
 
 .brand-mark-wrap {
   position: relative;
-  display: grid;
-  place-items: center;
-  width: 112px;
-  height: 78px;
-  overflow: hidden;
-  border-radius: 8px;
-  background: rgba(7, 15, 31, 0.9);
-  box-shadow: 0 0 28px rgba(34, 220, 255, 0.16);
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .brand-mark {
-  width: 162px;
-  height: 92px;
-  object-fit: cover;
-  object-position: 34% 34%;
+  height: 86px;
+  width: auto;
+  object-fit: contain;
   opacity: 0.92;
   mix-blend-mode: screen;
 }
