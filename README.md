@@ -76,6 +76,10 @@ scripts\install_windows.bat        :: Windows: controller + server + note bridge
 Follow the local Control Center's guided setup. It stays read-only while it
 checks MIDI ports, FL Studio controller heartbeat, daemon/SSE status, MCP client
 snippets, and manual actions such as opening FL Studio or running `MCP_Apply`.
+After Python and the core dependencies pass, Control Center attempts to start
+the local daemon automatically and reports the selected port. When Control
+Center starts the SSE server, it immediately tests the MCP connection through
+that SSE URL and shows the result in Guided Setup.
 `MCP_Apply` is only required for note-writing/composition tools, not for
 read-only review workflows.
 
@@ -145,8 +149,10 @@ To open the guided first-run and runtime Control Center:
 
 Default local ports are: Control Center `8766`, dashboard `8765`, ChatGPT/SSE
 `8080`, and TCP daemon `9787`. The Control Center detects conflicts and shows
-the actual selected or recommended fallback port in status, snippets, and setup
-reports.
+the actual selected fallback port in status, snippets, and setup reports. When
+the environment is ready, it attempts to start its own daemon automatically; a
+daemon started outside Control Center is detected but not stopped by Control
+Center.
 
 ## Documentation
 

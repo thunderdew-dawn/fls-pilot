@@ -490,6 +490,50 @@ dd {
   font-size: 13px;
 }
 
+.setup-success-layer {
+  border-color: rgba(85, 239, 135, 0.48);
+  background:
+    linear-gradient(180deg, rgba(24, 74, 50, 0.72), rgba(8, 24, 30, 0.82)),
+    var(--panel);
+}
+
+.setup-success-layer::after {
+  background: radial-gradient(circle, rgba(85, 239, 135, 0.28), transparent 68%);
+}
+
+.setup-feedback {
+  position: relative;
+  z-index: 1;
+  margin: 0 26px 20px;
+  padding: 10px 12px;
+  color: #c7d3ea;
+  background: rgba(19, 32, 57, 0.72);
+  border: 1px solid rgba(143, 166, 214, 0.22);
+  border-radius: 8px;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.setup-feedback.verified {
+  color: #70fba0;
+  background: rgba(27, 228, 126, 0.12);
+  border-color: rgba(54, 244, 152, 0.38);
+}
+
+.setup-feedback.progress,
+.setup-feedback.saved {
+  color: #d4c5ff;
+  background: rgba(118, 76, 255, 0.15);
+  border-color: rgba(151, 111, 255, 0.44);
+}
+
+.setup-feedback.attention,
+.setup-feedback.checking {
+  color: var(--amber);
+  background: rgba(255, 178, 62, 0.11);
+  border-color: rgba(255, 178, 62, 0.42);
+}
+
 .counter-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));

@@ -1,11 +1,12 @@
-const state = { status: null, report: "" };
+const state = { status: null, report: "", setupFeedback: {} };
 
-const setupSteps = [
-  ["created_midi_ports", "MIDI ports", "Create FLStudioPilot RX and FLStudioPilot TX."],
-  ["opened_fl_studio", "Open FL Studio", "Start FL Studio and load or create a project."],
-  ["configured_fl_midi", "FL MIDI settings", "Enable FLStudioPilot RX/TX and set port 42."],
-  ["granted_macos_accessibility", "macOS Accessibility", "Grant permission for note-writing hotkeys if needed."],
-  ["ran_mcp_apply", "MCP_Apply", "Run MCP_Apply once in Piano Roll for note-writing only."]
+const setupLayers = [
+  { group: "environment", title: "Environment" },
+  { group: "daemon", title: "Daemon / TCP Bridge" },
+  { group: "midi", title: "MIDI Loopback Ports" },
+  { group: "controller", title: "FL Studio Controller" },
+  { group: "mcp_sse", title: "MCP SSE" },
+  { group: "mcp_apply", title: "Piano Roll MCP_Apply" }
 ];
 
 async function api(path, options = {}) {
@@ -100,30 +101,75 @@ function render() {
 function renderSetup() {
   const container = document.getElementById("setup-steps");
   container.innerHTML = "";
-  const technical = [
-    ["environment", "Environment"],
-    ["midi", "MIDI ports"],
-    ["controller", "FL controller"],
-    ["daemon", "Daemon"],
-    ["mcp_sse", "MCP SSE"],
-    ["mcp_apply", "MCP_Apply file"]
-  ];
-  for (const [group, title] of technical) {
-    container.appendChild(card(title, groupStatus(group), groupText(group)));
+  renderSetupSuccess(container);
+  renderGuidedTroubleshooting(container);
+  for (const item of setupLayers) {
+    container.appendChild(card(item.title, groupStatus(item.group), groupText(item.group)));
   }
-  for (const [key, title, text] of setupSteps) {
-    const confirmed = state.status.checkpoints[key];
-    const node = card(title, confirmed ? "user confirmed" : "manual action", text, {
-      text: confirmed ? "Confirmed" : "I did this",
-      disabled: Boolean(confirmed),
-      onclick: () => confirmStep(key)
-    });
+}
+
+function renderSetupSuccess(container) {
+  if (!hasLiveFlData()) return;
+  const node = card(
+    "Congratulations, setup is up and running.",
+    "OK",
+    "FL Studio values are readable. Check out Live Data for live information and AI Clients to set up LLM agents to use FL Studio Pilot.",
+    [
+      { text: "Live Data", disabled: false, onclick: () => selectDashboard("project_data") },
+      { text: "AI Clients", disabled: false, onclick: () => selectDashboard("clients") }
+    ]
+  );
+  node.classList.add("setup-success-layer");
+  container.appendChild(node);
+}
+
+function renderGuidedTroubleshooting(container) {
+  const guidance = state.status.setup_guidance || [];
+  for (const item of guidance) {
+    const buttons = [];
+    if (item.checkpoint) {
+      const feedback = state.setupFeedback[item.checkpoint];
+      const isChecking = feedback?.state === "checking";
+      buttons.push({
+        text: isChecking ? "Checking..." : (item.action_label || "I did this"),
+        disabled: isChecking,
+        onclick: () => confirmStep({
+          key: item.checkpoint,
+          groups: item.groups || []
+        })
+      });
+    } else if (item.action_path) {
+      buttons.push({
+        text: item.action_label || "Run",
+        disabled: false,
+        onclick: () => runGuidanceAction(item.action_path)
+      });
+    }
+    const node = card(item.title, item.status, item.text, buttons.length ? buttons : null);
+    if (item.checkpoint) {
+      const confirmed = state.status.checkpoints[item.checkpoint];
+      const feedback = state.setupFeedback[item.checkpoint] || (
+        confirmed ? {
+          state: "attention",
+          text: "Confirmation saved. The related automated check still needs attention."
+        } : null
+      );
+      appendSetupFeedback(node, feedback);
+    }
     container.appendChild(node);
   }
 }
 
 function groupStatus(group) {
   const findings = state.status.groups[group] || [];
+  if (group === "daemon") {
+    const dynamicStatus = daemonRuntimeStatus(findings);
+    if (dynamicStatus) return dynamicStatus;
+  }
+  if (group === "mcp_sse") {
+    const dynamicStatus = mcpSseStatus(findings);
+    if (dynamicStatus) return dynamicStatus;
+  }
   const failed = findings.find((item) => item.status === "failed");
   if (failed) return failed.severity === "blocker" ? "blocked" : "action needed";
   const manual = findings.find((item) => item.status === "manual_check" || item.status === "probe_needed");
@@ -131,10 +177,147 @@ function groupStatus(group) {
   return findings.length ? "OK" : "not required";
 }
 
+function groupNeedsAction(group) {
+  const status = groupStatus(group).toLowerCase();
+  return status !== "ok" && status !== "not required";
+}
+
+function isGroupOk(group) {
+  return groupStatus(group).toLowerCase() === "ok";
+}
+
 function groupText(group) {
   const findings = state.status.groups[group] || [];
+  if (group === "daemon") {
+    const dynamicText = daemonRuntimeText(findings);
+    if (dynamicText) return dynamicText;
+  }
+  if (group === "mcp_sse") {
+    const dynamicText = mcpSseText(findings);
+    if (dynamicText) return dynamicText;
+  }
   if (!findings.length) return "No finding for this setup layer.";
   return findings.map((item) => `${item.component}: ${item.evidence}${item.remediation ? ` Fix: ${item.remediation}` : ""}`).join("\n");
+}
+
+function hasLiveFlData() {
+  const dashboard = state.status?.dashboard || {};
+  const bridge = dashboard.bridge || {};
+  const project = dashboard.project || {};
+  return bridge.state === "live" && project.state === "live";
+}
+
+function daemonRuntimeStatus(findings = []) {
+  const daemonProc = state.status.processes?.daemon || {};
+  const health = daemonProc.health || {};
+  const running = Boolean(daemonProc.running) || daemonProc.state === "running" || daemonProc.state === "external";
+  const problemFinding = findings.some((item) => item.status === "failed" || item.status === "manual_check" || item.status === "probe_needed");
+  if (problemFinding) return null;
+  if (!running) return "stopped";
+  if (health.reachable === false) return "action needed";
+  return null;
+}
+
+function daemonRuntimeText(findings = []) {
+  const daemonProc = state.status.processes?.daemon || {};
+  const health = daemonProc.health || {};
+  const running = Boolean(daemonProc.running) || daemonProc.state === "running" || daemonProc.state === "external";
+  const problemFinding = findings.some((item) => item.status === "failed" || item.status === "manual_check" || item.status === "probe_needed");
+  if (problemFinding) return null;
+  if (!running) return "Daemon is not running. Start the daemon, then re-check setup.";
+  if (health.reachable === false) return "Daemon process is running, but the TCP health check is not reachable.";
+  return null;
+}
+
+function mcpSseProbe() {
+  return state.status.mcp?.sse_probe || state.status.processes?.sse?.probe || null;
+}
+
+function mcpSseStatus(findings = []) {
+  const probe = mcpSseProbe();
+  if (!probe) return null;
+  const sseProc = state.status.processes?.sse || {};
+  const running = Boolean(sseProc.running) || sseProc.state === "running";
+  if (!running && (probe.state === "not_required" || probe.state === "stopped")) {
+    return findings.length ? null : "not required";
+  }
+  if (probe.state === "ok") return "OK";
+  if (probe.state === "failed") return "action needed";
+  if (probe.state === "checking") return "checking";
+  if (running) return "running";
+  return null;
+}
+
+function mcpSseText(findings = []) {
+  const probe = mcpSseProbe();
+  if (!probe) return null;
+  if (
+    findings.length &&
+    !state.status.processes?.sse?.running &&
+    (probe.state === "not_required" || probe.state === "stopped")
+  ) {
+    return null;
+  }
+  const parts = [probe.message || "SSE status is unavailable."];
+  if (probe.url) parts.push(`URL: ${probe.url}`);
+  if (probe.checked_at) parts.push(`Last test: ${new Date(probe.checked_at).toLocaleTimeString()}`);
+  return parts.join("\n");
+}
+
+function setupGroupSnapshot(groups) {
+  const out = {};
+  for (const group of groups) {
+    out[group] = groupStatus(group);
+  }
+  return out;
+}
+
+function groupStatusRank(status) {
+  const normalized = String(status || "").toLowerCase();
+  if (normalized === "ok") return 4;
+  if (normalized === "not required") return 3;
+  if (normalized === "manual check") return 2;
+  if (normalized === "action needed") return 1;
+  if (normalized === "blocked") return 0;
+  return 0;
+}
+
+function evaluateSetupFeedback(step, before) {
+  const after = setupGroupSnapshot(step.groups);
+  const groupsOk = step.groups.every((group) => isGroupOk(group) || groupStatus(group).toLowerCase() === "not required");
+  const improved = step.groups.some((group) => groupStatusRank(after[group]) > groupStatusRank(before[group]));
+  const stillNeedsAction = step.groups.some((group) => groupNeedsAction(group));
+
+  if (groupsOk) {
+    return {
+      state: "verified",
+      text: "Verified: the related automated check now passes."
+    };
+  }
+  if (improved) {
+    return {
+      state: "progress",
+      text: "Progress detected. One related check improved; continue with the next setup layer."
+    };
+  }
+  if (stillNeedsAction) {
+    return {
+      state: "attention",
+      text: "Checked again: the expected automated signal is still missing."
+    };
+  }
+  return {
+    state: "saved",
+    text: "Confirmation saved. No additional automated signal is available for this step."
+  };
+}
+
+function appendSetupFeedback(node, feedback) {
+  if (!feedback) return;
+  const message = document.createElement("div");
+  message.className = `setup-feedback ${feedback.state}`;
+  message.textContent = feedback.text;
+  node.appendChild(message);
 }
 
 function renderRuntime() {
@@ -324,16 +507,38 @@ function card(title, status, text, buttonConfig) {
 }
 
 async function confirmStep(step) {
-  state.status = await api("/api/setup/confirm-step", {
-    method: "POST",
-    body: JSON.stringify({ step })
-  });
+  const before = setupGroupSnapshot(step.groups);
+  state.setupFeedback[step.key] = {
+    state: "checking",
+    text: "Checking for the expected setup improvement..."
+  };
+  render();
+  try {
+    state.status = await api("/api/setup/confirm-step", {
+      method: "POST",
+      body: JSON.stringify({ step: step.key })
+    });
+    state.setupFeedback[step.key] = evaluateSetupFeedback(step, before);
+  } catch (error) {
+    state.setupFeedback[step.key] = {
+      state: "attention",
+      text: `Could not re-check this step: ${error.message}`
+    };
+  }
   render();
 }
 
 async function processAction(path) {
   await api(path, { method: "POST", body: "{}" });
   await refresh();
+}
+
+async function runGuidanceAction(path) {
+  if (path === "/api/refresh") {
+    await refresh();
+    return;
+  }
+  await processAction(path);
 }
 
 async function loadReport() {
@@ -402,15 +607,7 @@ function renderProjectData() {
 
   if (!live) {
     if (disconnectedOverlay) disconnectedOverlay.style.display = "flex";
-    document.querySelectorAll(".tab, .nav-item, .dashboard").forEach((el) => el.classList.remove("active"));
-    document.querySelectorAll(".dashboard").forEach((el) => el.style.display = "none");
-    const setupTabBtn = document.querySelector('[data-target="setup"]');
-    if (setupTabBtn) setupTabBtn.classList.add("active");
-    const setupPanel = document.getElementById("setup");
-    if (setupPanel) {
-      setupPanel.classList.add("active");
-      setupPanel.style.display = "block";
-    }
+    selectDashboard("setup");
   } else {
     if (disconnectedOverlay) disconnectedOverlay.style.display = "none";
   }
@@ -495,17 +692,19 @@ function renderProjectData() {
 }
 
 
-document.querySelectorAll(".nav-item").forEach((tab) => {
-  tab.addEventListener("click", () => {
-    document.querySelectorAll(".nav-item").forEach((el) => el.classList.remove("active"));
-    document.querySelectorAll(".dashboard").forEach((el) => el.style.display = "none");
-    
-    tab.classList.add("active");
-    const targetId = tab.dataset.target;
-    document.getElementById(targetId).style.display = "block";
-    
-    if (targetId === "support") loadReport();
+function selectDashboard(targetId) {
+  document.querySelectorAll(".nav-item").forEach((el) => {
+    el.classList.toggle("active", el.dataset.target === targetId);
   });
+  document.querySelectorAll(".dashboard").forEach((el) => {
+    el.classList.toggle("active", el.id === targetId);
+    el.style.display = el.id === targetId ? "block" : "none";
+  });
+  if (targetId === "support") loadReport();
+}
+
+document.querySelectorAll(".nav-item").forEach((tab) => {
+  tab.addEventListener("click", () => selectDashboard(tab.dataset.target));
 });
 
 document.getElementById("refresh-button").addEventListener("click", refresh);

@@ -11,6 +11,7 @@ import socket
 import subprocess
 import sys
 import threading
+import time
 import webbrowser
 from collections import deque
 from dataclasses import dataclass, field
@@ -103,6 +104,17 @@ class ControlCenterState:
         self.checkpoints: dict[str, dict[str, Any]] = {}
         self.processes: dict[str, ManagedProcess] = {}
         self.last_findings: list[doctor.Finding] = []
+        self.daemon_autostart_attempted = False
+        self.daemon_autostart: dict[str, Any] = {
+            "state": "pending",
+            "message": "Daemon auto-start has not run yet.",
+        }
+        self.sse_probe: dict[str, Any] = _sse_probe_state(
+            "not_required",
+            "SSE server is stopped. Start it only if your MCP client uses SSE/HTTP.",
+            sse_host,
+            sse_port,
+        )
         self.started_at = _now_iso()
         self.lock = threading.RLock()
 
@@ -118,18 +130,15 @@ def collect_status(state: ControlCenterState, *, refresh: bool = True) -> dict[s
     with state.lock:
         daemon_host, daemon_port = _selected_daemon_endpoint(state)
         if refresh or not state.last_findings:
-            state.last_findings = doctor.run_all_checks(
-                server_transport="stdio",
-                sse_host=state.sse_host,
-                sse_port=state.sse_port,
-                bridge_transport="tcp",
-                tcp_host=daemon_host,
-                tcp_port=daemon_port,
-                smoke_timeout_seconds=1.5,
-            )
+            state.last_findings = _run_doctor_checks(state, daemon_host, daemon_port)
+            autostart = _auto_start_daemon_if_ready(state, state.last_findings)
+            if autostart.get("rerun_checks"):
+                daemon_host, daemon_port = _selected_daemon_endpoint(state)
+                state.last_findings = _run_doctor_checks(state, daemon_host, daemon_port)
         findings = [finding.to_dict() for finding in state.last_findings]
         groups = _group_findings(state.last_findings)
         readiness = _readiness(state.last_findings, state.checkpoints)
+        _sync_sse_probe_state(state, refresh=refresh)
         process_state = _process_status(state)
         ports = _port_state(state)
         dashboard_data = collect_dashboard_snapshot(
@@ -157,9 +166,299 @@ def collect_status(state: ControlCenterState, *, refresh: bool = True) -> dict[s
             "findings": findings,
             "checkpoints": dict(state.checkpoints),
             "processes": process_state,
+            "automation": {"daemon_autostart": dict(state.daemon_autostart)},
+            "mcp": {"sse_probe": dict(state.sse_probe)},
+            "setup_guidance": _setup_guidance(
+                groups=groups,
+                readiness=readiness,
+                processes=process_state,
+                ports=ports,
+                daemon_autostart=state.daemon_autostart,
+                sse_probe=state.sse_probe,
+            ),
             "snippets": client_snippets(state),
             "dashboard": dashboard_data,
         }
+
+
+def _run_doctor_checks(
+    state: ControlCenterState,
+    daemon_host: str,
+    daemon_port: int,
+) -> list[doctor.Finding]:
+    return doctor.run_all_checks(
+        server_transport="stdio",
+        sse_host=state.sse_host,
+        sse_port=state.sse_port,
+        bridge_transport="tcp",
+        tcp_host=daemon_host,
+        tcp_port=daemon_port,
+        smoke_timeout_seconds=1.5,
+    )
+
+
+def _auto_start_daemon_if_ready(
+    state: ControlCenterState,
+    findings: list[doctor.Finding],
+) -> dict[str, Any]:
+    if state.daemon_autostart_attempted:
+        return {}
+
+    if not _environment_ready(findings):
+        state.daemon_autostart = {
+            "state": "skipped",
+            "message": "Daemon auto-start waits until Python and core dependencies are OK.",
+        }
+        return {}
+
+    state.daemon_autostart_attempted = True
+    existing = state.processes.get("daemon")
+    if existing and existing.running:
+        state.daemon_autostart = {
+            "state": "running",
+            "message": "Daemon is already running under this Control Center.",
+            "port": _selected_daemon_endpoint(state)[1],
+        }
+        return {}
+
+    health = _daemon_health(state.daemon_host, state.daemon_port)
+    if health.get("reachable"):
+        state.daemon_fallback_port = None
+        state.daemon_autostart = {
+            "state": "external",
+            "message": "A daemon is already reachable. Control Center will use it.",
+            "port": state.daemon_port,
+        }
+        return {}
+
+    port_status = tcp_port_status(state.daemon_host, state.daemon_port)
+    target_port = state.daemon_port
+    fallback_used = False
+    if not port_status["available"]:
+        target_port = int(port_status["fallback_port"])
+        state.daemon_fallback_port = target_port
+        fallback_used = True
+    else:
+        state.daemon_fallback_port = None
+
+    try:
+        proc = _spawn_daemon(state, target_port)
+    except Exception as exc:
+        state.daemon_autostart = {
+            "state": "failed",
+            "message": f"Daemon auto-start failed: {type(exc).__name__}: {exc}",
+            "port": target_port,
+        }
+        return {}
+
+    state.processes["daemon"] = proc
+    health = _wait_for_daemon_health(state.daemon_host, target_port)
+    state.daemon_autostart = {
+        "state": "started" if health.get("reachable") else "starting",
+        "message": (
+            f"Started daemon on fallback port {target_port}."
+            if fallback_used
+            else f"Started daemon on port {target_port}."
+        ),
+        "port": target_port,
+        "fallback_used": fallback_used,
+        "reachable": bool(health.get("reachable")),
+    }
+    return {"rerun_checks": True}
+
+
+def _environment_ready(findings: list[doctor.Finding]) -> bool:
+    required = {"Python Environment", "Core Dependencies"}
+    seen: set[str] = set()
+    for finding in findings:
+        if finding.component not in required:
+            continue
+        seen.add(finding.component)
+        if finding.status != "ok":
+            return False
+    return required.issubset(seen)
+
+
+def _spawn_daemon(state: ControlCenterState, port: int) -> ManagedProcess:
+    env = os.environ.copy()
+    env["PYTHONUNBUFFERED"] = "1"
+    env["FLS_PILOT_TCP_HOST"] = state.daemon_host
+    env["FLS_PILOT_TCP_PORT"] = str(port)
+    return _spawn("daemon", [sys.executable, "-m", "fls_pilot.daemon"], env)
+
+
+def _wait_for_daemon_health(host: str, port: int, *, timeout: float = 2.0) -> dict[str, Any]:
+    deadline = time.monotonic() + timeout
+    last = {"reachable": False}
+    while time.monotonic() < deadline:
+        last = _daemon_health(host, port)
+        if last.get("reachable"):
+            return last
+        time.sleep(0.1)
+    return last
+
+
+def _sync_sse_probe_state(state: ControlCenterState, *, refresh: bool) -> None:
+    proc = state.processes.get("sse")
+    if proc is None:
+        state.sse_probe = _sse_probe_state(
+            "not_required",
+            "SSE server is stopped. Start it only if your MCP client uses SSE/HTTP.",
+            state.sse_host,
+            state.sse_port,
+        )
+        return
+    if not proc.running:
+        if state.sse_probe.get("state") not in {"not_required", "stopped"}:
+            state.sse_probe = _sse_probe_state(
+                "failed",
+                f"SSE server is not running. Last exit code: {proc.process.poll()}.",
+                state.sse_host,
+                state.sse_port,
+                checked_at=_now_iso(),
+            )
+        return
+
+    expected_url = _sse_url(state.sse_host, state.sse_port)
+    probe_state = str(state.sse_probe.get("state") or "")
+    should_probe = (
+        state.sse_probe.get("url") != expected_url
+        or probe_state in {
+            "",
+            "not_required",
+            "stopped",
+            "pending",
+            "checking",
+        }
+        or (refresh and probe_state == "failed")
+    )
+    if should_probe:
+        _probe_sse_connection(state)
+
+
+def _probe_sse_connection(
+    state: ControlCenterState,
+    *,
+    timeout: float = 2.0,
+) -> dict[str, Any]:
+    url = _sse_url(state.sse_host, state.sse_port)
+    state.sse_probe = _sse_probe_state(
+        "checking",
+        "Testing the MCP connection over SSE...",
+        state.sse_host,
+        state.sse_port,
+    )
+    proc = state.processes.get("sse")
+    try:
+        _wait_for_tcp_listener(
+            state.sse_host,
+            state.sse_port,
+            process=proc.process if proc is not None else None,
+            timeout=timeout,
+        )
+        import anyio
+
+        result = anyio.run(doctor._sse_mcp_client_smoke_async, url, timeout)
+    except Exception as exc:
+        state.sse_probe = _sse_probe_state(
+            "failed",
+            f"SSE MCP connection test failed at {url}: {type(exc).__name__}: {exc}",
+            state.sse_host,
+            state.sse_port,
+            checked_at=_now_iso(),
+            error=f"{type(exc).__name__}: {exc}",
+        )
+    else:
+        state.sse_probe = _sse_probe_state(
+            "ok",
+            _sse_probe_success_message(url, result),
+            state.sse_host,
+            state.sse_port,
+            checked_at=_now_iso(),
+            result=result,
+        )
+    return dict(state.sse_probe)
+
+
+def _wait_for_tcp_listener(
+    host: str,
+    port: int,
+    *,
+    process: subprocess.Popen | None = None,
+    timeout: float = 2.0,
+) -> None:
+    deadline = time.monotonic() + timeout
+    connect_host = _connect_host_for_bind_host(host)
+    last_error: OSError | None = None
+    while time.monotonic() < deadline:
+        if process is not None and process.poll() is not None:
+            raise RuntimeError(f"SSE server exited early with code {process.returncode}.")
+        try:
+            with socket.create_connection((connect_host, int(port)), timeout=0.3):
+                return
+        except OSError as exc:
+            last_error = exc
+            time.sleep(0.1)
+    raise TimeoutError(f"Timed out waiting for SSE server at {host}:{port}: {last_error}")
+
+
+def _sse_probe_state(
+    state: str,
+    message: str,
+    host: str,
+    port: int,
+    *,
+    checked_at: str | None = None,
+    error: str | None = None,
+    result: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    data: dict[str, Any] = {
+        "state": state,
+        "message": message,
+        "host": host,
+        "port": int(port),
+        "url": _sse_url(host, port),
+    }
+    if checked_at is not None:
+        data["checked_at"] = checked_at
+    if error:
+        data["error"] = error
+    if result is not None:
+        data["result"] = result
+    return data
+
+
+def _sse_probe_success_message(url: str, result: dict[str, Any]) -> str:
+    pieces = [
+        f"SSE MCP connection test passed at {url}.",
+        f"Tools: {result.get('tool_count', 'unknown')}.",
+        f"Resources: {result.get('resource_count', 'unknown')}.",
+    ]
+    if result.get("has_fl_transport"):
+        pieces.append("fl_transport is available.")
+    if result.get("has_status_resource"):
+        pieces.append("fl://status is readable.")
+    return " ".join(pieces)
+
+
+def _sse_url(host: str, port: int) -> str:
+    connect_host = _connect_host_for_bind_host(host)
+    if connect_host == "127.0.0.1":
+        connect_host = "localhost"
+    connect_host = _url_host(connect_host)
+    return f"http://{connect_host}:{int(port)}/sse"
+
+
+def _connect_host_for_bind_host(host: str) -> str:
+    if host in {"0.0.0.0", ""}:
+        return "127.0.0.1"
+    if host == "::":
+        return "::1"
+    return host
+
+
+def _url_host(host: str) -> str:
+    return f"[{host}]" if ":" in host and not host.startswith("[") else host
 
 
 def client_snippets(state: ControlCenterState) -> dict[str, Any]:
@@ -231,6 +530,21 @@ def setup_report(state: ControlCenterState) -> str:
         lines.append(f"- {name}: {_process_state_text(proc)}")
         for log in proc.get("logs", [])[-10:]:
             lines.append(f"  - {log}")
+    autostart = status.get("automation", {}).get("daemon_autostart", {})
+    sse_probe = status.get("mcp", {}).get("sse_probe", {})
+    lines.extend(
+        [
+            "",
+            "## Automation",
+            f"- Daemon auto-start: {autostart.get('state', 'unknown')} - "
+            f"{autostart.get('message', 'no detail')}",
+            f"- MCP SSE probe: {sse_probe.get('state', 'unknown')} - "
+            f"{sse_probe.get('message', 'no detail')}",
+        ]
+    )
+    lines.extend(["", "## Guided troubleshooting"])
+    for item in status.get("setup_guidance", []):
+        lines.append(f"- [{item.get('status')}] {item.get('title')}: {item.get('text')}")
     lines.extend(["", "## Doctor findings"])
     for finding in status["findings"]:
         lines.append(
@@ -323,6 +637,8 @@ def _handler_factory(state: ControlCenterState):
                 self._json(_stop_process(state, "daemon"))
             elif self.path == "/api/process/sse/start":
                 self._json(_start_sse(state))
+            elif self.path == "/api/process/sse/test":
+                self._json(_test_sse(state))
             elif self.path == "/api/process/sse/stop":
                 self._json(_stop_process(state, "sse"))
             elif self.path == "/api/setup/confirm-step":
@@ -423,14 +739,22 @@ def _start_sse(state: ControlCenterState) -> dict[str, Any]:
     with state.lock:
         existing = state.processes.get("sse")
         if existing and existing.running:
+            probe = _probe_sse_connection(state)
             return {
                 "ok": True,
                 "process": existing.to_dict(),
                 "message": "SSE server already running",
+                "probe": probe,
             }
 
         selected = find_available_tcp_port(state.sse_host, DEFAULT_SSE_PORT)
         state.sse_port = selected
+        state.sse_probe = _sse_probe_state(
+            "checking",
+            "SSE server started. Testing the MCP connection...",
+            state.sse_host,
+            selected,
+        )
         env = os.environ.copy()
         env["PYTHONUNBUFFERED"] = "1"
         env["FLS_PILOT_TRANSPORT"] = "tcp"
@@ -446,15 +770,55 @@ def _start_sse(state: ControlCenterState) -> dict[str, Any]:
             env,
         )
         state.processes["sse"] = proc
-        return {"ok": True, "process": proc.to_dict(), "url": f"http://localhost:{selected}/sse"}
+        probe = _probe_sse_connection(state)
+        return {
+            "ok": True,
+            "process": proc.to_dict(),
+            "url": _sse_url(state.sse_host, selected),
+            "probe": probe,
+        }
+
+
+def _test_sse(state: ControlCenterState) -> dict[str, Any]:
+    with state.lock:
+        proc = state.processes.get("sse")
+        if proc is None or not proc.running:
+            state.sse_probe = _sse_probe_state(
+                "not_required",
+                "SSE server is stopped. Start it only if your MCP client uses SSE/HTTP.",
+                state.sse_host,
+                state.sse_port,
+            )
+            return {
+                "ok": False,
+                "state": "stopped",
+                "message": "SSE server is not running.",
+                "probe": dict(state.sse_probe),
+            }
+        probe = _probe_sse_connection(state)
+        return {"ok": probe.get("state") == "ok", "probe": probe}
 
 
 def _stop_process(state: ControlCenterState, name: str) -> dict[str, Any]:
     with state.lock:
         proc = state.processes.get(name)
         if proc is None:
+            if name == "sse":
+                state.sse_probe = _sse_probe_state(
+                    "not_required",
+                    "SSE server is stopped. Start it only if your MCP client uses SSE/HTTP.",
+                    state.sse_host,
+                    state.sse_port,
+                )
             return {"ok": True, "state": "stopped", "message": f"{name} is not managed here"}
         _stop_managed_process(proc)
+        if name == "sse":
+            state.sse_probe = _sse_probe_state(
+                "not_required",
+                "SSE server stopped. SSE is only needed for MCP clients that use SSE/HTTP.",
+                state.sse_host,
+                state.sse_port,
+            )
         return {"ok": True, "process": proc.to_dict()}
 
 
@@ -510,10 +874,14 @@ def _process_status(state: ControlCenterState) -> dict[str, Any]:
     for name in ("daemon", "sse"):
         if name not in managed:
             managed[name] = {"state": "stopped", "logs": []}
+    managed["sse"]["probe"] = dict(state.sse_probe)
     daemon_host, daemon_port = _selected_daemon_endpoint(state)
     daemon_health = _daemon_health(daemon_host, daemon_port)
-    if daemon_health.get("reachable") and not state.processes.get("daemon"):
+    daemon_proc = state.processes.get("daemon")
+    if daemon_health.get("reachable") and not (daemon_proc and daemon_proc.running):
         managed["daemon"] = {"state": "external", "health": daemon_health, "logs": []}
+    else:
+        managed["daemon"]["health"] = daemon_health
     return managed
 
 
@@ -605,6 +973,287 @@ def _readiness(
         "read_only_review_ready": not blockers,
         "write_tools_ready": write_ready,
     }
+
+
+def _setup_guidance(
+    *,
+    groups: dict[str, list[dict[str, Any]]],
+    readiness: dict[str, Any],
+    processes: dict[str, Any],
+    ports: dict[str, dict[str, Any]],
+    daemon_autostart: dict[str, Any],
+    sse_probe: dict[str, Any],
+) -> list[dict[str, Any]]:
+    guidance: list[dict[str, Any]] = []
+
+    if _group_needs_action(groups, "environment"):
+        guidance.append(
+            _guidance_item(
+                title="Fix the Python environment",
+                status="blocked",
+                text=_group_guidance_text(
+                    groups,
+                    "environment",
+                    "Run the installer again or install the missing package, then re-check setup.",
+                ),
+                groups=["environment"],
+                action_label="Re-check",
+                action_path="/api/refresh",
+            )
+        )
+        return guidance
+
+    daemon_process = processes.get("daemon", {})
+    daemon_running = _process_running(daemon_process)
+    daemon_start_action_shown = False
+    autostart_state = str(daemon_autostart.get("state") or "")
+    if autostart_state in {"started", "starting", "external", "failed"}:
+        daemon_status = _daemon_startup_status(
+            autostart_state,
+            daemon_process=daemon_process,
+            groups=groups,
+        )
+        daemon_action_path = "/api/refresh"
+        daemon_action_label = "Re-check"
+        if daemon_status == "action needed" and not daemon_running:
+            daemon_action_path = "/api/process/daemon/start"
+            daemon_action_label = "Start daemon"
+            daemon_start_action_shown = True
+        guidance.append(
+            _guidance_item(
+                title="Daemon startup",
+                status=daemon_status,
+                text=_daemon_startup_text(
+                    daemon_autostart=daemon_autostart,
+                    daemon_process=daemon_process,
+                    groups=groups,
+                ),
+                groups=["daemon"],
+                action_label=daemon_action_label,
+                action_path=daemon_action_path,
+            )
+        )
+
+    if (
+        _group_needs_action(groups, "daemon")
+        and not daemon_running
+        and not daemon_start_action_shown
+    ):
+        guidance.append(
+            _guidance_item(
+                title="Start the local daemon",
+                status="action needed",
+                text=(
+                    "The daemon owns the MIDI bridge. Start it before checking FL Studio. "
+                    f"Target port: {ports.get('daemon', {}).get('host', '127.0.0.1')}:"
+                    f"{ports.get('daemon', {}).get('selected_port', 'unknown')}."
+                ),
+                groups=["daemon"],
+                action_label="Start daemon",
+                action_path="/api/process/daemon/start",
+            )
+        )
+
+    if _group_needs_action(groups, "midi"):
+        guidance.append(
+            _guidance_item(
+                title="Create MIDI loopback ports",
+                status=_group_status(groups, "midi"),
+                text=_group_guidance_text(
+                    groups,
+                    "midi",
+                    "Create FLStudioPilot RX and FLStudioPilot TX, then re-check setup.",
+                ),
+                groups=["midi"],
+                checkpoint="created_midi_ports",
+                action_label="I did this",
+            )
+        )
+
+    if _group_needs_action(groups, "controller"):
+        guidance.append(
+            _guidance_item(
+                title="Connect FL Studio to the controller",
+                status=_group_status(groups, "controller"),
+                text=_group_guidance_text(
+                    groups,
+                    "controller",
+                    (
+                        "Open FL Studio, enable FLStudioPilot RX as the controller input, "
+                        "set FLStudioPilot TX to the same port number, then re-check."
+                    ),
+                ),
+                groups=["controller"],
+                checkpoint="configured_fl_midi",
+                action_label="I did this",
+            )
+        )
+
+    if _group_needs_action(groups, "mcp_sse"):
+        guidance.append(
+            _guidance_item(
+                title="Check MCP SSE",
+                status=_group_status(groups, "mcp_sse"),
+                text=_group_guidance_text(
+                    groups,
+                    "mcp_sse",
+                    "Start the SSE server only if your MCP client uses SSE, then re-check.",
+                ),
+                groups=["mcp_sse"],
+                action_label="Start SSE server",
+                action_path="/api/process/sse/start",
+            )
+        )
+
+    sse_probe_state = str(sse_probe.get("state") or "")
+    if sse_probe_state in {"ok", "failed", "checking"}:
+        guidance.append(
+            _guidance_item(
+                title="MCP SSE connection",
+                status=(
+                    "OK"
+                    if sse_probe_state == "ok"
+                    else ("checking" if sse_probe_state == "checking" else "action needed")
+                ),
+                text=str(sse_probe.get("message") or "SSE connection test has no detail."),
+                groups=["mcp_sse"],
+                action_label="Re-test SSE",
+                action_path="/api/process/sse/test",
+            )
+        )
+
+    if _group_needs_action(groups, "mcp_apply"):
+        guidance.append(
+            _guidance_item(
+                title="Arm Piano Roll note writing",
+                status=_group_status(groups, "mcp_apply"),
+                text=_group_guidance_text(
+                    groups,
+                    "mcp_apply",
+                    "Run MCP_Apply once from the Piano Roll script menu if you need note writing.",
+                ),
+                groups=["mcp_apply"],
+                checkpoint="ran_mcp_apply",
+                action_label="I did this",
+            )
+        )
+
+    if not guidance:
+        guidance.append(
+            _guidance_item(
+                title="Setup is ready",
+                status="OK",
+                text=(
+                    "Read-only workflows are ready."
+                    if readiness.get("read_only_review_ready")
+                    else "No next setup action is available from the current checks."
+                ),
+                groups=[],
+                action_label="Re-check",
+                action_path="/api/refresh",
+            )
+        )
+
+    return guidance
+
+
+def _daemon_startup_status(
+    autostart_state: str,
+    *,
+    daemon_process: dict[str, Any],
+    groups: dict[str, list[dict[str, Any]]],
+) -> str:
+    if autostart_state == "starting":
+        return "starting"
+    if autostart_state == "failed":
+        return "action needed"
+    if not _process_running(daemon_process):
+        return "action needed"
+    if _group_needs_action(groups, "daemon"):
+        return _group_status(groups, "daemon")
+    return "OK"
+
+
+def _daemon_startup_text(
+    *,
+    daemon_autostart: dict[str, Any],
+    daemon_process: dict[str, Any],
+    groups: dict[str, list[dict[str, Any]]],
+) -> str:
+    if not _process_running(daemon_process):
+        return "Daemon is not running. Start the daemon, then re-check setup."
+    if _group_needs_action(groups, "daemon"):
+        return _group_guidance_text(
+            groups,
+            "daemon",
+            "Daemon is running, but the bridge health check still needs attention.",
+        )
+    return str(daemon_autostart.get("message") or "Daemon is running.")
+
+
+def _process_running(process: dict[str, Any]) -> bool:
+    return bool(process.get("running")) or process.get("state") in {"running", "external"}
+
+
+def _guidance_item(
+    *,
+    title: str,
+    status: str,
+    text: str,
+    groups: list[str],
+    action_label: str | None = None,
+    action_path: str | None = None,
+    checkpoint: str | None = None,
+) -> dict[str, Any]:
+    return {
+        "title": title,
+        "status": status,
+        "text": text,
+        "groups": groups,
+        "action_label": action_label,
+        "action_path": action_path,
+        "checkpoint": checkpoint,
+    }
+
+
+def _group_status(groups: dict[str, list[dict[str, Any]]], group: str) -> str:
+    findings = groups.get(group, [])
+    failed = next((item for item in findings if item.get("status") == "failed"), None)
+    if failed:
+        return "blocked" if failed.get("severity") == "blocker" else "action needed"
+    manual = next(
+        (
+            item
+            for item in findings
+            if item.get("status") in {"manual_check", "probe_needed"}
+        ),
+        None,
+    )
+    if manual:
+        return "manual check"
+    return "OK" if findings else "not required"
+
+
+def _group_needs_action(groups: dict[str, list[dict[str, Any]]], group: str) -> bool:
+    return _group_status(groups, group).lower() not in {"ok", "not required"}
+
+
+def _group_guidance_text(
+    groups: dict[str, list[dict[str, Any]]],
+    group: str,
+    fallback: str,
+) -> str:
+    findings = [
+        item
+        for item in groups.get(group, [])
+        if item.get("status") in {"failed", "manual_check", "probe_needed"}
+    ]
+    if not findings:
+        return fallback
+    first = findings[0]
+    evidence = str(first.get("evidence") or fallback)
+    remediation = str(first.get("remediation") or "")
+    return f"{evidence} {remediation}".strip()
 
 
 def _daemon_health(host: str, port: int) -> dict[str, Any]:

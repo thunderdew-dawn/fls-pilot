@@ -73,7 +73,12 @@ setup:
 
 The Control Center stays read-only against the FL Studio project. It asks you to
 perform manual FL Studio actions, then reruns the relevant checks. It can also
-start/stop the local daemon and ChatGPT SSE server that it manages.
+start/stop the local daemon and ChatGPT SSE server that it manages. When Python
+and the core dependencies are available, Control Center attempts to start the
+local daemon automatically. If the default daemon port is busy, it starts on the
+recommended fallback port and updates the snippets and setup report. When it
+starts the SSE server, it immediately runs an MCP connection test through the
+displayed SSE URL and shows the result in Guided Setup under MCP SSE.
 
 CLI fallback: before starting write-capable workflows, run the read-only Setup Doctor:
 
@@ -121,17 +126,20 @@ Default local ports:
 | Control Center | `8766` | Uses the next available port and opens/prints the actual URL. |
 | Dashboard | `8765` | Uses the next available port and prints the actual URL. |
 | ChatGPT SSE server | `8080` | Control Center-managed SSE uses the next available port and updates snippets. |
-| TCP daemon | `9787` | Control Center detects a healthy external daemon or recommends `FLS_PILOT_TCP_PORT`. |
+| TCP daemon | `9787` | Control Center detects a healthy external daemon, auto-starts its own daemon when possible, or uses a fallback port. |
 
 ## 6. Connect to your MCP Client
 
 ### Option A: Claude Desktop, Cursor, or other stdio clients
 
-1. Start the MIDI bridge daemon (recommended so MIDI ports are held by a stable background process):
+1. Recommended: open Control Center first. It attempts to start the MIDI bridge
+   daemon automatically after the environment checks pass.
+2. Terminal fallback: start the MIDI bridge daemon manually if Control Center
+   cannot manage it:
     - Windows (.venv): Run `.venv\Scripts\fls-pilot-daemon`
     - macOS (.venv): Run `.venv/bin/fls-pilot-daemon`
     *(If using pipx, run `fls-pilot-daemon`)*
-2. Configure your client (e.g., Claude Desktop). Add this to your configuration file (Windows: `%APPDATA%\Claude\claude_desktop_config.json`, macOS: `~/Library/Application Support/Claude/claude_desktop_config.json`):
+3. Configure your client (e.g., Claude Desktop). Add this to your configuration file (Windows: `%APPDATA%\Claude\claude_desktop_config.json`, macOS: `~/Library/Application Support/Claude/claude_desktop_config.json`):
     
     ```json
     {
@@ -154,17 +162,20 @@ ChatGPT Desktop does not support local stdio subprocesses and requires a remote/
 
 Recommended: start the SSE server from the Control Center and copy the displayed
 ChatGPT URL. It will reflect any fallback port selected because `8080` was busy.
+Guided Setup shows the SSE MCP connection test result after the server starts.
 
-1. Start the MIDI bridge daemon in a terminal:
+1. Recommended: start the MIDI bridge daemon from Control Center. It will use
+   the configured port or a detected fallback port.
+2. Terminal fallback:
     - Windows (.venv): `.venv\Scripts\fls-pilot-daemon`
     - macOS (.venv): `.venv/bin/fls-pilot-daemon`
     *(If using pipx, run `fls-pilot-daemon`)*
-2. Start the MCP server with the SSE transport in another terminal:
+3. Start the MCP server with the SSE transport in another terminal:
     - Windows (.venv): `set FLS_PILOT_TRANSPORT=tcp && .venv\Scripts\fls-pilot --sse --port 8080`
     - macOS (.venv): `export FLS_PILOT_TRANSPORT=tcp && .venv/bin/fls-pilot --sse --port 8080`
     *(If using pipx, run `fls-pilot --sse --port 8080`)*
-3. Enable Developer Mode in ChatGPT Desktop (Settings > Developer).
-4. Go to **Settings > Developer > MCP**, click **Add New Server**:
+4. Enable Developer Mode in ChatGPT Desktop (Settings > Developer).
+5. Go to **Settings > Developer > MCP**, click **Add New Server**:
     - **Name**: `FL Studio`
     - **Type**: `sse`
     - **URL**: `http://localhost:8080/sse`

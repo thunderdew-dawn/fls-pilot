@@ -85,6 +85,161 @@ def test_status_uses_selected_tcp_endpoint_for_doctor_and_dashboard(monkeypatch)
     assert dashboard_calls == [("127.0.0.1", 9788)]
 
 
+def test_status_autostarts_daemon_when_environment_is_ready(monkeypatch):
+    findings = [
+        _finding("Python Environment"),
+        _finding("Core Dependencies"),
+        _finding("TCP Daemon / Bridge", "blocker", "failed"),
+    ]
+    spawned: dict = {}
+    health_calls = []
+
+    def fake_health(host, port):  # noqa: ANN001, ANN202
+        health_calls.append((host, port))
+        return {"reachable": bool(spawned)}
+
+    def fake_spawn(name, args, env):  # noqa: ANN001, ANN202
+        spawned["name"] = name
+        spawned["args"] = args
+        spawned["env"] = env
+        process = mock.Mock(spec=subprocess.Popen)
+        process.pid = 123
+        process.poll.return_value = None
+        return control_center.ManagedProcess(
+            name=name,
+            args=args,
+            env=env,
+            process=process,
+            started_at="now",
+        )
+
+    monkeypatch.setattr(control_center.doctor, "run_all_checks", lambda **_: findings)
+    monkeypatch.setattr(control_center, "_daemon_health", fake_health)
+    monkeypatch.setattr(
+        control_center,
+        "tcp_port_status",
+        lambda host, port: {
+            "host": host,
+            "preferred_port": port,
+            "available": True,
+            "selected_port": port,
+            "fallback_port": None,
+        },
+    )
+    monkeypatch.setattr(control_center, "_spawn", fake_spawn)
+    monkeypatch.setattr(
+        control_center,
+        "collect_dashboard_snapshot",
+        lambda **_: {"bridge": {"state": "unavailable"}, "project": {}},
+    )
+    state = _state()
+
+    status = control_center.collect_status(state)
+
+    assert spawned["name"] == "daemon"
+    assert spawned["env"]["FLS_PILOT_TCP_PORT"] == "9787"
+    assert status["automation"]["daemon_autostart"]["state"] == "started"
+    assert status["processes"]["daemon"]["state"] == "running"
+    assert health_calls[0] == ("127.0.0.1", 9787)
+
+
+def test_daemon_startup_guidance_is_not_ok_when_daemon_stopped():
+    groups = {
+        "daemon": [
+            _finding("TCP Daemon / Bridge", "blocker", "failed").to_dict(),
+        ],
+    }
+
+    guidance = control_center._setup_guidance(
+        groups=groups,
+        readiness={},
+        processes={"daemon": {"state": "stopped"}},
+        ports={"daemon": {"host": "127.0.0.1", "selected_port": 9787}},
+        daemon_autostart={"state": "started", "message": "Started daemon on port 9787."},
+        sse_probe={},
+    )
+
+    daemon_items = [item for item in guidance if item["title"] == "Daemon startup"]
+    assert len(daemon_items) == 1
+    assert daemon_items[0]["status"] == "action needed"
+    assert daemon_items[0]["action_path"] == "/api/process/daemon/start"
+    assert "not running" in daemon_items[0]["text"]
+
+
+def test_setup_guidance_prioritizes_midi_manual_action(monkeypatch):
+    findings = [
+        _finding("Python Environment"),
+        _finding("Core Dependencies"),
+        _finding("TCP Daemon / Bridge"),
+        _finding("MIDI/IAC/loopMIDI Ports", "blocker", "failed"),
+    ]
+    monkeypatch.setattr(control_center.doctor, "run_all_checks", lambda **_: findings)
+    monkeypatch.setattr(control_center, "_daemon_health", lambda host, port: {"reachable": True})
+    monkeypatch.setattr(
+        control_center,
+        "collect_dashboard_snapshot",
+        lambda **_: {"bridge": {"state": "unavailable"}, "project": {}},
+    )
+    state = _state()
+
+    status = control_center.collect_status(state)
+
+    midi_guidance = next(
+        item for item in status["setup_guidance"] if item["checkpoint"] == "created_midi_ports"
+    )
+    assert midi_guidance["title"] == "Create MIDI loopback ports"
+    assert midi_guidance["groups"] == ["midi"]
+
+
+def test_status_visualizes_running_sse_probe_in_guided_setup(monkeypatch):
+    findings = [
+        _finding("Python Environment"),
+        _finding("Core Dependencies"),
+        _finding("TCP Daemon / Bridge"),
+    ]
+
+    process = mock.Mock(spec=subprocess.Popen)
+    process.pid = 234
+    process.poll.return_value = None
+    state = _state()
+    state.processes["sse"] = control_center.ManagedProcess(
+        name="sse",
+        args=["fls-pilot", "--sse"],
+        env={},
+        process=process,
+        started_at="now",
+    )
+
+    def fake_probe(probe_state):  # noqa: ANN001, ANN202
+        probe_state.sse_probe = control_center._sse_probe_state(
+            "ok",
+            "SSE MCP connection test passed at http://127.0.0.1:8080/sse.",
+            probe_state.sse_host,
+            probe_state.sse_port,
+            checked_at="now",
+            result={"tool_count": 1, "resource_count": 1},
+        )
+        return dict(probe_state.sse_probe)
+
+    monkeypatch.setattr(control_center.doctor, "run_all_checks", lambda **_: findings)
+    monkeypatch.setattr(control_center, "_daemon_health", lambda host, port: {"reachable": True})
+    monkeypatch.setattr(control_center, "_probe_sse_connection", fake_probe)
+    monkeypatch.setattr(
+        control_center,
+        "collect_dashboard_snapshot",
+        lambda **_: {"bridge": {"state": "unavailable"}, "project": {}},
+    )
+
+    status = control_center.collect_status(state)
+
+    assert status["mcp"]["sse_probe"]["state"] == "ok"
+    assert status["processes"]["sse"]["probe"]["state"] == "ok"
+    assert any(
+        item["title"] == "MCP SSE connection" and item["status"] == "OK"
+        for item in status["setup_guidance"]
+    )
+
+
 def test_manual_checkpoint_is_user_confirmed(monkeypatch):
     monkeypatch.setattr(control_center.doctor, "run_all_checks", lambda **_: [])
     state = _state()
@@ -137,6 +292,16 @@ def test_start_sse_uses_fallback_port_and_safe_args(monkeypatch):
     state = _state()
     state.daemon_fallback_port = 9788
     monkeypatch.setattr(control_center, "find_available_tcp_port", lambda host, port: 8081)
+    monkeypatch.setattr(
+        control_center,
+        "_probe_sse_connection",
+        lambda probe_state: control_center._sse_probe_state(
+            "ok",
+            "SSE MCP connection test passed.",
+            probe_state.sse_host,
+            probe_state.sse_port,
+        ),
+    )
     spawned: dict = {}
 
     def fake_spawn(name, args, env):  # noqa: ANN001, ANN202
@@ -164,6 +329,43 @@ def test_start_sse_uses_fallback_port_and_safe_args(monkeypatch):
     assert spawned["env"]["FLS_PILOT_TRANSPORT"] == "tcp"
     assert spawned["env"]["FLS_PILOT_TCP_HOST"] == "127.0.0.1"
     assert spawned["env"]["FLS_PILOT_TCP_PORT"] == "9788"
+
+
+def test_start_sse_runs_forced_connection_probe(monkeypatch):
+    state = _state()
+    monkeypatch.setattr(control_center, "find_available_tcp_port", lambda host, port: 8081)
+    probes = []
+
+    def fake_probe(probe_state):  # noqa: ANN001, ANN202
+        probes.append((probe_state.sse_host, probe_state.sse_port))
+        probe_state.sse_probe = control_center._sse_probe_state(
+            "ok",
+            "SSE MCP connection test passed.",
+            probe_state.sse_host,
+            probe_state.sse_port,
+        )
+        return dict(probe_state.sse_probe)
+
+    def fake_spawn(name, args, env):  # noqa: ANN001, ANN202
+        process = mock.Mock(spec=subprocess.Popen)
+        process.pid = 123
+        process.poll.return_value = None
+        return control_center.ManagedProcess(
+            name=name,
+            args=args,
+            env=env,
+            process=process,
+            started_at="now",
+        )
+
+    monkeypatch.setattr(control_center, "_spawn", fake_spawn)
+    monkeypatch.setattr(control_center, "_probe_sse_connection", fake_probe)
+
+    result = control_center._start_sse(state)
+
+    assert probes == [("127.0.0.1", 8081)]
+    assert result["probe"]["state"] == "ok"
+    assert state.sse_probe["state"] == "ok"
 
 
 def test_start_daemon_uses_configured_endpoint_and_child_env(monkeypatch):
@@ -230,6 +432,32 @@ def test_process_status_checks_selected_daemon_fallback(monkeypatch):
 
     assert calls == [("127.0.0.1", 9788)]
     assert status["daemon"]["state"] == "external"
+
+
+def test_process_status_reclassifies_exited_daemon_when_external_daemon_is_reachable(
+    monkeypatch,
+):
+    state = _state()
+    process = mock.Mock(spec=subprocess.Popen)
+    process.pid = 123
+    process.poll.return_value = 1
+    state.processes["daemon"] = control_center.ManagedProcess(
+        name="daemon",
+        args=["fls-pilot-daemon"],
+        env={},
+        process=process,
+        started_at="now",
+    )
+    monkeypatch.setattr(
+        control_center,
+        "_daemon_health",
+        lambda host, port: {"reachable": True},
+    )
+
+    status = control_center._process_status(state)
+
+    assert status["daemon"]["state"] == "external"
+    assert status["daemon"]["health"]["reachable"] is True
 
 
 def test_setup_report_redacts_home(monkeypatch):
