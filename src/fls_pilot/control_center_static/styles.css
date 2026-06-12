@@ -1056,3 +1056,8 @@ dd {
   text-align: center;
   font-weight: 500;
 }
+
+.disconnected-content p {
+  margin: 0 0 14px;
+  max-width: 420px;
+}

@@ -1,4 +1,4 @@
-const state = { status: null, report: "", setupFeedback: {} };
+const state = { status: null, report: "", setupFeedback: {}, actionFeedback: {} };
 
 const setupLayers = [
   { group: "environment", title: "Environment" },
@@ -312,6 +312,47 @@ function appendSetupFeedback(node, feedback) {
   node.appendChild(message);
 }
 
+function processStatus(process) {
+  return process?.running ? "running" : (process?.state || "stopped");
+}
+
+function isManagedProcessRunning(process) {
+  return Boolean(process?.running) || process?.state === "running";
+}
+
+function isProcessReachable(process) {
+  return isManagedProcessRunning(process) || process?.state === "external";
+}
+
+function processActionKey(path) {
+  if (path.includes("/daemon/")) return "daemon";
+  if (path.includes("/sse/")) return "sse";
+  return "runtime";
+}
+
+function processActionLabel(path) {
+  if (path.endsWith("/start")) return "Start";
+  if (path.endsWith("/stop")) return "Stop";
+  if (path.endsWith("/test")) return "Test";
+  return "Action";
+}
+
+function processActionFeedback(path, result) {
+  const label = processActionLabel(path);
+  const parts = [];
+  if (result?.message) parts.push(result.message);
+  if (result?.fallback_port) parts.push(`Fallback port: ${result.fallback_port}.`);
+  if (result?.url) parts.push(`URL: ${result.url}`);
+  if (result?.probe?.message) parts.push(`Probe: ${result.probe.message}`);
+  if (!parts.length) {
+    parts.push(result?.ok ? `${label} completed.` : `${label} did not complete.`);
+  }
+  return {
+    state: result?.ok ? "verified" : "attention",
+    text: parts.join("\n")
+  };
+}
+
 function renderRuntime() {
   const container = document.getElementById("runtime-status");
   container.innerHTML = "";
@@ -321,26 +362,33 @@ function renderRuntime() {
   const daemonProc = state.status.processes.daemon || {};
   const daemonPort = state.status.ports.daemon || {};
   
-  const daemonStatus = daemonProc.running ? "running" : (daemonProc.state || "stopped");
+  const daemonStatus = processStatus(daemonProc);
   let daemonText = `Port: ${daemonPort.host}:${daemonPort.selected_port} (Default: ${daemonPort.preferred_port})\n\n`;
+  if (daemonStatus === "external") {
+    daemonText += "External daemon is reachable. Control Center can use it but cannot stop it.\n\n";
+  }
   daemonText += "Logs:\n" + ((daemonProc.logs || []).slice(-6).join("\n") || "No recent logs.");
   
-  container.appendChild(card("daemon", daemonStatus, daemonText, [
-    { text: "Start daemon", disabled: daemonStatus === "running", onclick: () => processAction("/api/process/daemon/start") },
-    { text: "Stop daemon", disabled: daemonStatus !== "running", onclick: () => processAction("/api/process/daemon/stop") }
-  ]));
+  const daemonCard = card("daemon", daemonStatus, daemonText, [
+    { text: "Start daemon", disabled: isProcessReachable(daemonProc), onclick: () => processAction("/api/process/daemon/start") },
+    { text: "Stop daemon", disabled: !isManagedProcessRunning(daemonProc), onclick: () => processAction("/api/process/daemon/stop") }
+  ]);
+  appendSetupFeedback(daemonCard, state.actionFeedback.daemon);
+  container.appendChild(daemonCard);
 
   const sseProc = state.status.processes.sse || {};
   const ssePort = state.status.ports.sse || {};
   
-  const sseStatus = sseProc.running ? "running" : (sseProc.state || "stopped");
+  const sseStatus = processStatus(sseProc);
   let sseText = `Port: ${ssePort.host}:${ssePort.selected_port} (Default: ${ssePort.preferred_port})\n\n`;
   sseText += "Logs:\n" + ((sseProc.logs || []).slice(-6).join("\n") || "No recent logs.");
   
-  container.appendChild(card("sse", sseStatus, sseText, [
-    { text: "Start SSE server", disabled: sseStatus === "running", onclick: () => processAction("/api/process/sse/start") },
-    { text: "Stop SSE server", disabled: sseStatus !== "running", onclick: () => processAction("/api/process/sse/stop") }
-  ]));
+  const sseCard = card("sse", sseStatus, sseText, [
+    { text: "Start SSE server", disabled: isProcessReachable(sseProc), onclick: () => processAction("/api/process/sse/start") },
+    { text: "Stop SSE server", disabled: !isManagedProcessRunning(sseProc), onclick: () => processAction("/api/process/sse/stop") }
+  ]);
+  appendSetupFeedback(sseCard, state.actionFeedback.sse);
+  container.appendChild(sseCard);
   
   const ccPort = state.status.ports.control_center || {};
   const footerPortSpan = document.getElementById("footer-cc-port");
@@ -440,7 +488,7 @@ function card(title, status, text, buttonConfig) {
   tag.style.fontSize = "11px";
   
   const statLower = String(status).toLowerCase();
-  if (statLower.includes("ok") || statLower.includes("running") || statLower.includes("confirmed")) {
+  if (statLower.includes("ok") || statLower.includes("running") || statLower.includes("external") || statLower.includes("confirmed")) {
     tag.style.color = "#70fba0";
     tag.style.background = "rgba(27, 228, 126, 0.14)";
     tag.style.borderColor = "rgba(54, 244, 152, 0.44)";
@@ -479,6 +527,7 @@ function card(title, status, text, buttonConfig) {
     
     for (const config of configs) {
       const btn = document.createElement("button");
+      btn.type = "button";
       btn.className = "ghost-button";
       btn.textContent = config.text;
       btn.disabled = config.disabled;
@@ -521,8 +570,24 @@ async function confirmStep(step) {
 }
 
 async function processAction(path) {
-  await api(path, { method: "POST", body: "{}" });
-  await refresh();
+  const key = processActionKey(path);
+  state.actionFeedback[key] = {
+    state: "checking",
+    text: `${processActionLabel(path)} in progress...`
+  };
+  render();
+  try {
+    const result = await api(path, { method: "POST", body: "{}" });
+    state.actionFeedback[key] = processActionFeedback(path, result);
+    render();
+    await refresh();
+  } catch (error) {
+    state.actionFeedback[key] = {
+      state: "attention",
+      text: `${processActionLabel(path)} failed: ${error.message}`
+    };
+    render();
+  }
 }
 
 async function runGuidanceAction(path) {
@@ -599,7 +664,6 @@ function renderProjectData() {
 
   if (!live) {
     if (disconnectedOverlay) disconnectedOverlay.style.display = "flex";
-    selectDashboard("setup");
   } else {
     if (disconnectedOverlay) disconnectedOverlay.style.display = "none";
   }
@@ -702,27 +766,51 @@ function selectDashboard(targetId) {
   if (targetId === "support") loadReport();
 }
 
-document.querySelectorAll(".nav-item").forEach((tab) => {
-  tab.addEventListener("click", () => selectDashboard(tab.dataset.target));
-});
+function wireEvents() {
+  document.querySelectorAll(".nav-item").forEach((tab) => {
+    tab.addEventListener("click", () => selectDashboard(tab.dataset.target));
+  });
 
-document.getElementById("refresh-button").addEventListener("click", refresh);
+  const refreshButton = document.getElementById("refresh-button");
+  if (refreshButton) refreshButton.addEventListener("click", refresh);
 
-document.getElementById("copy-report").addEventListener("click", async () => {
-  await loadReport();
-  await navigator.clipboard.writeText(state.report);
-});
-document.getElementById("download-report").addEventListener("click", async () => {
-  await loadReport();
-  const url = URL.createObjectURL(new Blob([state.report], { type: "text/markdown" }));
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = "fls-pilot-setup-report.md";
-  link.click();
-  URL.revokeObjectURL(url);
-});
+  const setupButton = document.getElementById("disconnected-setup-button");
+  if (setupButton) setupButton.addEventListener("click", () => selectDashboard("setup"));
 
-refresh().catch((error) => {
-  const refreshTime = document.getElementById("refresh-time");
-  if (refreshTime) refreshTime.textContent = "Error";
-});
+  const copyReport = document.getElementById("copy-report");
+  if (copyReport) {
+    copyReport.addEventListener("click", async () => {
+      await loadReport();
+      await navigator.clipboard.writeText(state.report);
+    });
+  }
+
+  const downloadReport = document.getElementById("download-report");
+  if (downloadReport) {
+    downloadReport.addEventListener("click", async () => {
+      await loadReport();
+      const url = URL.createObjectURL(new Blob([state.report], { type: "text/markdown" }));
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "fls-pilot-setup-report.md";
+      link.click();
+      URL.revokeObjectURL(url);
+    });
+  }
+}
+
+window.flsPilotControlCenter = {
+  state,
+  processAction,
+  renderProjectData,
+  renderRuntime,
+  selectDashboard
+};
+
+if (!window.__FLS_PILOT_TEST__) {
+  wireEvents();
+  refresh().catch((error) => {
+    const refreshTime = document.getElementById("refresh-time");
+    if (refreshTime) refreshTime.textContent = "Error";
+  });
+}
