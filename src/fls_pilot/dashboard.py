@@ -8,7 +8,7 @@ import functools
 import json
 import shutil
 import webbrowser
-from datetime import UTC, datetime
+from datetime import datetime, timezone
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from importlib import resources
 from pathlib import Path
@@ -663,7 +663,7 @@ def _display_ms(value) -> str:
 
 
 def _now_iso() -> str:
-    return datetime.now(UTC).isoformat(timespec="seconds").replace("+00:00", "Z")
+    return datetime.now(timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z")
 
 
 if __name__ == "__main__":
