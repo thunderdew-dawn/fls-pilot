@@ -47,6 +47,78 @@ The highest-value entry points for day-to-day production work are:
 7. **Audio Analyzer:** Analyze external audio files for tempo/key and extract melodies to MIDI when optional audio extras are installed.
 8. **Project Preflight & Health Overview:** Combine mix review, routing review, organization checks, and cleanup suggestions into an export-readiness report.
 
+## Requirements
+
+- **Windows 10/11** (tested on Windows 11) or **macOS 12+** (Intel & Apple Silicon)
+- **Last live-verified FL Studio build:** Producer Edition v25.2.5, build 5055, with controller build marker `channels-v39`. FL Studio 20.7+ has the required MIDI scripting foundation, but individual API behavior can be build-dependent; use `fl_transport(action="ping")` and the live smoke/probe scripts before relying on a new FL build for writes.
+- **Claude Desktop** or **ChatGPT Desktop** (or any MCP client)
+- **Python 3.10+**
+- Virtual MIDI ports:
+    - **loopMIDI** on Windows ([download](https://www.tobias-erichsen.de/software/loopmidi.html))
+    - **IAC Driver** (built into macOS)
+- Optional: **ffmpeg** on PATH (for MP3 analysis)
+
+## Quickstart
+
+> [!NOTE]
+> The full, step-by-step setup guide including MIDI routing, macOS accessibility permissions, and client configuration is available in [docs/user-guide/setup.md](docs/user-guide/setup.md).
+
+```batchfile
+scripts\install_windows.bat        :: Windows: controller + server + note bridge
+fls-pilot-daemon                   :: start the bridge, keep it running
+```
+
+```shell
+./scripts/install_macos.sh         # macOS: controller + server + note bridge
+.venv/bin/fls-pilot-daemon         # start the bridge, keep it running
+```
+
+Wire the two virtual MIDI ports in FL (Options > MIDI Settings), arm `MCP_Apply` once in the piano roll, then ask the LLM assistant in plain language:
+
+> "Scan my mix and tell me what's wrong." / "Set up a vocal chain from my plugins." / "Export this arrangement to MIDI."
+
+## Setup & Diagnostics
+
+fls-pilot includes a read-only Setup Doctor to diagnose connection issues.
+Since the architecture involves multiple layers, the Setup Doctor separates
+these components to prevent misleading "server works" results when only one
+part of the stack is actually connected.
+
+### The Three Architectural Layers
+
+Understanding these layers is critical for troubleshooting:
+
+1. **MCP server**: How the MCP client (your IDE or AI agent) talks to `fls-pilot` (via `stdio` or `SSE/HTTP`).
+2. **Bridge / Daemon**: How the MCP server communicates with FL Studio. This layer is only relevant if TCP bridge mode (`FLS_PILOT_TRANSPORT=tcp`) is used. By default, direct MIDI is used.
+3. **FL Studio controller**: The actual Python script running *inside* FL Studio that handles the events.
+
+### First-Run Verification Flow
+
+Before starting any write-capable workflows, follow these steps to verify your installation safely without modifying project data:
+
+1. **Install the package** (ensure virtual environment is active).
+2. **Run Setup Doctor** to get human-readable feedback:
+   ```bash
+   fls-pilot-doctor
+   ```
+3. **Review `--- BLOCKERS ---` first**.
+4. **Verify MCP transport**: Ensure the default `stdio` (or `SSE/HTTP` if configured) handshake succeeds.
+5. **Verify Daemon**: *Only* required if you are using TCP bridge mode. If using direct MIDI, ignore daemon warnings.
+6. **Verify FL Studio controller**: Ensure the script is installed, assigned to the virtual MIDI ports, and returning a fresh heartbeat.
+7. **Continue**: Once all relevant blockers are resolved, you can safely proceed to write-capable workflows.
+
+For JSON output (useful for MCP clients or CI), run:
+
+```bash
+fls-pilot-doctor --format json
+```
+
+For release validation, smoke-test both MCP transports explicitly:
+
+```bash
+fls-pilot-doctor --all-transports
+```
+
 ## Documentation
 
 The full documentation is available on Read the Docs:

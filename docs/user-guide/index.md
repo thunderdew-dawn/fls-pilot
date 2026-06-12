@@ -5,6 +5,7 @@ fls-pilot turns FL Studio into a controllable production workspace for MCP-compa
 - [Workflows](workflows.md): how users interact with the assistant, common production workflows, and safety classes.
 - [Prompts](prompts.md): reusable prompt patterns and module-specific examples.
 - [Tool Reference](tool-reference.md): MCP resources, full public tool catalog, and product boundaries.
+- [Setup & Troubleshooting](setup.md): step-by-step installation, MIDI routing, and daemon configuration.
 
 ## Why This App Exists
 

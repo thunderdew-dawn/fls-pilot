@@ -25,6 +25,7 @@ from fastmcp import FastMCP
 from . import __version__
 from .connection import list_ports
 from .protocol import port_from_fl_name, port_to_fl_name
+from .runtime_config import DEFAULT_SSE_HOST, DEFAULT_SSE_PORT
 from .tools import arrange as arrange_tools
 from .tools import audio as audio_tools
 from .tools import batch as batch_tools
@@ -281,8 +282,8 @@ def main() -> None:
         transport = "sse"
 
     if transport == "sse":
-        sse_host = os.environ.get("FLS_PILOT_SSE_HOST", "127.0.0.1")
-        sse_port = int(os.environ.get("FLS_PILOT_SSE_PORT", "8080"))
+        sse_host = os.environ.get("FLS_PILOT_SSE_HOST", DEFAULT_SSE_HOST)
+        sse_port = int(os.environ.get("FLS_PILOT_SSE_PORT", str(DEFAULT_SSE_PORT)))
         # Allow --port N from CLI
         if "--port" in sys.argv:
             try:

@@ -70,6 +70,7 @@ audio-accurate = [
 [project.scripts]
 fls-pilot = "fls_pilot.server:main"
 fls-pilot-daemon = "fls_pilot.daemon:main"
+fls-pilot-doctor = "fls_pilot.doctor:main"
 
 [project.urls]
 Homepage = "https://github.com/thunderdew-dawn/fls-pilot"

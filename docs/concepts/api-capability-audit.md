@@ -154,6 +154,15 @@ The current baseline, regenerated on 2026-06-11, reports:
 check. The previous duplicate `project_doctor_tools.register(mcp)` call was
 removed as behavior-preserving registration cleanup.
 
+The `fls-pilot-doctor` CLI was added for v3/alpha first-run diagnostics. It is
+not a public MCP tool and does not add FL Studio write capability. Its allowed
+runtime actions are read-only setup probes only: Python/dependency inspection,
+MCP stdio/SSE session smoke tests, TCP daemon health, MIDI port listing,
+heartbeat freshness, controller ping/build-marker readback, and local
+`MCP_Apply.pyscript` file detection. It must keep MCP server transports, the
+TCP daemon/bridge, and the FL Studio controller script as separate findings so
+transport success is not treated as project readiness.
+
 The v2.0 internal operation registry skeleton was added on 2026-06-04 without
 public MCP registration changes. It describes existing write-safe-required mixer,
 channel, and tempo primitives for later validation and batching work; it does
