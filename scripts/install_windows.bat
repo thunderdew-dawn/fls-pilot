@@ -36,7 +36,12 @@ if not exist "%FL_SETTINGS%\Hardware" (
   echo   Open FL Studio at least once, then re-run this script.
   exit /b 1
 )
+if not exist "%REPO_ROOT%\fl_controller\FLStudioPilot\device_FLStudioPilot.py" (
+  echo   Error: Source controller script not found. Are you running this from the cloned repo?
+  exit /b 1
+)
 if not exist "%HW_TARGET%" mkdir "%HW_TARGET%"
+if errorlevel 1 ( echo   Failed to create target directory. ^("%HW_TARGET%"^) & exit /b 1 )
 copy /Y "%REPO_ROOT%\fl_controller\FLStudioPilot\device_FLStudioPilot.py" "%HW_TARGET%\" >nul
 if errorlevel 1 ( echo   Copy failed. Aborting. & exit /b 1 )
 echo   Installed to %HW_TARGET%
@@ -44,9 +49,12 @@ echo   Installed to %HW_TARGET%
 echo.
 echo [2/4] Installing the MCP server...
 where python >nul 2>nul
-if errorlevel 1 ( echo   Python not found on PATH. Install Python 3.12+ and re-run. & exit /b 1 )
+if errorlevel 1 ( echo   Python not found on PATH. Install Python 3.10+ and re-run. & exit /b 1 )
+python -c "import sys; sys.exit(0 if sys.version_info >= (3, 10) else 1)" 2>nul
+if errorlevel 1 ( echo   Python 3.10+ is required. Please upgrade your Python installation. & exit /b 1 )
 pushd "%REPO_ROOT%"
 
+set "PIPX_CMD=pipx"
 if "!USE_PIPX!"=="1" (
   where pipx >nul 2>nul
   if errorlevel 1 (
@@ -54,6 +62,7 @@ if "!USE_PIPX!"=="1" (
       echo   pipx not found. Attempting to install via pip...
       python -m pip install --user pipx
       python -m pipx ensurepath
+      set "PIPX_CMD=python -m pipx"
       echo   WARNING: PATH changes may require restarting the terminal!
     ) else (
       echo   pipx not found. Install pipx manually or run this script with --install-pipx.
@@ -62,11 +71,12 @@ if "!USE_PIPX!"=="1" (
     )
   )
   echo   Installing via pipx (editable)...
-  pipx install --force --editable .
+  !PIPX_CMD! install --force --editable .
 ) else (
   if not exist ".venv" (
     echo   Creating virtual environment ^(.venv^)...
     python -m venv .venv
+    if errorlevel 1 ( echo   Failed to create virtual environment. & popd & exit /b 1 )
   )
   echo   Installing via .venv...
   .venv\Scripts\python.exe -m pip install --upgrade pip >nul
@@ -87,7 +97,13 @@ if errorlevel 1 echo   Note: could not pre-seed MCP_Apply (FL Piano roll scripts
 
 echo.
 echo [4/4] Checking loopMIDI ports...
-python -c "import mido; names=set(mido.get_output_names())|set(mido.get_input_names()); req=('FLStudioPilot RX','FLStudioPilot TX'); missing=[n for n in req if not any(n.lower() in x.lower() for x in names)]; print('   All required ports present.') if not missing else print('   MISSING ports: %s -- create them in loopMIDI.' % missing)"
+python -c "import mido" 2>nul
+if errorlevel 1 (
+  echo   ^(Automated port check skipped: 'mido' module not in global environment.^)
+  echo   If using pipx, please manually ensure you have created the required loopMIDI ports.
+) else (
+  python -c "import mido; names=set(mido.get_output_names())|set(mido.get_input_names()); req=('FLStudioPilot RX','FLStudioPilot TX'); missing=[n for n in req if not any(n.lower() in x.lower() for x in names)]; print('   All required ports present.') if not missing else print('   MISSING ports: %s -- create them in loopMIDI.' % missing)"
+)
 
 echo.
 echo ============================================================================

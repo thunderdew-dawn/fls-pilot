@@ -17,6 +17,10 @@ if [[ ! -d "$FL_HARDWARE" ]]; then
   echo "  Open FL Studio at least once, then re-run this script."
   exit 1
 fi
+if [[ ! -f "$REPO_ROOT/fl_controller/FLStudioPilot/device_FLStudioPilot.py" ]]; then
+  echo "  Error: Source controller script not found. Are you running this from the cloned repo?"
+  exit 1
+fi
 mkdir -p "$TARGET"
 cp "$REPO_ROOT/fl_controller/FLStudioPilot/device_FLStudioPilot.py" "$TARGET/"
 echo "  Installed to $TARGET"
@@ -47,8 +51,13 @@ if ! command -v python3 >/dev/null 2>&1; then
   echo "  python3 not found. Install Python 3.10+ and re-run."
   exit 1
 fi
+if ! python3 -c 'import sys; sys.exit(0 if sys.version_info >= (3, 10) else 1)' 2>/dev/null; then
+  echo "  Python 3.10+ is required. Please upgrade your Python installation."
+  exit 1
+fi
 cd "$REPO_ROOT"
 
+PIPX_CMD="pipx"
 if [[ "$USE_PIPX" -eq 1 ]]; then
   if ! command -v pipx >/dev/null 2>&1; then
     if [[ "$INSTALL_PIPX" -eq 1 ]]; then
@@ -57,13 +66,14 @@ if [[ "$USE_PIPX" -eq 1 ]]; then
       python3 -m pipx ensurepath
       echo "  WARNING: PATH changes may require restarting your terminal!"
       export PATH="$HOME/.local/bin:$PATH"
+      PIPX_CMD="python3 -m pipx"
     else
       echo "  pipx not found. Install pipx manually or run this script with --install-pipx."
       exit 1
     fi
   fi
   echo "  Installing via pipx (editable)..."
-  pipx install --force --editable .
+  $PIPX_CMD install --force --editable .
 else
   if [[ -z "${VIRTUAL_ENV:-}" ]]; then
     if [[ ! -d ".venv" ]]; then
@@ -87,7 +97,8 @@ fi
 
 echo
 echo "[4/4] Checking for IAC Driver ports..."
-python3 - <<'PYEOF'
+if python3 -c 'import mido' 2>/dev/null; then
+  python3 - <<'PYEOF'
 import mido
 names = set(mido.get_output_names()) | set(mido.get_input_names())
 rx, tx = "FLStudioPilot RX", "FLStudioPilot TX"
@@ -97,6 +108,10 @@ if not missing:
 else:
     print(f"  Missing ports: {missing}")
 PYEOF
+else
+  echo "  (Automated port check skipped: 'mido' module not in global environment.)"
+  echo "  If using pipx, please manually ensure you have created the required IAC ports."
+fi
 
 if [[ "$USE_PIPX" -eq 1 ]]; then
   CMD_DAEMON="fls-pilot-daemon"
