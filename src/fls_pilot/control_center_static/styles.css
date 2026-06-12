@@ -1,0 +1,176 @@
+:root {
+  color-scheme: light;
+  --bg: #f7f8fa;
+  --text: #1d232a;
+  --muted: #5f6b78;
+  --line: #d9dee5;
+  --panel: #ffffff;
+  --accent: #136f63;
+  --danger: #b42318;
+  --warn: #9a6700;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+.topbar {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: center;
+  padding: 20px 24px;
+  background: var(--panel);
+  border-bottom: 1px solid var(--line);
+}
+
+h1,
+h2,
+h3,
+p {
+  margin: 0;
+}
+
+h1 {
+  font-size: 22px;
+}
+
+.topbar p,
+.section-heading p,
+.card p {
+  color: var(--muted);
+}
+
+button {
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: #fff;
+  color: var(--text);
+  padding: 8px 12px;
+  font: inherit;
+  cursor: pointer;
+}
+
+button:hover {
+  border-color: var(--accent);
+}
+
+button:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+
+.tabs {
+  display: flex;
+  gap: 8px;
+  padding: 12px 24px 0;
+}
+
+.tab.active {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+main {
+  padding: 20px 24px 32px;
+}
+
+.panel {
+  display: none;
+}
+
+.panel.active {
+  display: block;
+}
+
+.section-heading {
+  display: grid;
+  gap: 4px;
+  margin-bottom: 16px;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 12px;
+}
+
+.card,
+.snippet {
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+}
+
+.chip {
+  width: fit-content;
+  border-radius: 999px;
+  padding: 3px 8px;
+  background: #e9f7ef;
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.chip.blocked {
+  background: #fdecec;
+  color: var(--danger);
+}
+
+.chip.action-needed,
+.chip.manual-check,
+.chip.manual-action {
+  background: #fff4d6;
+  color: var(--warn);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.snippets {
+  display: grid;
+  gap: 12px;
+}
+
+pre {
+  margin: 0;
+  max-width: 100%;
+  overflow: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+  padding: 12px;
+  border-radius: 6px;
+  background: #111827;
+  color: #f8fafc;
+}
+
+@media (max-width: 700px) {
+  .topbar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .tabs {
+    overflow-x: auto;
+    padding-inline: 16px;
+  }
+
+  main {
+    padding-inline: 16px;
+  }
+}

@@ -54,6 +54,7 @@ from .connection import (
     FLPortMissing,
     FLTimeout,
 )
+from .runtime_config import find_available_tcp_port
 
 logger = logging.getLogger("fls_pilot.daemon")
 
@@ -203,7 +204,18 @@ def main() -> None:
             "will pick them up on the next request."
         )
 
-    server = _Server((host, port), _Handler)
+    try:
+        server = _Server((host, port), _Handler)
+    except OSError as exc:
+        fallback = find_available_tcp_port(host, port + 1)
+        logger.error(
+            "Could not bind daemon on %s:%d: %s. Try FLS_PILOT_TCP_PORT=%d.",
+            host,
+            port,
+            exc,
+            fallback,
+        )
+        raise
     logger.info("fls-pilot daemon %s listening on %s:%d", __version__, host, port)
     try:
         server.serve_forever()

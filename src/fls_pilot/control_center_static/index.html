@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>fls-pilot Control Center</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div>
+        <h1>fls-pilot Control Center</h1>
+        <p id="readiness">Loading status...</p>
+      </div>
+      <button id="refresh" type="button">Refresh status</button>
+    </header>
+
+    <nav class="tabs" aria-label="Control Center sections">
+      <button class="tab active" data-tab="setup" type="button">Setup</button>
+      <button class="tab" data-tab="runtime" type="button">Runtime</button>
+      <button class="tab" data-tab="clients" type="button">Client Setup</button>
+      <button class="tab" data-tab="support" type="button">Support</button>
+    </nav>
+
+    <main>
+      <section id="setup" class="panel active">
+        <div class="section-heading">
+          <h2>Guided Setup</h2>
+          <p>Setup checks are read-only and do not modify FL Studio projects.</p>
+        </div>
+        <div id="setup-steps" class="grid"></div>
+      </section>
+
+      <section id="runtime" class="panel">
+        <div class="section-heading">
+          <h2>Runtime</h2>
+          <p>Start and stop only processes launched by this Control Center.</p>
+        </div>
+        <div class="actions">
+          <button id="start-daemon" type="button">Start daemon</button>
+          <button id="stop-daemon" type="button">Stop daemon</button>
+          <button id="start-sse" type="button">Start SSE server</button>
+          <button id="stop-sse" type="button">Stop SSE server</button>
+        </div>
+        <div id="runtime-status" class="grid"></div>
+      </section>
+
+      <section id="clients" class="panel">
+        <div class="section-heading">
+          <h2>Client Setup</h2>
+          <p>Copy these values into your MCP client. Config files are not edited automatically.</p>
+        </div>
+        <div id="client-snippets" class="snippets"></div>
+      </section>
+
+      <section id="support" class="panel">
+        <div class="section-heading">
+          <h2>Support Report</h2>
+          <p>Use this when reporting setup problems.</p>
+        </div>
+        <div class="actions">
+          <button id="copy-report" type="button">Copy setup report</button>
+          <button id="download-report" type="button">Download setup report</button>
+        </div>
+        <pre id="setup-report"></pre>
+      </section>
+    </main>
+
+    <script src="app.js"></script>
+  </body>
+</html>

@@ -64,7 +64,18 @@ For optional audio/melody analysis extras:
 
 ## 4. Run Setup Doctor
 
-Before starting write-capable workflows, run the read-only Setup Doctor:
+Recommended first-run path: open the local Control Center and follow its guided
+setup:
+
+- **Windows (.venv)**: `.venv\Scripts\fls-pilot-control-center --open`
+- **macOS (.venv)**: `.venv/bin/fls-pilot-control-center --open`
+*(If you installed via pipx, simply run `fls-pilot-control-center --open`)*
+
+The Control Center stays read-only against the FL Studio project. It asks you to
+perform manual FL Studio actions, then reruns the relevant checks. It can also
+start/stop the local daemon and ChatGPT SSE server that it manages.
+
+CLI fallback: before starting write-capable workflows, run the read-only Setup Doctor:
 
 - **Windows (.venv)**: `.venv\Scripts\fls-pilot-doctor`
 - **macOS (.venv)**: `.venv/bin/fls-pilot-doctor`
@@ -103,6 +114,15 @@ Studio project changes. To serve it locally and open a browser:
 - **macOS (.venv)**: `.venv/bin/fls-pilot-dashboard --serve --open`
 *(If you installed via pipx, simply run `fls-pilot-dashboard --serve --open`)*
 
+Default local ports:
+
+| Component | Default | Fallback behavior |
+|---|---:|---|
+| Control Center | `8766` | Uses the next available port and opens/prints the actual URL. |
+| Dashboard | `8765` | Uses the next available port and prints the actual URL. |
+| ChatGPT SSE server | `8080` | Control Center-managed SSE uses the next available port and updates snippets. |
+| TCP daemon | `9787` | Control Center detects a healthy external daemon or recommends `FLS_PILOT_TCP_PORT`. |
+
 ## 6. Connect to your MCP Client
 
 ### Option A: Claude Desktop, Cursor, or other stdio clients
@@ -132,6 +152,9 @@ Studio project changes. To serve it locally and open a browser:
 
 ChatGPT Desktop does not support local stdio subprocesses and requires a remote/SSE connection:
 
+Recommended: start the SSE server from the Control Center and copy the displayed
+ChatGPT URL. It will reflect any fallback port selected because `8080` was busy.
+
 1. Start the MIDI bridge daemon in a terminal:
     - Windows (.venv): `.venv\Scripts\fls-pilot-daemon`
     - macOS (.venv): `.venv/bin/fls-pilot-daemon`
@@ -149,7 +172,7 @@ ChatGPT Desktop does not support local stdio subprocesses and requires a remote/
 
 ## 7. Arm the Note Bridge (Per Session)
 
-Open the FL Studio Piano Roll, click the arrow menu (top-left), and run **MCP_Apply** once from the **File > Script** menu. This arms the note bridge for composition tools.
+Open the FL Studio Piano Roll, click the arrow menu (top-left), and run **MCP_Apply** once from the **File > Script** menu. This arms the note bridge for composition tools only. It is not required for read-only Mix Review, Routing Review, Project Health, or other scan/report workflows.
 
 Verify the connection by asking your AI assistant to run `fl_transport(action="ping")`.
 

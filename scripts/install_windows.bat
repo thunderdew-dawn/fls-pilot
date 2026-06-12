@@ -121,20 +121,28 @@ if "!USE_PIPX!"=="1" (
   set "CMD_SERVER=fls-pilot"
   set "CMD_OPT=pipx inject fls-pilot"
   set "CMD_DOCTOR=fls-pilot-doctor"
+  set "CMD_CONTROL=fls-pilot-control-center"
 ) else (
   set "CMD_DAEMON=.venv\Scripts\fls-pilot-daemon.exe"
   set "CMD_SERVER=.venv\Scripts\fls-pilot.exe"
   set "CMD_OPT=.venv\Scripts\python.exe -m pip install -e"
   set "CMD_DOCTOR=.venv\Scripts\fls-pilot-doctor.exe"
+  set "CMD_CONTROL=.venv\Scripts\fls-pilot-control-center.exe"
 )
 
-echo   3. Start the bridge daemon and keep it running:
-echo        !CMD_DAEMON!
-echo   4. Register with an MCP Client like Claude Desktop  (%%APPDATA%%\Claude\claude_desktop_config.json):
+echo   3. Open the guided Control Center:
+echo        !CMD_CONTROL! --open
+echo        It checks setup, shows useful fixes, and can start the daemon/SSE server.
+echo   4. CLI fallback: run Setup Doctor to verify:
+echo        !CMD_DOCTOR!
+echo   5. Register with an MCP Client like Claude Desktop  (%%APPDATA%%\Claude\claude_desktop_config.json):
 echo        "fls-pilot": { "command": "!CMD_SERVER!", "env": { "FLS_PILOT_TRANSPORT": "tcp" } }
-echo   5. Each session: open the Piano roll, and from its Scripting menu run "MCP_Apply"
-echo        once (this arms note-writing). Then ask your AI assistant to call fl_ping.
-echo   6. Run Setup Doctor to verify: !CMD_DOCTOR!
+echo   6. Each session: open the Piano roll, and from its Scripting menu run "MCP_Apply"
+echo        once (this arms note-writing). Then ask your AI assistant to call fl_transport(action="ping").
+echo        MCP_Apply is not required for read-only review workflows.
+echo.
+echo  Default ports: Control Center 8766, dashboard 8765, ChatGPT SSE 8080, daemon 9787.
+echo  The Control Center detects conflicts and shows the actual or recommended fallback.
 echo.
 echo  Optional audio features:   !CMD_OPT! ".[audio]"      (tempo/key + melody)
 echo                             !CMD_OPT! ".[audio,audio-accurate]"  (+ CREPE)

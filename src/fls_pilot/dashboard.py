@@ -15,6 +15,7 @@ from pathlib import Path
 from typing import Any
 
 from . import __version__, connection, protocol, safety
+from .runtime_config import find_available_tcp_port
 
 DEFAULT_PORT = 8765
 DEFAULT_HOST = "127.0.0.1"
@@ -158,6 +159,8 @@ def serve_dashboard(
     """Serve an exported dashboard directory until interrupted."""
     server = _bind_server(directory, host, port)
     url = f"http://{server.server_address[0]}:{server.server_address[1]}/"
+    if server.server_address[1] != port:
+        print(f"Dashboard port {port} is busy; using fallback {server.server_address[1]}.")
     print(f"Serving read-only dashboard at {url}")
     print("Press Ctrl+C to stop.")
     if open_browser:
@@ -592,17 +595,13 @@ def _write_dashboard_data(output_path: Path, snapshot: dict[str, Any]) -> None:
 
 def _bind_server(directory: Path, host: str, port: int) -> ThreadingHTTPServer:
     handler = functools.partial(SimpleHTTPRequestHandler, directory=str(directory))
-    current_port = int(port)
-    last_error: OSError | None = None
-    for _ in range(25):
-        try:
-            return ThreadingHTTPServer((host, current_port), handler)
-        except OSError as exc:
-            last_error = exc
-            if current_port == 0 or not _port_in_use(exc):
-                raise
-            current_port += 1
-    raise OSError(f"Could not bind dashboard server near port {port}: {last_error}")
+    try:
+        return ThreadingHTTPServer((host, int(port)), handler)
+    except OSError as exc:
+        if int(port) == 0 or not _port_in_use(exc):
+            raise
+        fallback = find_available_tcp_port(host, int(port) + 1)
+        return ThreadingHTTPServer((host, fallback), handler)
 
 
 def _port_in_use(exc: OSError) -> bool:

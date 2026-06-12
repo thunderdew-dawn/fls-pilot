@@ -65,15 +65,21 @@ The highest-value entry points for day-to-day production work are:
 
 ```batchfile
 scripts\install_windows.bat        :: Windows: controller + server + note bridge
-.venv\Scripts\fls-pilot-daemon     :: start the bridge, keep it running
+.venv\Scripts\fls-pilot-control-center --open
 ```
 
 ```shell
 ./scripts/install_macos.sh         # macOS: controller + server + note bridge
-.venv/bin/fls-pilot-daemon         # start the bridge, keep it running
+.venv/bin/fls-pilot-control-center --open
 ```
 
-Wire the two virtual MIDI ports in FL (Options > MIDI Settings), arm `MCP_Apply` once in the piano roll, then ask the LLM assistant in plain language:
+Follow the local Control Center's guided setup. It stays read-only while it
+checks MIDI ports, FL Studio controller heartbeat, daemon/SSE status, MCP client
+snippets, and manual actions such as opening FL Studio or running `MCP_Apply`.
+`MCP_Apply` is only required for note-writing/composition tools, not for
+read-only review workflows.
+
+After setup, ask the LLM assistant in plain language:
 
 > "Scan my mix and tell me what's wrong." / "Set up a vocal chain from my plugins." / "Export this arrangement to MIDI."
 
@@ -130,6 +136,17 @@ when run from this repository. It reads bridge/project/resource state only,
 clearly marks unavailable or API-limited data, and does not modify FL Studio.
 Use `.venv\Scripts\fls-pilot-dashboard --serve --open` (or `.venv/bin/fls-pilot-dashboard --serve --open` on macOS) to view it through a local browser
 server. *(If you installed via pipx, simply run `fls-pilot-dashboard --serve --open`)*
+
+To open the guided first-run and runtime Control Center:
+
+- **Windows (.venv)**: `.venv\Scripts\fls-pilot-control-center --open`
+- **macOS (.venv)**: `.venv/bin/fls-pilot-control-center --open`
+*(If you installed via pipx, simply run `fls-pilot-control-center --open`)*
+
+Default local ports are: Control Center `8766`, dashboard `8765`, ChatGPT/SSE
+`8080`, and TCP daemon `9787`. The Control Center detects conflicts and shows
+the actual selected or recommended fallback port in status, snippets, and setup
+reports.
 
 ## Documentation
 

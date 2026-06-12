@@ -18,6 +18,7 @@ def test_console_scripts_have_no_old_aliases() -> None:
     assert 'name = "fls-pilot"' in pyproject
     assert scripts == {
         "fls-pilot": "fls_pilot.server:main",
+        "fls-pilot-control-center": "fls_pilot.control_center:main",
         "fls-pilot-daemon": "fls_pilot.daemon:main",
         "fls-pilot-dashboard": "fls_pilot.dashboard:main",
         "fls-pilot-doctor": "fls_pilot.doctor:main",
