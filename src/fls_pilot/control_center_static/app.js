@@ -567,7 +567,7 @@ function numberValue(value, digits) {
 
 function bpm(value) {
   if (value == null) return "N/A";
-  return numberValue(value, 3);
+  return numberValue(value, 1);
 }
 
 function yesNo(value) {
@@ -617,8 +617,15 @@ function renderProjectData() {
   const resources = data.resources || {};
   text("tempo-value", bpm(project.tempo_bpm));
   text("channel-count", project.channel_count == null ? count(resources.channels) : project.channel_count);
-  text("mixer-count", project.mixer_track_count == null ? count(resources.mixer) : project.mixer_track_count);
-  text("pattern-count", project.pattern_count == null ? count(resources.patterns) : project.pattern_count);
+
+  let mixCount = project.mixer_track_count == null ? count(resources.mixer) : project.mixer_track_count;
+  if (typeof mixCount === "number") mixCount = Math.max(0, mixCount - 2);
+  text("mixer-count", mixCount);
+
+  let patCount = project.pattern_count == null ? count(resources.patterns) : project.pattern_count;
+  if (typeof patCount === "number") patCount = Math.max(1, patCount);
+  text("pattern-count", patCount);
+
   text("playlist-count", project.playlist_track_count == null ? count(resources.playlist) : project.playlist_track_count);
   
   // Transport
