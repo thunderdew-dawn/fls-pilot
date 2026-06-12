@@ -116,9 +116,11 @@ fi
 if [[ "$USE_PIPX" -eq 1 ]]; then
   CMD_DAEMON="fls-pilot-daemon"
   CMD_SERVER="fls-pilot"
+  CMD_DOCTOR="fls-pilot-doctor"
 else
   CMD_DAEMON="$REPO_ROOT/.venv/bin/fls-pilot-daemon"
   CMD_SERVER="$REPO_ROOT/.venv/bin/fls-pilot"
+  CMD_DOCTOR="$REPO_ROOT/.venv/bin/fls-pilot-doctor"
 fi
 
 cat <<EOF
@@ -139,7 +141,9 @@ Next steps:
        Input list  > click 'FLStudioPilot RX', tick Enable, Controller type=FLStudioPilot, Port=42.
        Output list > click 'FLStudioPilot TX', tick Enable, Port=42 (SAME number).
   4. View > Script output should show '[FLStudioPilot] Ready. ...'.
-  5. Run: python3 scripts/test_bridge.py
+  5. Each session: open the Piano roll, and from its Scripting menu run 'MCP_Apply'
+     once (this arms note-writing).
+  6. Run Setup Doctor to verify: $CMD_DOCTOR
 
 To use with Claude Desktop, Cursor, or other stdio clients:
   1. Start the daemon (holds the MIDI ports):
@@ -147,7 +151,7 @@ To use with Claude Desktop, Cursor, or other stdio clients:
   2. Add this to your client's config (e.g. for Claude Desktop: ~/Library/Application Support/Claude/claude_desktop_config.json):
   {
     "mcpServers": {
-      "fl-studio": {
+      "fls-pilot": {
         "command": "$CMD_SERVER",
         "env": {
           "FLS_PILOT_TRANSPORT": "tcp"
@@ -163,7 +167,7 @@ To use with ChatGPT Desktop (SSE):
      export FLS_PILOT_TRANSPORT=tcp
      $CMD_SERVER --sse --port 8080
   3. Open ChatGPT Desktop, go to Settings > Developer > MCP, click "Add New Server":
-     - Name: FL Studio
+     - Name: fls-pilot
      - URL: http://localhost:8080/sse
 
 IMPORTANT (macOS Accessibility):

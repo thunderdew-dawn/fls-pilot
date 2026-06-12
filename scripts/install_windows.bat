@@ -120,18 +120,21 @@ if "!USE_PIPX!"=="1" (
   set "CMD_DAEMON=fls-pilot-daemon"
   set "CMD_SERVER=fls-pilot"
   set "CMD_OPT=pipx inject fls-pilot"
+  set "CMD_DOCTOR=fls-pilot-doctor"
 ) else (
   set "CMD_DAEMON=.venv\Scripts\fls-pilot-daemon.exe"
   set "CMD_SERVER=.venv\Scripts\fls-pilot.exe"
   set "CMD_OPT=.venv\Scripts\python.exe -m pip install -e"
+  set "CMD_DOCTOR=.venv\Scripts\fls-pilot-doctor.exe"
 )
 
 echo   3. Start the bridge daemon and keep it running:
 echo        !CMD_DAEMON!
 echo   4. Register with an MCP Client like Claude Desktop  (%%APPDATA%%\Claude\claude_desktop_config.json):
-echo        "fl-studio": { "command": "!CMD_SERVER!", "env": { "FLS_PILOT_TRANSPORT": "tcp" } }
+echo        "fls-pilot": { "command": "!CMD_SERVER!", "env": { "FLS_PILOT_TRANSPORT": "tcp" } }
 echo   5. Each session: open the Piano roll, and from its Scripting menu run "MCP_Apply"
 echo        once (this arms note-writing). Then ask your AI assistant to call fl_ping.
+echo   6. Run Setup Doctor to verify: !CMD_DOCTOR!
 echo.
 echo  Optional audio features:   !CMD_OPT! ".[audio]"      (tempo/key + melody)
 echo                             !CMD_OPT! ".[audio,audio-accurate]"  (+ CREPE)
