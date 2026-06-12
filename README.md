@@ -98,9 +98,8 @@ Before starting any write-capable workflows, follow these steps to verify your i
 
 1. **Install the package** (ensure virtual environment is active).
 2. **Run Setup Doctor** to get human-readable feedback:
-   ```bash
-   fls-pilot-doctor
-   ```
+   - **Windows**: `fls-pilot-doctor`
+   - **macOS**: `.venv/bin/fls-pilot-doctor`
 3. **Review `--- BLOCKERS ---` first**.
 4. **Verify MCP transport**: Ensure the default `stdio` (or `SSE/HTTP` if configured) handshake succeeds.
 5. **Verify Daemon**: *Only* required if you are using TCP bridge mode. If using direct MIDI, ignore daemon warnings.
@@ -109,26 +108,23 @@ Before starting any write-capable workflows, follow these steps to verify your i
 
 For JSON output (useful for MCP clients or CI), run:
 
-```bash
-fls-pilot-doctor --format json
-```
+- **Windows**: `fls-pilot-doctor --format json`
+- **macOS**: `.venv/bin/fls-pilot-doctor --format json`
 
 For release validation, smoke-test both MCP transports explicitly:
 
-```bash
-fls-pilot-doctor --all-transports
-```
+- **Windows**: `fls-pilot-doctor --all-transports`
+- **macOS**: `.venv/bin/fls-pilot-doctor --all-transports`
 
 To export a local read-only dashboard page:
 
-```bash
-fls-pilot-dashboard
-```
+- **Windows**: `fls-pilot-dashboard`
+- **macOS**: `.venv/bin/fls-pilot-dashboard`
 
 The dashboard writes a static HTML/CSS/JS page under `scratch/dashboard/site`
 when run from this repository. It reads bridge/project/resource state only,
 clearly marks unavailable or API-limited data, and does not modify FL Studio.
-Use `fls-pilot-dashboard --serve --open` to view it through a local browser
+Use `fls-pilot-dashboard --serve --open` (or `.venv/bin/fls-pilot-dashboard --serve --open` on macOS) to view it through a local browser
 server.
 
 ## Documentation

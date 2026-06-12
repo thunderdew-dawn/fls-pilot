@@ -32,7 +32,7 @@ chmod +x scripts/install_macos.sh
 ./scripts/install_macos.sh
 ```
 
-This script will copy the controller script, create a virtual environment (`.venv`), install the server inside it, and verify that the IAC Driver ports are online. It also pre-seeds the note-bridge script (`MCP_Apply.pyscript`) inside your FL Studio user data directory.
+These scripts will copy the controller script, install the server (on macOS inside a `.venv` virtual environment; on Windows in your active Python environment), verify that the MIDI ports are online, and pre-seed the note-bridge script (`MCP_Apply.pyscript`) inside your FL Studio user data directory.
 
 > [!IMPORTANT]
 > **macOS Accessibility Permissions**: Since the note-writing tool simulates keyboard shortcuts (`Cmd+Opt+Y`) via `pyautogui` to trigger script runs in FL Studio, the application executing the MCP server (e.g., your terminal, iTerm, Warp, or your MCP client app like Claude Desktop/ChatGPT) must be granted Accessibility permissions. Go to **System Settings > Privacy & Security > Accessibility** and ensure the app you are running is enabled.
@@ -53,9 +53,8 @@ For optional audio/melody analysis extras:
 
 Before starting write-capable workflows, run the read-only Setup Doctor:
 
-```shell
-fls-pilot-doctor
-```
+- **Windows**: `fls-pilot-doctor`
+- **macOS**: `.venv/bin/fls-pilot-doctor`
 
 Review `--- BLOCKERS ---` first. The Doctor reports MCP stdio/SSE transport,
 TCP daemon/bridge health, MIDI ports, FL controller heartbeat, read-only ping,
@@ -64,31 +63,27 @@ is not mistaken for full project readiness.
 
 For machine-readable output:
 
-```shell
-fls-pilot-doctor --format json
-```
+- **Windows**: `fls-pilot-doctor --format json`
+- **macOS**: `.venv/bin/fls-pilot-doctor --format json`
 
 For release validation across both MCP transports:
 
-```shell
-fls-pilot-doctor --all-transports
-```
+- **Windows**: `fls-pilot-doctor --all-transports`
+- **macOS**: `.venv/bin/fls-pilot-doctor --all-transports`
 
 ## 5. Open the Local Dashboard
 
 Export the read-only local dashboard:
 
-```shell
-fls-pilot-dashboard
-```
+- **Windows**: `fls-pilot-dashboard`
+- **macOS**: `.venv/bin/fls-pilot-dashboard`
 
 The dashboard uses existing read-only bridge and resource reads. It separates
 live bridge data from unavailable or API-limited signals and never applies FL
 Studio project changes. To serve it locally and open a browser:
 
-```shell
-fls-pilot-dashboard --serve --open
-```
+- **Windows**: `fls-pilot-dashboard --serve --open`
+- **macOS**: `.venv/bin/fls-pilot-dashboard --serve --open`
 
 ## 6. Connect to your MCP Client
 
