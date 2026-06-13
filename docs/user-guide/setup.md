@@ -62,7 +62,9 @@ For optional audio/melody analysis extras:
     - **Output list**: Click `FLStudioPilot TX`, tick **Enable**, and set **Port** to `42` (MUST match the input port).
 3. Go to **View > Script output**. It should show `[FLStudioPilot] Ready`.
 
-## 4. Run Setup Doctor
+## 4. Run Control Center
+
+![Control Center](../assets/logo-control-center.png)
 
 Recommended first-run path: open the local Control Center and follow its guided
 setup:

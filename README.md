@@ -21,10 +21,9 @@
 
 [![Documentation Status](https://readthedocs.org/projects/fl-studio-pilot/badge/?version=v3-alpha)](https://fl-studio-pilot.readthedocs.io/en/v3-alpha/)
 
+![FL Studio Pilot](../assets/fls-pilot-logo-with-text.png)
 
-**Rollback-first FL Studio control for MCP-compatible LLMs: AI mixing, composition, project cleanup, routing review, and production assistance through natural language.**
-
-*The LLM assistant diagnosing and fixing a mix in FL Studio through natural language.*
+**FL Studio control for MCP-compatible LLMs: AI mixing, composition, project cleanup, routing review, analysises and production assistance through natural language.**
 
 ## Overview
 
