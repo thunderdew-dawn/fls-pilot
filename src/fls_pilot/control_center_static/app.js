@@ -721,11 +721,11 @@ function renderProjectData() {
     if (!evidence.length) {
       evidence = [
         {
-          label: "Dashboard data",
+          label: "Status data",
           state: "unavailable",
           value: "N/A",
           source: "Generated data",
-          detail: "Dashboard data was not populated."
+          detail: "Status data was not populated."
         }
       ];
     }
@@ -755,7 +755,7 @@ function renderProjectData() {
 }
 
 
-function selectDashboard(targetId) {
+function selectPanel(targetId) {
   document.querySelectorAll(".nav-item").forEach((el) => {
     el.classList.toggle("active", el.dataset.target === targetId);
   });
@@ -768,14 +768,14 @@ function selectDashboard(targetId) {
 
 function wireEvents() {
   document.querySelectorAll(".nav-item").forEach((tab) => {
-    tab.addEventListener("click", () => selectDashboard(tab.dataset.target));
+    tab.addEventListener("click", () => selectPanel(tab.dataset.target));
   });
 
   const refreshButton = document.getElementById("refresh-button");
   if (refreshButton) refreshButton.addEventListener("click", refresh);
 
   const setupButton = document.getElementById("disconnected-setup-button");
-  if (setupButton) setupButton.addEventListener("click", () => selectDashboard("setup"));
+  if (setupButton) setupButton.addEventListener("click", () => selectPanel("setup"));
 
   const copyReport = document.getElementById("copy-report");
   if (copyReport) {
@@ -804,7 +804,7 @@ window.flsPilotControlCenter = {
   processAction,
   renderProjectData,
   renderRuntime,
-  selectDashboard
+  selectPanel
 };
 
 if (!window.__FLS_PILOT_TEST__) {

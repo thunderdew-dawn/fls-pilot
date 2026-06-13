@@ -17,7 +17,7 @@
         </span>
         <span class="brand-subtitle">Control Center</span>
       </div>
-      <div class="topbar-status" aria-label="Dashboard status">
+      <div class="topbar-status" aria-label="Status">
         <span class="pill pill-live" id="bridge-pill">Loading</span>
         <span class="pill pill-version" id="version-pill">...</span>
         <span class="divider"></span>
@@ -33,7 +33,7 @@
       </div>
     </header>
 
-    <aside class="sidebar" aria-label="Dashboard navigation">
+    <aside class="sidebar" aria-label="Navigation">
       <nav class="nav-list">
         <button class="nav-item active" type="button" data-target="project_data">
           <span aria-hidden="true">&#x25a4;</span><span>Live Data</span>
@@ -168,7 +168,7 @@
             <span class="panel-icon" aria-hidden="true">&#x2662;</span>
           </div>
           <ul class="safety-list">
-            <li><span>Read-only Dashboard</span><strong id="read-only-state">YES</strong></li>
+            <li><span>Read-only Status</span><strong id="read-only-state">YES</strong></li>
             <li><span>Rollback Available</span><strong id="rollback-state">N/A</strong></li>
             <li><span>Dry-run Available</span><strong id="dry-run-state">YES</strong></li>
           </ul>
@@ -202,8 +202,8 @@
       </div>
       <p class="panel-note" style="margin: 20px 26px; white-space: pre-wrap; line-height: 1.5;">FL Studio values are readable. Check out Live Data for live information and AI Clients to set up LLM agents to use FL Studio Pilot.</p>
       <div style="padding: 0 26px 20px; display: flex; gap: 8px;">
-        <button class="ghost-button" onclick="document.getElementById('success-overlay').style.display='none'; selectDashboard('project_data')">Live Data</button>
-        <button class="ghost-button" onclick="document.getElementById('success-overlay').style.display='none'; selectDashboard('clients')">AI Clients</button>
+        <button class="ghost-button" onclick="document.getElementById('success-overlay').style.display='none'; selectPanel('project_data')">Live Data</button>
+        <button class="ghost-button" onclick="document.getElementById('success-overlay').style.display='none'; selectPanel('clients')">AI Clients</button>
       </div>
     </article>
   </div>

@@ -163,7 +163,7 @@ heartbeat freshness, controller ping/build-marker readback, and local
 TCP daemon/bridge, and the FL Studio controller script as separate findings so
 transport success is not treated as project readiness.
 
-The `fls-pilot-dashboard` CLI was added for v3/alpha as a read-only local
+The `fls-pilot-status` CLI was added for v3/alpha as a read-only local
 status page export. It is not a public MCP tool and does not add FL Studio
 write capability. Its collector is limited to existing bridge/resource status
 reads, MCP safety changelog reads, and generated static HTML/CSS/JS output. It
@@ -179,7 +179,7 @@ in-memory user-confirmed checkpoints, and setup remains read-only against FL
 Studio project state. Its process controls are limited to local child processes
 it starts itself, such as the daemon and SSE server; externally running
 processes may be detected but must not be killed. Port conflict handling may
-select or recommend fallback localhost ports for the Control Center, dashboard,
+select or recommend fallback localhost ports for the Control Center, and
 SSE server, and daemon, but it must update displayed snippets/reports whenever
 the selected port changes.
 
