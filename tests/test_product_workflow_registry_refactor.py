@@ -151,7 +151,60 @@ def test_project_organizer_invalid_color_fails_before_mutation() -> None:
         project_organizer.safety.safe_write_group = original_safe_write_group
 
     assert result.get("ok") is False
-    assert "unknown color" in result.get("error", "")
+    assert any("unknown color" in row.get("message", "") for row in result.get("diagnostics", []))
+
+
+def test_project_organizer_cleanup_requires_explicit_approval() -> None:
+    mcp = MockMCP()
+    project_organizer.register(mcp)
+    original_get_bridge = project_organizer.get_bridge
+    original_safe_write_group = project_organizer.safety.safe_write_group
+
+    def fail_safe_write_group(*_args, **_kwargs):
+        raise AssertionError("safe_write_group must not be called before approval")
+
+    try:
+        project_organizer.get_bridge = lambda: object()
+        project_organizer.safety.safe_write_group = fail_safe_write_group
+        result = mcp.tools["fl_apply_project_cleanup_step"](
+            renames=[{"type": "channel", "index": 3, "name": "Lead"}]
+        )
+    finally:
+        project_organizer.get_bridge = original_get_bridge
+        project_organizer.safety.safe_write_group = original_safe_write_group
+
+    assert result["ok"] is False
+    assert result["mode"] == "approval_required"
+    assert result["proposed_changes"][0]["params"]["approved"] is True
+
+
+def test_project_organizer_standard_approval_uses_exact_tool() -> None:
+    mcp = MockMCP()
+    project_organizer.register(mcp)
+    original_get_bridge = project_organizer.get_bridge
+    original_safe_write_group = project_organizer.safety.safe_write_group
+
+    def fail_safe_write_group(*_args, **_kwargs):
+        raise AssertionError("safe_write_group must not be called before approval")
+
+    try:
+        project_organizer.get_bridge = lambda: object()
+        project_organizer.safety.safe_write_group = fail_safe_write_group
+        result = mcp.tools["fl_apply_naming_standard"](
+            "test", [{"type": "channel", "index": 3, "name": "Lead"}]
+        )
+    finally:
+        project_organizer.get_bridge = original_get_bridge
+        project_organizer.safety.safe_write_group = original_safe_write_group
+
+    proposal = result["proposed_changes"][0]
+    assert result["mode"] == "approval_required"
+    assert proposal["tool"] == "fl_apply_naming_standard"
+    assert proposal["params"] == {
+        "style": "test",
+        "rules": [{"type": "channel", "index": 3, "name": "Lead"}],
+        "approved": True,
+    }
 
 
 def test_mix_doctor_trim_volume_uses_registry_safe_write(monkeypatch, tmp_path) -> None:
@@ -174,18 +227,24 @@ def _exercise_mix_doctor_trim_volume_uses_registry_safe_write(tmp_path, monkeypa
         monkeypatch.setattr(safety, "_log", safety.ChangeLog(tmp_path / "changes.jsonl"))
 
     try:
-        result = mcp.tools["fl_apply_mix_adjustment"]("trim_volume", track=4, target_db=-3.0)
+        gated = mcp.tools["fl_apply_mix_adjustment"]("trim_volume", track=4, target_db=-3.0)
+        result = mcp.tools["fl_apply_mix_adjustment"](
+            "trim_volume", track=4, target_db=-3.0, approved=True
+        )
     finally:
         if monkeypatch is None:
             mix_doctor.get_bridge = original_get_bridge
             safety._log = original_log
 
+    assert gated["ok"] is False
+    assert gated["mode"] == "approval_required"
+    assert gated["proposed_changes"][0]["params"]["approved"] is True
     assert result["ok"] is True
-    assert result["kind"] == "trim_volume"
-    assert result["track"] == 4
-    assert result["before_db"] == -1.0
-    assert result["after_db"] == -3.0
-    assert result["applied"] is True
+    assert result["mode"] == "applied"
+    assert result["applied_changes"][0]["before"]["vol_db"] == -1.0
+    assert result["applied_changes"][0]["after"]["vol_db"] == -3.0
+    assert result["applied_changes"][0]["readback_ok"] is True
+    assert result["applied_changes"][0]["change_id"]
     assert (
         protocol.CMD_MIXER_SET_VOLUME,
         {"track": 4, "value": -3.0, "unit": "db"},
@@ -204,6 +263,12 @@ def main() -> int:
 
     test_project_organizer_invalid_color_fails_before_mutation()
     check("project organizer rejects invalid colors before mutation", True)
+
+    test_project_organizer_cleanup_requires_explicit_approval()
+    check("project organizer cleanup requires explicit approval", True)
+
+    test_project_organizer_standard_approval_uses_exact_tool()
+    check("project organizer standard approval uses exact tool", True)
 
     with tempfile.TemporaryDirectory() as tmp:
         _exercise_mix_doctor_trim_volume_uses_registry_safe_write(Path(tmp))

@@ -18,6 +18,7 @@ from fastmcp import FastMCP
 from pydantic import Field
 
 from .. import kb_policy, operations, protocol, safety
+from .. import workflow_report as wr
 from ..connection import fetch_all_pages, get_bridge
 from ..music import mix_doctor as md
 from ..project_templates import compact_context
@@ -57,74 +58,257 @@ def register(mcp: FastMCP) -> None:
         "safetyClass": "write-safe-required",
     }
 
+    def _diagnostic_from_finding(finding: dict, *, index: int, source: str) -> dict:
+        track = finding.get("track")
+        target = {"track_name": track}
+        if isinstance(track, int):
+            target = {"track": track}
+        return wr.diagnostic(
+            id=f"{finding.get('rule', 'finding')}_{index}",
+            severity=finding.get("severity", "info"),
+            message=finding.get("message", ""),
+            evidence=finding.get("evidence"),
+            target=target,
+            source=source,
+            kb_rule_ids=finding.get("kb_rule_ids") or [],
+            metadata={
+                key: value
+                for key, value in _compact_kb_fields(finding).items()
+                if key not in {"kb_rule_ids"}
+            },
+        )
+
+    def _risk_for_plan(plan: dict) -> str:
+        if plan.get("kind") == "trim_volume":
+            return "low"
+        if plan.get("kind") == "group":
+            return "read-only"
+        return "medium" if plan.get("actionable") else "unsupported"
+
+    def _proposal_from_plan(plan: dict, *, index: int, source: str) -> dict:
+        kind = plan.get("kind", "change")
+        if kind == "trim_volume":
+            tool = "fl_apply_mix_adjustment"
+            params = {
+                "kind": "trim_volume",
+                "track": plan.get("track"),
+                "target_db": plan.get("target_fader_db"),
+                "approved": True,
+            }
+            target = {"track": plan.get("track"), "track_name": plan.get("track_name")}
+            readback = "Mixer track fader dB is read back after the write."
+            rollback = "MCP changelog restores the prior mixer track volume."
+        elif kind == "group":
+            tool = "fl_plan_routing_cleanup"
+            params = {
+                "issues": [plan.get("reason") or plan.get("human") or "grouping review"],
+                "proposed_buses": [],
+            }
+            target = {"tracks": plan.get("args") or []}
+            readback = "Read-only routing plan; no FL write is performed."
+            rollback = "No rollback needed for read-only routing planning."
+        else:
+            tool = plan.get("tool")
+            params = plan.get("params") or {}
+            target = {}
+            readback = "Readback depends on the selected write-safe tool."
+            rollback = "Rollback depends on the selected write-safe tool."
+        return wr.proposed_change(
+            id=f"{source}_proposal_{index}",
+            title=plan.get("human") or f"{kind} proposal",
+            reason=plan.get("reason") or plan.get("note") or "",
+            risk=_risk_for_plan(plan),
+            tool=tool,
+            params=params,
+            target=target,
+            safety_basis=(
+                "Apply only after explicit approval. Persistent writes route through "
+                "the safety layer."
+            ),
+            readback=readback,
+            rollback=rollback,
+            requires_explicit_approval=kind != "group",
+            kb_rule_ids=plan.get("kb_rule_ids") or [],
+            metadata={
+                key: value
+                for key, value in _compact_kb_fields(plan).items()
+                if key not in {"kb_rule_ids"}
+            },
+        )
+
+    def _proposal_from_finding(finding: dict, *, index: int, source: str) -> dict | None:
+        fix = finding.get("proposed_fix") or {}
+        intent = fix.get("intent")
+        if not intent:
+            return None
+        manual = intent in {"manual_review", "user_action_required"}
+        risk = "read-only" if manual else "low"
+        if intent in {"fl_apply_eq_intent", "fl_group_tracks"}:
+            risk = "medium"
+        if intent == "user_action_required":
+            risk = "unsupported"
+        return wr.proposed_change(
+            id=f"{source}_proposal_{index}",
+            title=fix.get("desc") or finding.get("message") or "Review finding",
+            reason=finding.get("message") or "",
+            risk=risk,
+            tool=None if manual else intent,
+            params=fix.get("args") or {},
+            action=intent,
+            target={"track_name": finding.get("track")},
+            safety_basis=(
+                "Read-only/manual review only."
+                if manual
+                else "Apply only after explicit approval through the referenced write-safe tool."
+            ),
+            readback=(
+                "Manual check; no FL write readback."
+                if manual
+                else "Readback depends on the referenced write-safe tool."
+            ),
+            rollback=(
+                "No project write is performed by this proposal."
+                if manual
+                else "Rollback is provided by the referenced write-safe tool."
+            ),
+            requires_explicit_approval=not manual,
+            manual_review=manual,
+            kb_rule_ids=finding.get("kb_rule_ids") or [],
+            metadata={
+                key: value
+                for key, value in _compact_kb_fields(finding).items()
+                if key not in {"kb_rule_ids"}
+            },
+        )
+
+    def _diagnostic_report(
+        *,
+        workflow: str,
+        title: str,
+        status: str,
+        snap: dict,
+        diagnostics: list[dict],
+        proposed_changes: list[dict],
+        notes: list[str],
+        kb_rule_ids: set,
+        summary: dict,
+        metadata: dict | None = None,
+        manual_checks: list[dict] | None = None,
+        limits: list[str] | None = None,
+    ) -> dict:
+        return wr.workflow_report(
+            workflow=workflow,
+            title=title,
+            mode="proposal" if proposed_changes and not diagnostics else "diagnostic",
+            status=status,
+            summary=summary,
+            diagnostics=diagnostics,
+            proposed_changes=proposed_changes,
+            manual_checks=manual_checks or [],
+            notes=notes,
+            limits=limits or [],
+            kb_policy_refs=kb_policy.rule_refs(sorted(kb_rule_ids)),
+            safety={
+                "read_only": True,
+                "requires_explicit_approval": bool(proposed_changes),
+                "approval_received": False,
+            },
+            metadata={
+                "track_count": snap.get("track_count"),
+                "levels_valid": snap.get("levels_valid"),
+                "template_context": compact_context(snap.get("template_context") or {}),
+                **(metadata or {}),
+            },
+        )
+
     def _result(snap):
         """Diagnose + plan a gathered snapshot -> the common tool payload."""
         diag = md.diagnose(snap)
         plan = md.plan_fixes(snap)
-        proposals = []
-        for p in plan["plans"]:
-            prop = {
-                "id": p["id"],
-                "kind": p["kind"],
-                "severity": p["severity"],
-                "actionable": bool(p.get("actionable")),
-                "human": p["human"],
-                "reason": p.get("reason", ""),
-            }
-            if p["kind"] == "trim_volume":
-                prop["track"] = p["track"]
-                prop["target_db"] = p["target_fader_db"]
-            elif p["kind"] == "group":
-                prop["tracks"] = p.get("args")
-            prop.update(_compact_kb_fields(p))
-            proposals.append(prop)
-        findings = []
+        proposed_changes = [
+            _proposal_from_plan(p, index=index, source="mix_review")
+            for index, p in enumerate(plan["plans"], start=1)
+        ]
+        diagnostics = []
         used_rule_ids = set()
-        for f in diag["findings"]:
-            row = {k: f[k] for k in ("rule", "severity", "track", "evidence", "message")}
-            row.update(_compact_kb_fields(f))
+        for index, f in enumerate(diag["findings"], start=1):
+            row = _diagnostic_from_finding(f, index=index, source="mix_review")
             used_rule_ids.update(f.get("kb_rule_ids") or [])
-            findings.append(row)
-        for p in proposals:
+            diagnostics.append(row)
+        for p in proposed_changes:
             used_rule_ids.update(p.get("kb_rule_ids") or [])
-        return {
-            "track_count": snap["track_count"],
-            "levels_valid": snap.get("levels_valid"),
-            "template_context": compact_context(diag.get("template_context") or {}),
-            "summary": plan["summary"],
-            "findings": findings,
-            "proposals": proposals,
-            "notes": plan["notes"],
-            "kb_policy_refs": kb_policy.rule_refs(sorted(used_rule_ids)),
-        }
+        playing = snap.get("playing")
+        guidance = (
+            "Project stopped; press play and rerun, or use watch mode for full-song peaks."
+            if not playing
+            else "Short snapshot only; use watch mode for full-song peak evidence."
+        )
+        return _diagnostic_report(
+            workflow="mix_review",
+            title="Mix Review",
+            status="Mix review generated",
+            snap={**snap, "template_context": diag.get("template_context")},
+            diagnostics=diagnostics,
+            proposed_changes=proposed_changes,
+            notes=[guidance, *plan["notes"]],
+            kb_rule_ids=used_rule_ids,
+            summary=plan["summary"],
+            metadata={
+                "playing": playing,
+                "needs_playback": not playing,
+                "peak_source": snap.get("peak_window", {}).get("source"),
+            },
+        )
 
     def _low_end_stereo_result(snap):
         report = md.low_end_stereo_safety(snap)
-        findings = []
+        diagnostics = []
         manual_checks = []
+        proposed_changes = []
         used_rule_ids = set()
-        for f in report["findings"]:
-            row = {k: f[k] for k in ("rule", "severity", "track", "evidence", "message")}
-            row.update(_compact_kb_fields(f))
+        for index, f in enumerate(report["findings"], start=1):
+            row = _diagnostic_from_finding(f, index=index, source="low_end_stereo")
             used_rule_ids.update(f.get("kb_rule_ids") or [])
-            findings.append(row)
-        for check in report["manual_checks"]:
-            row = {k: check[k] for k in ("topic", "check", "reason")}
-            row.update(_compact_kb_fields(check))
+            diagnostics.append(row)
+            proposal = _proposal_from_finding(f, index=index, source="low_end_stereo")
+            if proposal:
+                proposed_changes.append(proposal)
+        for index, check in enumerate(report["manual_checks"], start=1):
+            row = {
+                "id": f"low_end_manual_check_{index}",
+                "topic": check.get("topic"),
+                "check": check.get("check"),
+                "reason": check.get("reason"),
+            }
+            row.update(
+                {
+                    key: value
+                    for key, value in _compact_kb_fields(check).items()
+                    if key not in {"kb_rule_ids"}
+                }
+            )
+            if check.get("kb_rule_ids"):
+                row["kb_rule_ids"] = check.get("kb_rule_ids")
             used_rule_ids.update(check.get("kb_rule_ids") or [])
             manual_checks.append(row)
-        return {
-            "track_count": report["track_count"],
-            "levels_valid": report["levels_valid"],
-            "template_context": compact_context(report.get("template_context") or {}),
-            "summary": report["summary"],
-            "low_end_tracks": report["low_end_tracks"],
-            "findings": findings,
-            "manual_checks": manual_checks,
-            "notes": report["notes"],
-            "analysis_limits": report["analysis_limits"],
-            "kb_policy_refs": kb_policy.rule_refs(sorted(used_rule_ids)),
-        }
+        return _diagnostic_report(
+            workflow="low_end_stereo_review",
+            title="Low-End and Stereo Safety Review",
+            status="Low-end/stereo review generated",
+            snap={
+                "track_count": report.get("track_count"),
+                "levels_valid": report.get("levels_valid"),
+                "template_context": report.get("template_context") or {},
+            },
+            diagnostics=diagnostics,
+            proposed_changes=proposed_changes,
+            manual_checks=manual_checks,
+            notes=report["notes"],
+            limits=report["analysis_limits"],
+            kb_rule_ids=used_rule_ids,
+            summary=report["summary"],
+            metadata={"low_end_tracks": report.get("low_end_tracks", [])},
+        )
 
     @mcp.tool(annotations={"title": "Review mix", **_RO})
     def fl_review_mix() -> dict:
@@ -145,23 +329,22 @@ def register(mcp: FastMCP) -> None:
         try:
             snap = md.gather_snapshot(get_bridge())
         except Exception as e:
-            return {"ok": False, "error": f"{type(e).__name__}: {e}"}
-        playing = snap["playing"]
-        guidance = (
-            "Project STOPPED -- press PLAY and call again, or use watch mode "
-            "(fl_mix_watch_start -> play full song -> fl_mix_watch_stop)."
-            if not playing
-            else "NOTE: ~1.2s sample (one moment). For full-song peaks (catch the "
-            "drop/chorus) use fl_mix_watch_start -> play -> fl_mix_watch_stop."
-        )
-        return {
-            "ok": True,
-            "playing": playing,
-            "needs_playback": not playing,
-            "peak_source": snap.get("peak_window", {}).get("source"),
-            "guidance": guidance,
-            **_result(snap),
-        }
+            return wr.workflow_report(
+                workflow="mix_review",
+                title="Mix Review",
+                mode="error",
+                status="Mix review failed",
+                summary={"diagnostics": 0, "proposed_changes": 0},
+                diagnostics=[
+                    wr.diagnostic(
+                        id="mix_review_error",
+                        severity="error",
+                        message=f"{type(e).__name__}: {e}",
+                    )
+                ],
+                ok=False,
+            )
+        return _result(snap)
 
     @mcp.tool(annotations={"title": "Review low-end and stereo safety", **_RO})
     def fl_review_low_end_stereo() -> dict:
@@ -180,7 +363,21 @@ def register(mcp: FastMCP) -> None:
             wmax = md.get_watcher().last_max()
             snap = md.gather_snapshot(bridge, with_params=False, peaks_override=wmax or None)
         except Exception as e:
-            return {"ok": False, "error": f"{type(e).__name__}: {e}"}
+            return wr.workflow_report(
+                workflow="low_end_stereo_review",
+                title="Low-End and Stereo Safety Review",
+                mode="error",
+                status="Low-end/stereo review failed",
+                summary={"diagnostics": 0, "proposed_changes": 0},
+                diagnostics=[
+                    wr.diagnostic(
+                        id="low_end_stereo_error",
+                        severity="error",
+                        message=f"{type(e).__name__}: {e}",
+                    )
+                ],
+                ok=False,
+            )
         levels_valid = bool(wmax or snap.get("levels_valid"))
         guidance = (
             "Structural pan/stereo checks are available. For reliable hot low-end "
@@ -191,16 +388,24 @@ def register(mcp: FastMCP) -> None:
             "apply no widening, mid-side EQ, mastering, render, or plugin-loading "
             "automation from this assistant."
         )
-        return {
-            "ok": True,
-            "playing": snap.get("playing"),
-            "needs_levels": not levels_valid,
-            "peak_source": "watch (full-song)"
-            if wmax
-            else snap.get("peak_window", {}).get("source"),
-            "guidance": guidance,
-            **_low_end_stereo_result(snap),
+        report = _low_end_stereo_result(snap)
+        report["notes"] = [guidance, *report.get("notes", [])]
+        report["metadata"].update(
+            {
+                "playing": snap.get("playing"),
+                "needs_levels": not levels_valid,
+                "peak_source": "watch (full-song)"
+                if wmax
+                else snap.get("peak_window", {}).get("source"),
+            }
+        )
+        report["json_report"] = {
+            key: value
+            for key, value in report.items()
+            if key not in {"json_report", "markdown_report"}
         }
+        report["markdown_report"] = wr.render_markdown(report["json_report"])
+        return report
 
     @mcp.tool(annotations={"title": "Apply mix adjustment (gated)", **_WR})
     def fl_apply_mix_adjustment(
@@ -213,6 +418,10 @@ def register(mcp: FastMCP) -> None:
         target_db: Annotated[
             float | None, Field(description="Absolute target fader level in dB, e.g. -3.0.")
         ] = None,
+        approved: Annotated[
+            bool,
+            Field(description="Must be true after explicit approval of this exact change."),
+        ] = False,
     ) -> dict:
         """Apply ONE Mix Review adjustment via the safety layer: snapshot -> write ->
         FRESH readback -> rollback-able with fl_rollback_last_change.
@@ -225,13 +434,60 @@ def register(mcp: FastMCP) -> None:
         Safety: Write-Safe-Required with Rollback.
         """
         if kind != "trim_volume":
-            return {
-                "ok": False,
-                "error": "only 'trim_volume' is wired here; use "
-                "fl_group_tracks (grouping) or fl_apply_eq_intent (EQ moves).",
-            }
+            return wr.workflow_report(
+                workflow="mix_review_apply",
+                title="Apply Mix Review Adjustment",
+                mode="rejected",
+                status="Unsupported mix adjustment",
+                summary={"applied_changes": 0},
+                diagnostics=[
+                    wr.diagnostic(
+                        id="unsupported_mix_adjustment",
+                        severity="error",
+                        message=(
+                            "Only trim_volume is wired here; use fl_group_tracks "
+                            "or fl_apply_eq_intent for other approved changes."
+                        ),
+                        evidence={"kind": kind},
+                    )
+                ],
+                ok=False,
+            )
         if track is None or target_db is None:
-            return {"ok": False, "error": "trim_volume needs both track and target_db."}
+            return wr.workflow_report(
+                workflow="mix_review_apply",
+                title="Apply Mix Review Adjustment",
+                mode="rejected",
+                status="Missing parameters",
+                summary={"applied_changes": 0},
+                diagnostics=[
+                    wr.diagnostic(
+                        id="missing_trim_volume_params",
+                        severity="error",
+                        message="trim_volume needs both track and target_db.",
+                        evidence={"track": track, "target_db": target_db},
+                    )
+                ],
+                ok=False,
+            )
+        proposal = wr.proposed_change(
+            id=f"mix_trim_track_{track}",
+            title=f"Trim mixer track {track} to {target_db:.1f} dB",
+            reason="Approved Mix Review fader trim.",
+            risk="low",
+            tool="fl_apply_mix_adjustment",
+            params={"kind": kind, "track": track, "target_db": target_db, "approved": True},
+            target={"track": track},
+            safety_basis="Single mixer fader write through safety.safe_write.",
+            readback="Mixer track fader dB is read back after write.",
+            rollback="MCP changelog restores the prior mixer track volume.",
+        )
+        if not approved:
+            return wr.approval_required_report(
+                workflow="mix_review_apply",
+                title="Apply Mix Review Adjustment",
+                proposed_changes=[proposal],
+            )
         try:
             bridge = get_bridge()
             prepared = operations.prepare_operation(
@@ -242,22 +498,64 @@ def register(mcp: FastMCP) -> None:
                 **prepared.safe_write_kwargs(tool="mixer_set_volume"),
             )
             if res.get("dry_run"):
-                return {"ok": True, "dry_run": True, "planned": res.get("planned")}
+                return wr.workflow_report(
+                    workflow="mix_review_apply",
+                    title="Apply Mix Review Adjustment",
+                    mode="dry_run",
+                    status="Dry-run only",
+                    summary={"proposed_changes": 1, "applied_changes": 0},
+                    proposed_changes=[proposal],
+                    notes=["Dry-run mode is enabled; no FL Studio project state was changed."],
+                    safety={"read_only": True, "requires_explicit_approval": True},
+                )
             before, after = res.get("before") or {}, res.get("after") or {}
             applied = after.get("vol_db") is not None and abs(after["vol_db"] - target_db) <= 0.6
-            return {
-                "ok": True,
-                "kind": kind,
-                "track": track,
-                "name": after.get("name") or before.get("name"),
-                "before_db": before.get("vol_db"),
-                "after_db": after.get("vol_db"),
-                "target_db": target_db,
-                "applied": applied,
-                "undo": "call fl_rollback_last_change to revert this",
-            }
+            return wr.workflow_report(
+                workflow="mix_review_apply",
+                title="Apply Mix Review Adjustment",
+                mode="applied",
+                status="Applied" if applied else "Applied with readback mismatch",
+                summary={"proposed_changes": 0, "applied_changes": 1},
+                applied_changes=[
+                    wr.applied_change(
+                        id=f"mix_trim_track_{track}",
+                        title=f"Trim mixer track {track} to {target_db:.1f} dB",
+                        tool="fl_apply_mix_adjustment",
+                        params={"kind": kind, "track": track, "target_db": target_db},
+                        risk="low",
+                        before=before,
+                        after=after,
+                        change_id=res.get("change_id"),
+                        rollback=res.get("rollback"),
+                        readback_ok=applied,
+                        source_proposal_id=proposal["id"],
+                    )
+                ],
+                safety={
+                    "read_only": False,
+                    "requires_explicit_approval": False,
+                    "approval_received": True,
+                },
+                notes=["Rollback with fl_rollback_last_change if the result is not intended."],
+                ok=bool(applied),
+            )
         except Exception as e:
-            return {"ok": False, "error": f"{type(e).__name__}: {e}"}
+            return wr.workflow_report(
+                workflow="mix_review_apply",
+                title="Apply Mix Review Adjustment",
+                mode="error",
+                status="Apply failed",
+                summary={"applied_changes": 0},
+                diagnostics=[
+                    wr.diagnostic(
+                        id="mix_apply_error",
+                        severity="error",
+                        message=f"{type(e).__name__}: {e}",
+                        evidence={"kind": kind, "track": track, "target_db": target_db},
+                    )
+                ],
+                ok=False,
+            )
 
     @mcp.tool(annotations={"title": "Start full-song peak watch (Mix Review)", **_RO})
     def fl_mix_watch_start(
@@ -314,22 +612,57 @@ def register(mcp: FastMCP) -> None:
         try:
             peaks_lin, reads, elapsed = md.get_watcher().stop()
             if not peaks_lin or reads == 0 or max(peaks_lin.values(), default=0.0) <= 0.0:
-                return {
-                    "ok": False,
-                    "reads": reads,
-                    "elapsed_s": round(elapsed, 1),
-                    "error": "no peaks captured -- was the song playing during the watch?",
-                }
+                return wr.workflow_report(
+                    workflow="mix_review",
+                    title="Mix Review Watch",
+                    mode="error",
+                    status="No peaks captured",
+                    summary={"reads": reads, "elapsed_s": round(elapsed, 1)},
+                    diagnostics=[
+                        wr.diagnostic(
+                            id="no_watch_peaks",
+                            severity="error",
+                            message="No peaks captured. Was the song playing during the watch?",
+                        )
+                    ],
+                    ok=False,
+                )
             snap = md.gather_snapshot(get_bridge(), peaks_override=peaks_lin)
         except Exception as e:
-            return {"ok": False, "error": f"{type(e).__name__}: {e}"}
-        return {
-            "ok": True,
-            "peak_source": "watch (full-song running max)",
-            "watch": {"reads": reads, "elapsed_s": round(elapsed, 1)},
-            "guidance": "Levels are full-song maxima -- trustworthy for clipping/headroom.",
-            **_result(snap),
+            return wr.workflow_report(
+                workflow="mix_review",
+                title="Mix Review Watch",
+                mode="error",
+                status="Watch review failed",
+                summary={"diagnostics": 0, "proposed_changes": 0},
+                diagnostics=[
+                    wr.diagnostic(
+                        id="mix_watch_stop_error",
+                        severity="error",
+                        message=f"{type(e).__name__}: {e}",
+                    )
+                ],
+                ok=False,
+            )
+        report = _result(snap)
+        report["title"] = "Mix Review Watch"
+        report["metadata"].update(
+            {
+                "peak_source": "watch (full-song running max)",
+                "watch": {"reads": reads, "elapsed_s": round(elapsed, 1)},
+            }
+        )
+        report["notes"] = [
+            "Levels are full-song maxima and are suitable for clipping/headroom review.",
+            *report.get("notes", []),
+        ]
+        report["json_report"] = {
+            key: value
+            for key, value in report.items()
+            if key not in {"json_report", "markdown_report"}
         }
+        report["markdown_report"] = wr.render_markdown(report["json_report"])
+        return report
 
     @mcp.tool(annotations={"title": "Review gain staging", **_RO})
     def fl_gain_stage() -> dict:
@@ -349,49 +682,60 @@ def register(mcp: FastMCP) -> None:
             wmax = md.get_watcher().last_max()
             snap = md.gather_snapshot(bridge, peaks_override=wmax or None)
             if not (wmax or snap.get("levels_valid")):
-                return {
-                    "ok": True,
-                    "needs_levels": True,
-                    "guidance": "No level data -- press PLAY (or run watch mode: "
-                    "fl_mix_watch_start -> play -> fl_mix_watch_stop) then call again.",
-                }
+                return wr.workflow_report(
+                    workflow="gain_stage_review",
+                    title="Gain Staging Review",
+                    mode="diagnostic",
+                    status="Needs level evidence",
+                    summary={"diagnostics": 0, "proposed_changes": 0},
+                    notes=[
+                        "No level data. Press play or run watch mode, then call this tool again."
+                    ],
+                    safety={"read_only": True, "requires_explicit_approval": False},
+                )
             plan = md.gain_stage_plan(snap)
         except Exception as e:
-            return {"ok": False, "error": f"{type(e).__name__}: {e}"}
+            return wr.workflow_report(
+                workflow="gain_stage_review",
+                title="Gain Staging Review",
+                mode="error",
+                status="Gain-stage review failed",
+                summary={"diagnostics": 0, "proposed_changes": 0},
+                diagnostics=[
+                    wr.diagnostic(
+                        id="gain_stage_error",
+                        severity="error",
+                        message=f"{type(e).__name__}: {e}",
+                    )
+                ],
+                ok=False,
+            )
         proposals = [
-            {
-                "id": p["id"],
-                "kind": p["kind"],
-                "severity": p["severity"],
-                "track": p["track"],
-                "track_name": p["track_name"],
-                "target_db": p["target_fader_db"],
-                "actionable": True,
-                "alternative": p.get("alternative", False),
-                "human": p["human"],
-                "reason": p["reason"],
-                **_compact_kb_fields(p),
-            }
-            for p in plan["plans"]
+            _proposal_from_plan(p, index=index, source="gain_stage")
+            for index, p in enumerate(plan["plans"], start=1)
         ]
         used_rule_ids = sorted(
             {rule_id for proposal in proposals for rule_id in (proposal.get("kb_rule_ids") or [])}
         )
-        return {
-            "ok": True,
-            "peak_source": "watch (full-song)"
-            if wmax
-            else snap.get("peak_window", {}).get("source"),
-            "aim_db": plan["target_db"],
-            "healthy_band_db": plan["band"],
-            "proposals": proposals,
-            "notes": plan["notes"],
-            "kb_policy_refs": kb_policy.rule_refs(used_rule_ids),
-            "guidance": "Apply approved trims: fl_apply_mix_adjustment(kind='trim_volume', track, "
-            "target_db=<proposal.target_db>). One at a time; undo via "
-            "fl_rollback_last_change. Skip the 'alternative' Master trim if you "
-            "already applied the source trims.",
-        }
+        return wr.workflow_report(
+            workflow="gain_stage_review",
+            title="Gain Staging Review",
+            mode="proposal",
+            status="Gain-stage plan generated",
+            summary={"target_db": plan["target_db"], "band": plan["band"]},
+            proposed_changes=proposals,
+            notes=[
+                *plan["notes"],
+                "Apply approved trims one at a time. Skip alternative Master trim if source trims were applied.",
+            ],
+            kb_policy_refs=kb_policy.rule_refs(used_rule_ids),
+            metadata={
+                "peak_source": "watch (full-song)"
+                if wmax
+                else snap.get("peak_window", {}).get("source"),
+            },
+            safety={"read_only": True, "requires_explicit_approval": bool(proposals)},
+        )
 
     @mcp.tool(annotations={"title": "Reference match (level/balance)", **_RO})
     def fl_reference_match(
