@@ -1,24 +1,15 @@
-"""Read-only local dashboard export for FL Studio Pilot."""
+"""Read-only local status export for FL Studio Pilot."""
 
 from __future__ import annotations
 
 import argparse
 import contextlib
-import functools
 import json
-import shutil
-import webbrowser
-from datetime import UTC, datetime
-from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
-from importlib import resources
-from pathlib import Path
+from collections.abc import Callable
+from datetime import datetime, timezone
 from typing import Any
 
 from . import __version__, connection, protocol, safety
-
-DEFAULT_PORT = 8765
-DEFAULT_HOST = "127.0.0.1"
-STATIC_PACKAGE = "fls_pilot.dashboard_static"
 READ_COMMANDS = {
     protocol.CMD_GET_PROJECT_STATE,
     protocol.CMD_GET_PLAY_STATE,
@@ -31,17 +22,13 @@ READ_COMMANDS = {
 }
 
 
-def default_output_dir(cwd: Path | None = None) -> Path:
-    """Return the least surprising export path for repo and installed usage."""
-    base = cwd or Path.cwd()
-    scratch_dashboard = base / "scratch" / "dashboard"
-    if scratch_dashboard.is_dir():
-        return scratch_dashboard / "site"
-    return base / "fls-pilot-dashboard-site"
 
-
-def collect_dashboard_snapshot(*, offline: bool = False) -> dict[str, Any]:
-    """Collect a compact read-only snapshot for the local dashboard.
+def collect_status(
+    *,
+    offline: bool = False,
+    bridge_factory: Callable[[], Any] | None = None,
+) -> dict[str, Any]:
+    """Collect a compact read-only snapshot for the local status.
 
     The collector intentionally uses existing read-only bridge commands and
     safety changelog reads only. It does not register MCP tools or mutate FL
@@ -62,7 +49,7 @@ def collect_dashboard_snapshot(*, offline: bool = False) -> dict[str, Any]:
 
     bridge = None
     try:
-        bridge = connection.get_bridge()
+        bridge = bridge_factory() if bridge_factory is not None else connection.get_bridge()
         wait = getattr(bridge, "wait_for_heartbeat", None)
         if callable(wait):
             wait(timeout=1.0)
@@ -103,17 +90,8 @@ def collect_dashboard_snapshot(*, offline: bool = False) -> dict[str, Any]:
     return snapshot
 
 
-def export_dashboard(output_dir: Path | str, snapshot: dict[str, Any] | None = None) -> Path:
-    """Write the static dashboard app and generated data file."""
-    output_path = Path(output_dir).expanduser().resolve()
-    output_path.mkdir(parents=True, exist_ok=True)
-    _copy_static_tree(output_path)
-    data = snapshot or collect_dashboard_snapshot()
-    _write_dashboard_data(output_path, data)
-    return output_path / "index.html"
 
-
-def format_human(snapshot: dict[str, Any], index_path: Path | None = None) -> str:
+def format_human(snapshot: dict[str, Any]) -> str:
     """Return a compact CLI summary."""
     bridge = snapshot.get("bridge", {})
     project = snapshot.get("project", {})
@@ -123,8 +101,8 @@ def format_human(snapshot: dict[str, Any], index_path: Path | None = None) -> st
     unavailable_count = sum(1 for item in evidence if item.get("state") == "unavailable")
 
     lines = [
-        "FL Studio Pilot Dashboard",
-        "=========================",
+        "FL Studio Pilot Status",
+        "======================",
         "Mode: READ-ONLY",
         f"Generated: {snapshot.get('generated_at', 'unknown')}",
         f"Bridge: {bridge.get('state', 'unknown')}",
@@ -138,8 +116,7 @@ def format_human(snapshot: dict[str, Any], index_path: Path | None = None) -> st
             f"{_display_value(project.get('channel_count'))} channels | "
             f"{_display_value(project.get('mixer_track_count'))} mixer tracks"
         )
-    if index_path is not None:
-        lines.append(f"Page: {index_path}")
+
     lines.append(
         f"Evidence: {live_count} live, {limited_count} limited, "
         f"{unavailable_count} unavailable"
@@ -148,37 +125,10 @@ def format_human(snapshot: dict[str, Any], index_path: Path | None = None) -> st
     return "\n".join(lines)
 
 
-def serve_dashboard(
-    directory: Path,
-    *,
-    host: str = DEFAULT_HOST,
-    port: int = DEFAULT_PORT,
-    open_browser: bool = False,
-) -> None:
-    """Serve an exported dashboard directory until interrupted."""
-    server = _bind_server(directory, host, port)
-    url = f"http://{server.server_address[0]}:{server.server_address[1]}/"
-    print(f"Serving read-only dashboard at {url}")
-    print("Press Ctrl+C to stop.")
-    if open_browser:
-        webbrowser.open(url)
-    try:
-        server.serve_forever()
-    except KeyboardInterrupt:
-        print("\nStopped dashboard server.")
-    finally:
-        server.server_close()
-
 
 def main(argv: list[str] | None = None) -> None:
     parser = argparse.ArgumentParser(
-        description="Export or serve the read-only FL Studio Pilot local dashboard."
-    )
-    parser.add_argument(
-        "--output",
-        type=Path,
-        default=None,
-        help="Directory for the generated dashboard app.",
+        description="Print the read-only FL Studio Pilot local status data."
     )
     parser.add_argument(
         "--format",
@@ -191,38 +141,14 @@ def main(argv: list[str] | None = None) -> None:
         action="store_true",
         help="Render an offline preview without contacting the FL Studio bridge.",
     )
-    parser.add_argument(
-        "--serve",
-        action="store_true",
-        help="Serve the exported dashboard over local HTTP.",
-    )
-    parser.add_argument("--host", default=DEFAULT_HOST, help="Host for --serve.")
-    parser.add_argument("--port", type=int, default=DEFAULT_PORT, help="Port for --serve.")
-    parser.add_argument(
-        "--open",
-        action="store_true",
-        help="Open the browser after exporting or serving the dashboard.",
-    )
     args = parser.parse_args(argv)
 
-    snapshot = collect_dashboard_snapshot(offline=args.offline)
-    output_dir = args.output or default_output_dir()
-    index_path = export_dashboard(output_dir, snapshot)
+    snapshot = collect_status(offline=args.offline)
 
     if args.format == "json":
-        print(json.dumps({"index": str(index_path), "snapshot": snapshot}, indent=2))
+        print(json.dumps({"snapshot": snapshot}, indent=2))
     else:
-        print(format_human(snapshot, index_path))
-
-    if args.serve:
-        serve_dashboard(
-            index_path.parent,
-            host=args.host,
-            port=args.port,
-            open_browser=args.open,
-        )
-    elif args.open:
-        webbrowser.open(index_path.as_uri())
+        print(format_human(snapshot))
 
 
 def _base_snapshot(generated_at: str) -> dict[str, Any]:
@@ -233,7 +159,7 @@ def _base_snapshot(generated_at: str) -> dict[str, Any]:
         "app": {
             "name": "fls-pilot",
             "version": __version__,
-            "target_version": "v3 alpha",
+            "target_version": "v3 beta",
         },
         "mode": "read-only",
         "generated_at": generated_at,
@@ -259,14 +185,14 @@ def _base_snapshot(generated_at: str) -> dict[str, Any]:
             "rollback_available": bool(entries),
             "last_change": entries[-1] if entries else None,
             "note": (
-                "Dashboard reads safety state only; rollback is executed through "
+                "Status reads safety state only; rollback is executed through "
                 "MCP safety tools."
             ),
         },
         "analysis": {
             "mix_risk": {
                 "state": "limited",
-                "headline": "Audio peak/headroom risk is not measured by this dashboard.",
+                "headline": "Audio peak/headroom risk is not measured by this status.",
                 "detail": "Run Mix Review or peak watch for audio-level evidence.",
             },
             "organization": {
@@ -503,7 +429,7 @@ def _evidence_feed(snapshot: dict[str, Any]) -> list[dict[str, Any]]:
             "label": "Audio peak analysis",
             "state": "limited",
             "value": "Not sampled",
-            "source": "Dashboard scope",
+            "source": "Status scope",
             "timestamp": generated_at,
             "detail": "Run Mix Review or peak watch for dBFS/headroom findings.",
         },
@@ -518,7 +444,7 @@ def _safe_fetch_resource(bridge, command: str, list_key: str) -> dict[str, Any]:
             "total": 0,
             "shown": 0,
             "items": [],
-            "error": f"Refused non-read dashboard command: {command}",
+            "error": f"Refused non-read status command: {command}",
         }
     try:
         data = connection.fetch_all_pages(
@@ -544,7 +470,7 @@ def _safe_fetch_resource(bridge, command: str, list_key: str) -> dict[str, Any]:
 
 def _safe_bridge_call(bridge, command: str, params: dict[str, Any] | None = None) -> dict[str, Any]:
     if command not in READ_COMMANDS:
-        return {"ok": False, "error": f"Refused non-read dashboard command: {command}"}
+        return {"ok": False, "error": f"Refused non-read status command: {command}"}
     try:
         return {
             "ok": True,
@@ -559,54 +485,6 @@ def _safe_bridge_call(bridge, command: str, params: dict[str, Any] | None = None
     except Exception as exc:
         return {"ok": False, "error": f"{type(exc).__name__}: {exc}"}
 
-
-def _copy_static_tree(output_path: Path) -> None:
-    static_root = resources.files(STATIC_PACKAGE)
-    for child in static_root.iterdir():
-        if child.name in {"__pycache__", "__init__.py"}:
-            continue
-        _copy_resource(child, output_path / child.name)
-
-
-def _copy_resource(source, target: Path) -> None:
-    if source.is_dir():
-        target.mkdir(parents=True, exist_ok=True)
-        for child in source.iterdir():
-            if child.name in {"__pycache__", "__init__.py"}:
-                continue
-            _copy_resource(child, target / child.name)
-        return
-
-    target.parent.mkdir(parents=True, exist_ok=True)
-    with resources.as_file(source) as source_path:
-        shutil.copy2(source_path, target)
-
-
-def _write_dashboard_data(output_path: Path, snapshot: dict[str, Any]) -> None:
-    payload = json.dumps(snapshot, indent=2, sort_keys=True)
-    (output_path / "dashboard-data.js").write_text(
-        "window.FLS_PILOT_DASHBOARD_DATA = " + payload + ";\n",
-        encoding="utf-8",
-    )
-
-
-def _bind_server(directory: Path, host: str, port: int) -> ThreadingHTTPServer:
-    handler = functools.partial(SimpleHTTPRequestHandler, directory=str(directory))
-    current_port = int(port)
-    last_error: OSError | None = None
-    for _ in range(25):
-        try:
-            return ThreadingHTTPServer((host, current_port), handler)
-        except OSError as exc:
-            last_error = exc
-            if current_port == 0 or not _port_in_use(exc):
-                raise
-            current_port += 1
-    raise OSError(f"Could not bind dashboard server near port {port}: {last_error}")
-
-
-def _port_in_use(exc: OSError) -> bool:
-    return exc.errno in {48, 98, 10048} or "address already in use" in str(exc).lower()
 
 
 def _safe_call(fn, default=None):
@@ -664,7 +542,7 @@ def _display_ms(value) -> str:
 
 
 def _now_iso() -> str:
-    return datetime.now(UTC).isoformat(timespec="seconds").replace("+00:00", "Z")
+    return datetime.now(timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z")
 
 
 if __name__ == "__main__":

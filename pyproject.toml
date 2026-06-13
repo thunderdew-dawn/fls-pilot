@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "fls-pilot"
-version = "3.0.0a1"
+version = "3.0.0b1"
 description = "Control FL Studio with any MCP-compatible LLM: mixing, composition, and mix diagnosis through natural language."
 readme = "README.md"
 license = { text = "MIT" }
@@ -17,7 +17,7 @@ maintainers = [
 requires-python = ">=3.10"
 keywords = ["mcp", "fl-studio", "music-production", "ai", "claude", "fruityloops"]
 classifiers = [
-    "Development Status :: 3 - Alpha",
+    "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
     "Intended Audience :: End Users/Desktop",
     "License :: OSI Approved :: MIT License",
@@ -69,8 +69,9 @@ audio-accurate = [
 
 [project.scripts]
 fls-pilot = "fls_pilot.server:main"
+fls-pilot-control-center = "fls_pilot.control_center:main"
 fls-pilot-daemon = "fls_pilot.daemon:main"
-fls-pilot-dashboard = "fls_pilot.dashboard:main"
+fls-pilot-status = "fls_pilot.status:main"
 fls-pilot-doctor = "fls_pilot.doctor:main"
 
 [project.urls]

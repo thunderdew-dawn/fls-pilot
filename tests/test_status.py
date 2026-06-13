@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from fls_pilot import dashboard, protocol
+from fls_pilot import status, protocol
 
 
 class FakeBridge:
@@ -86,18 +86,18 @@ class FakeBridge:
         self.closed = True
 
 
-def test_collect_dashboard_snapshot_is_read_only(monkeypatch) -> None:
+def test_collect_status_is_read_only(monkeypatch) -> None:
     bridge = FakeBridge()
-    monkeypatch.setattr(dashboard.connection, "get_bridge", lambda: bridge)
+    monkeypatch.setattr(status.connection, "get_bridge", lambda: bridge)
 
-    snapshot = dashboard.collect_dashboard_snapshot()
+    snapshot = status.collect_status()
 
     assert snapshot["mode"] == "read-only"
     assert snapshot["bridge"]["state"] == "live"
     assert snapshot["project"]["tempo_bpm"] == 145.0
     assert snapshot["project"]["playlist_track_count"] == 2
     assert bridge.closed is True
-    assert {command for command, _ in bridge.calls} <= dashboard.READ_COMMANDS
+    assert {command for command, _ in bridge.calls} <= status.READ_COMMANDS
 
     organization = snapshot["analysis"]["organization"]["signals"]
     duplicate_signal = next(
@@ -105,18 +105,3 @@ def test_collect_dashboard_snapshot_is_read_only(monkeypatch) -> None:
     )
     assert duplicate_signal["value"] == 1
 
-
-def test_export_dashboard_writes_static_app(tmp_path: Path) -> None:
-    snapshot = dashboard.collect_dashboard_snapshot(offline=True)
-    index_path = dashboard.export_dashboard(tmp_path / "site", snapshot)
-
-    assert index_path.is_file()
-    assert (index_path.parent / "styles.css").is_file()
-    assert (index_path.parent / "app.js").is_file()
-    assert (index_path.parent / "assets" / "fls-pilot-logo-wide.png").is_file()
-
-    data_js = (index_path.parent / "dashboard-data.js").read_text(encoding="utf-8")
-    payload = data_js.removeprefix("window.FLS_PILOT_DASHBOARD_DATA = ").rstrip(";\n")
-    exported = json.loads(payload)
-    assert exported["mode"] == "read-only"
-    assert exported["bridge"]["state"] == "unavailable"
