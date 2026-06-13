@@ -4,11 +4,9 @@ from __future__ import annotations
 
 import argparse
 import contextlib
-import functools
 import json
 from collections.abc import Callable
 from datetime import datetime, timezone
-from pathlib import Path
 from typing import Any
 
 from . import __version__, connection, protocol, safety
@@ -161,7 +159,7 @@ def _base_snapshot(generated_at: str) -> dict[str, Any]:
         "app": {
             "name": "fls-pilot",
             "version": __version__,
-            "target_version": "v3 alpha",
+            "target_version": "v3 beta",
         },
         "mode": "read-only",
         "generated_at": generated_at,
