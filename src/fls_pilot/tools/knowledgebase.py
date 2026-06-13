@@ -10,6 +10,21 @@ from fastmcp import FastMCP
 KB_ROOT = Path("knowledgebase")
 
 
+def get_kb_root() -> Path:
+    env_path = os.environ.get("FLS_PILOT_KB_PATH")
+    if env_path:
+        return Path(env_path).resolve()
+
+    repo_kb = Path(__file__).resolve().parent.parent.parent.parent / "knowledgebase"
+    if repo_kb.exists():
+        return repo_kb
+
+    return Path("knowledgebase").resolve()
+
+
+KB_ROOT = get_kb_root()
+
+
 def _resolve_path(sub_path: str) -> Path:
     p = KB_ROOT / sub_path
     return p.resolve()
