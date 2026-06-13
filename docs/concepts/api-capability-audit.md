@@ -322,6 +322,16 @@ KB policy data is not executable operation data: persistent writes still route
 through operation-registry validation and `safety.safe_write` or
 `safety.safe_write_group`.
 
+The v3 workflow report contract was added on 2026-06-13 without new FL Studio
+API capability claims. Mix Review, Project Health/Preflight, and Project
+Organizer reports now use `fls-pilot.workflow-report.v1`, separating
+`diagnostics`, `proposed_changes`, `applied_changes`, and `manual_checks` while
+embedding `json_report` and `markdown_report` renderings. Project Organizer
+apply tools and `fl_apply_mix_adjustment` now require `approved=True` before
+dispatching persistent writes; approved organizer cleanup writes, including
+channel-routing cleanup, still route through operation-registry entries and
+`safety.safe_write_group`.
+
 The Low-End/Stereo Safety Assistant was added on 2026-06-07 as a read-only Mix
 Review companion. `fl_review_low_end_stereo` uses the existing mixer snapshot
 path plus `mixer_list_tracks.stereo_sep` metadata from controller build

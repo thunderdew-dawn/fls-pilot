@@ -127,11 +127,16 @@ def main() -> int:
     try:
         report = mcp.tools["fl_project_health_report"]()
         check("health report ok", report.get("ok") is True)
-        check("health report has findings", report.get("summary", {}).get("findings", 0) >= 1)
+        check("health report uses workflow contract", report.get("contract_version") is not None)
+        check(
+            "health report has diagnostics",
+            report.get("summary", {}).get("diagnostics", 0) >= 1,
+        )
+        check("health report includes markdown", "# Project Health Report" in report.get("markdown_report", ""))
 
         readiness = mcp.tools["fl_export_readiness_report"]()
         check("readiness report ok", readiness.get("ok") is True)
-        check("readiness marks project not ready", readiness.get("ready") is False)
+        check("readiness marks project not ready", readiness.get("summary", {}).get("ready") is False)
         check(
             "readiness exposes mastering boundary KB ref",
             "mastering_after_mix_readiness" in _ref_ids(readiness),
@@ -139,20 +144,21 @@ def main() -> int:
 
         plan = mcp.tools["fl_project_dry_run_fix_plan"]()
         check("dry-run fix plan ok", plan.get("ok") is True)
-        check("dry-run flag true", plan.get("dry_run") is True)
-        check("has planned actions", len(plan.get("plan", [])) > 0)
+        check("dry-run fix plan is proposal mode", plan.get("mode") == "proposal")
+        check("has planned actions", len(plan.get("proposed_changes", [])) > 0)
         check(
             "contains rollback-safe channel assignment action",
             any(
-                a.get("tool") == "fl_assign_channel_to_free_mixer_track"
-                for a in plan.get("plan", [])
+                a.get("tool") == "fl_apply_project_cleanup_step"
+                and a.get("params", {}).get("approved") is True
+                for a in plan.get("proposed_changes", [])
             ),
         )
 
         dashboard = mcp.tools["fl_project_health_overview"]()
         check(
             "dashboard recommends current Mix Review tool name",
-            any("fl_review_mix" in item for item in dashboard.get("recommendations", [])),
+            any("fl_review_mix" in item for item in dashboard.get("notes", [])),
         )
         check(
             "dashboard exposes preservation and mastering KB refs",
@@ -166,19 +172,33 @@ def main() -> int:
         preflight = mcp.tools["fl_check_project_preflight"]()
         check(
             "preflight blocks Master output clipping from watch",
-            any("output/render clipping risk" in item for item in preflight.get("blockers", [])),
+            any(
+                "output/render clipping risk" in item.get("message", "")
+                for item in preflight.get("diagnostics", [])
+            ),
         )
         check(
             "preflight reports watch peak source",
-            preflight.get("mix_readiness", {}).get("master_peak_source") == "mix_review_watch",
+            preflight.get("metadata", {})
+            .get("mix_readiness", {})
+            .get("master_peak_source")
+            == "mix_review_watch",
         )
         check(
             "preflight keeps render and FL Cloud Mastering manual",
-            any("FL Cloud Mastering" in item for item in preflight.get("manual_checklist", [])),
+            any("FL Cloud Mastering" in item.get("check", "") for item in preflight.get("manual_checks", [])),
         )
         check(
             "preflight no longer uses generic API LIMITATION clipping copy",
-            all("API LIMITATION" not in item for item in preflight.get("manual_checklist", [])),
+            all("API LIMITATION" not in item.get("check", "") for item in preflight.get("manual_checks", [])),
+        )
+        check(
+            "preflight channel route proposal is approval-gated",
+            any(
+                p.get("tool") == "fl_apply_project_cleanup_step"
+                and p.get("params", {}).get("approved") is True
+                for p in preflight.get("proposed_changes", [])
+            ),
         )
         check(
             "preflight exposes Master/output and manual mastering KB refs",
@@ -194,7 +214,10 @@ def main() -> int:
         advisory_preflight = mcp.tools["fl_check_project_preflight"]()
         check(
             "preflight warns near-zero Master peak from watch",
-            any("leave more headroom" in item for item in advisory_preflight.get("advisories", [])),
+            any(
+                "leave more headroom" in item.get("message", "")
+                for item in advisory_preflight.get("diagnostics", [])
+            ),
         )
 
         pd.md.get_watcher = lambda: FakeWatcher({})
@@ -202,8 +225,8 @@ def main() -> int:
         check(
             "preflight asks for Mix Review watch when Master peak is missing",
             any(
-                "Run Mix Review watch mode" in item
-                for item in missing_peak_preflight.get("manual_checklist", [])
+                "Run Mix Review watch mode" in item.get("check", "")
+                for item in missing_peak_preflight.get("manual_checks", [])
             ),
         )
     finally:

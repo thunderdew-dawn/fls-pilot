@@ -23,6 +23,16 @@ The current public MCP surface registers 87 tools: 41 `read-only`, 33
 `write-safe-required`, 4 `server-state`, 2 `external-write`, and 7 Knowledgebase tools
 registered outside the static annotation pattern.
 
+### Workflow Report Contract
+
+Mix Review, Project Health/Preflight, and Project Organizer diagnostics return
+the v3 workflow report contract (`fls-pilot.workflow-report.v1`). These reports
+separate `diagnostics`, `proposed_changes`, `applied_changes`, and
+`manual_checks`, and include both `json_report` and `markdown_report` renderings.
+Proposal reports are read-only. Persistent organizer or Mix Review changes
+require an exact proposed change to be approved and then applied through a
+write-safe tool with rollback/readback metadata.
+
 ### Phase 1: Ideation & Composition Tools
 
 #### Audio Analysis
@@ -65,10 +75,10 @@ registered outside the static annotation pattern.
 | Tool | Safety | What it does |
 |---|---|---|
 | `fl_analyze_project_organization` | `read-only` | Finds unnamed, uncolored, and ungrouped channels. |
-| `fl_plan_project_cleanup` | `read-only` | Plans naming and coloring fixes. |
-| `fl_apply_project_cleanup_step` | `write-safe-required` | Applies a batch of specific name and color fixes. |
-| `fl_apply_naming_standard` | `write-safe-required` | Batch applies a naming schema (e.g., psytrance) across channels and buses. |
-| `fl_apply_color_standard` | `write-safe-required` | Batch applies a color schema (e.g., psytrance) across channels and buses. |
+| `fl_plan_project_cleanup` | `read-only` | Produces proposal-mode naming, routing, and cleanup changes without mutating FL Studio. |
+| `fl_apply_project_cleanup_step` | `write-safe-required` | Applies approved name, color, or channel-routing cleanup changes as one rollback unit. |
+| `fl_apply_naming_standard` | `write-safe-required` | Batch applies an approved naming schema (e.g., psytrance) across channels and buses. |
+| `fl_apply_color_standard` | `write-safe-required` | Batch applies an approved color schema (e.g., psytrance) across channels and buses. |
 | `fl_set_track_color` | `write-safe-required` | Colors one or more mixer tracks by color name or hex value. |
 | `fl_set_channel_color` | `write-safe-required` | Colors one or more Channel Rack channels by color name or hex value. |
 
@@ -120,7 +130,7 @@ registered outside the static annotation pattern.
 |---|---|---|
 | `fl_review_mix` | `read-only` | Scans the mix and reports concrete issues with evidence and proposed fixes. |
 | `fl_review_low_end_stereo` | `read-only` | Reports bass/sub mono-compatibility, stereo-width metadata risks, low-end layering, and Master headroom as manual-safe guidance. |
-| `fl_apply_mix_adjustment` | `write-safe-required` | Applies one gated Mix Review fix through the safety layer. |
+| `fl_apply_mix_adjustment` | `write-safe-required` | Applies one explicitly approved Mix Review fix through the safety layer. |
 | `fl_mix_watch_start` | `read-only` | Starts full-song peak watching for better level evidence. |
 | `fl_mix_watch_status` | `read-only` | Reports current peak-watch status. |
 | `fl_mix_watch_stop` | `read-only` | Stops peak watching and returns a diagnosis. |

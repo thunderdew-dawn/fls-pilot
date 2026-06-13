@@ -231,14 +231,21 @@ def main() -> int:
             {"i": 1, "name": "Band 2 - Freq", "s": "1000 Hz"},
         ],
     }
+    comp = {"slot": 1, "name": "Fruity Compressor", "params": []}
     snap = {
         "playing": False,
         "tracks": [
             trk(0, "Master"),
-            trk(1, "Bass", vol_db=0.0, plugins=[]),
-            trk(2, "Kick", vol_db=0.0, plugins=[], routes_to=[{"dst": 30}]),
-            trk(3, "Snare", vol_db=0.0, plugins=[dict(flat_eq)], routes_to=[{"dst": 30}]),
-            trk(4, "Vox", vol_db=0.0, plugins=[dict(flat_eq)]),
+            trk(1, "Bass", vol_db=0.0, plugins=[dict(comp)]),
+            trk(2, "Kick", vol_db=0.0, plugins=[dict(comp)], routes_to=[{"dst": 30}]),
+            trk(
+                3,
+                "Snare",
+                vol_db=0.0,
+                plugins=[dict(flat_eq), dict(comp)],
+                routes_to=[{"dst": 30}],
+            ),
+            trk(4, "Vox", vol_db=0.0, plugins=[dict(flat_eq), dict(comp)]),
         ],
     }
     r = md.diagnose(snap)
@@ -433,24 +440,31 @@ def main() -> int:
         mix_tool.md.gather_snapshot = original_gather_snapshot
 
     check("tool diagnosis output ok", tool_out.get("ok") is True)
+    check("tool diagnosis uses workflow contract", tool_out.get("contract_version") is not None)
+    check("tool diagnosis includes markdown report", "# Mix Review" in tool_out.get("markdown_report", ""))
     check(
         "tool findings omit full per-row KB rule details",
-        all("kb_rules" not in f for f in tool_out.get("findings", [])),
+        all("kb_rules" not in f for f in tool_out.get("diagnostics", [])),
     )
     check(
         "tool proposals omit full per-row KB rule details",
-        all("kb_rules" not in p for p in tool_out.get("proposals", [])),
+        all("kb_rules" not in p for p in tool_out.get("proposed_changes", [])),
     )
     check(
         "tool findings keep compact KB ids and confidence",
         any(
-            f.get("kb_rule_ids") and f.get("kb_confidence_levels")
-            for f in tool_out.get("findings", [])
+            f.get("kb_rule_ids")
+            and f.get("metadata", {}).get("kb_confidence_levels")
+            for f in tool_out.get("diagnostics", [])
         ),
     )
     check(
         "tool proposals keep compact KB ids and safety limits",
-        any(p.get("kb_rule_ids") and p.get("safety_limits") for p in tool_out.get("proposals", [])),
+        any(
+            p.get("kb_rule_ids")
+            and p.get("metadata", {}).get("safety_limits")
+            for p in tool_out.get("proposed_changes", [])
+        ),
     )
     check(
         "top-level KB refs keep source-qualified rule detail",
@@ -460,21 +474,23 @@ def main() -> int:
         ),
     )
     check("tool gain-stage output ok", gain_out.get("ok") is True)
+    check("tool gain-stage proposals are explicit", gain_out.get("mode") == "proposal")
     check(
         "tool gain-stage proposals omit full per-row KB rule details",
-        all("kb_rules" not in p for p in gain_out.get("proposals", [])),
+        all("kb_rules" not in p for p in gain_out.get("proposed_changes", [])),
     )
     check(
         "tool gain-stage proposals keep compact KB confidence",
         any(
-            p.get("kb_rule_ids") and p.get("kb_confidence_levels")
-            for p in gain_out.get("proposals", [])
+            p.get("kb_rule_ids")
+            and p.get("metadata", {}).get("kb_confidence_levels")
+            for p in gain_out.get("proposed_changes", [])
         ),
     )
     check("tool low-end/stereo output ok", low_out.get("ok") is True)
     check(
         "tool low-end findings omit full per-row KB rule details",
-        all("kb_rules" not in f for f in low_out.get("findings", [])),
+        all("kb_rules" not in f for f in low_out.get("diagnostics", [])),
     )
     check(
         "tool low-end manual checks keep compact KB ids",

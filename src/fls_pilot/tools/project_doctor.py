@@ -9,6 +9,7 @@ from fastmcp import FastMCP
 
 from .. import kb_policy, protocol
 from .. import project_templates as templates
+from .. import workflow_report as wr
 from ..connection import fetch_all_pages, get_bridge
 from ..music import mix_doctor as md
 
@@ -25,6 +26,67 @@ def _find_duplicate_names(rows: list[dict], key: str) -> list[str]:
 
 def _suggest_pattern_name(index: int) -> str:
     return f"Pattern {index}"
+
+
+def _diagnostic_from_finding(finding: dict, *, source: str) -> dict:
+    return wr.diagnostic(
+        id=str(finding.get("id") or "finding"),
+        severity=str(finding.get("severity") or "info"),
+        message=str(finding.get("message") or ""),
+        evidence={
+            key: value
+            for key, value in finding.items()
+            if key not in {"id", "severity", "message"}
+        },
+        source=source,
+    )
+
+
+def _risk_for_action(action: dict) -> str:
+    if action.get("manual_review"):
+        return "medium"
+    priority = action.get("priority")
+    if priority == "high":
+        return "low"
+    if priority == "medium":
+        return "medium"
+    return "low"
+
+
+def _proposal_from_action(action: dict) -> dict:
+    tool = action.get("tool")
+    params = dict(action.get("params") or {})
+    if tool in {
+        "fl_apply_project_cleanup_step",
+        "fl_apply_naming_standard",
+        "fl_apply_color_standard",
+        "fl_apply_mix_adjustment",
+    }:
+        params["approved"] = True
+    return wr.proposed_change(
+        id=f"project_action_{action.get('id')}",
+        title=f"{action.get('kind', 'project_action')}: {action.get('reason', '')}",
+        reason=action.get("reason", ""),
+        risk=_risk_for_action(action),
+        tool=tool,
+        params=params,
+        target=action.get("params") or {},
+        safety_basis=(
+            "The referenced tool is write-safe-required and must be called only "
+            "after explicit approval."
+        ),
+        readback="Readback is provided by the referenced write-safe tool.",
+        rollback=action.get("rollback") or "MCP safety changelog rollback.",
+        manual_review=bool(action.get("manual_review")),
+        metadata={"priority": action.get("priority"), "kind": action.get("kind")},
+    )
+
+
+def _manual_check(topic: str, check: str, reason: str | None = None) -> dict:
+    row = {"topic": topic, "check": check}
+    if reason:
+        row["reason"] = reason
+    return row
 
 
 def register(mcp: FastMCP) -> None:
@@ -127,22 +189,33 @@ def register(mcp: FastMCP) -> None:
                 }
             )
 
-        return {
-            "ok": True,
-            "project": project,
-            "summary": {
-                "channels": len(channels),
-                "patterns": len(patterns),
-                "playlist_tracks": len(playlist_tracks),
-                "mixer_tracks": len(mixer_tracks),
-                "findings": len(findings),
-            },
-            "template_context": templates.compact_context(template_context),
-            "findings": findings,
-            "details": {
-                "unassigned_channels": unassigned_channels,
-            },
+        summary = {
+            "channels": len(channels),
+            "patterns": len(patterns),
+            "playlist_tracks": len(playlist_tracks),
+            "mixer_tracks": len(mixer_tracks),
+            "diagnostics": len(findings),
         }
+        diagnostics = [
+            _diagnostic_from_finding(finding, source="project_health")
+            for finding in findings
+        ]
+        return wr.workflow_report(
+            workflow="project_health",
+            title="Project Health Report",
+            mode="diagnostic",
+            status="Project health report generated",
+            summary=summary,
+            diagnostics=diagnostics,
+            metadata={
+                "project": project,
+                "template_context": templates.compact_context(template_context),
+                "details": {
+                    "unassigned_channels": unassigned_channels,
+                },
+            },
+            safety={"read_only": True, "requires_explicit_approval": False},
+        )
 
     @mcp.tool(annotations={"title": "Export readiness report", **_RO})
     def fl_export_readiness_report() -> dict:
@@ -151,16 +224,24 @@ def register(mcp: FastMCP) -> None:
         Safety: Read-Only.
         """
         report = fl_project_health_report()
-        findings = list(report.get("findings", []))
+        findings = list(report.get("diagnostics", []))
         blockers = [f for f in findings if f.get("severity") in ("high", "medium")]
-        return {
-            "ok": True,
-            "ready": len(blockers) == 0,
-            "blockers": blockers,
-            "advisories": [f for f in findings if f.get("severity") in ("low", "info")],
-            "kb_policy_refs": kb_policy.rule_refs(["mastering_after_mix_readiness"]),
-            "source": report,
-        }
+        ready = len(blockers) == 0
+        return wr.workflow_report(
+            workflow="export_readiness",
+            title="Export Readiness Report",
+            mode="diagnostic",
+            status="Ready for export" if ready else "Export blockers found",
+            summary={
+                "ready": ready,
+                "blockers": len(blockers),
+                "advisories": len(findings) - len(blockers),
+            },
+            diagnostics=findings,
+            kb_policy_refs=kb_policy.rule_refs(["mastering_after_mix_readiness"]),
+            metadata={"source_report": report.get("json_report", report)},
+            safety={"read_only": True, "requires_explicit_approval": False},
+        )
 
     @mcp.tool(annotations={"title": "Project dry-run fix plan", **_RO})
     def fl_project_dry_run_fix_plan(
@@ -171,8 +252,8 @@ def register(mcp: FastMCP) -> None:
         Safety: Read-Only.
         """
         report = fl_project_health_report()
-        findings = list(report.get("findings", []))
-        details = report.get("details", {})
+        findings = list(report.get("diagnostics", []))
+        details = report.get("metadata", {}).get("details", {})
         channels = fetch_all_pages(get_bridge(), protocol.CMD_CHANNEL_LIST, "channels").get(
             "channels", []
         )
@@ -193,8 +274,10 @@ def register(mcp: FastMCP) -> None:
                     "id": action_id,
                     "priority": "high",
                     "kind": "channel_routing",
-                    "tool": "fl_assign_channel_to_free_mixer_track",
-                    "params": {"channel": int(row["index"])},
+                    "tool": "fl_apply_project_cleanup_step",
+                    "params": {
+                        "routing": [{"channel": int(row["index"]), "mode": "free"}]
+                    },
                     "reason": "Channel is routed to Master only.",
                     "rollback": "single safe_write entry",
                 }
@@ -261,27 +344,29 @@ def register(mcp: FastMCP) -> None:
             actionable = actions
 
         readiness = fl_export_readiness_report()
-        return {
-            "ok": True,
-            "dry_run": True,
-            "summary": {
-                "findings": len(findings),
+        proposed_changes = [_proposal_from_action(action) for action in actionable]
+        return wr.workflow_report(
+            workflow="project_dry_run_fix_plan",
+            title="Project Dry-Run Fix Plan",
+            mode="proposal",
+            status="Dry-run fix plan generated",
+            summary={
+                "diagnostics": len(findings),
                 "planned_actions": len(actions),
                 "channels_scanned": len(channels),
                 "patterns_scanned": len(patterns),
                 "playlist_tracks_scanned": len(playlist_tracks),
             },
-            "source_report": {
-                "ready": readiness.get("ready"),
-                "blockers": readiness.get("blockers"),
-            },
-            "plan": actionable,
-            "notes": [
+            diagnostics=findings,
+            proposed_changes=proposed_changes,
+            notes=[
                 "This tool is read-only and applies no FL changes.",
                 "Execute one action at a time and verify readback before the next write.",
                 "Use fl_rollback_last_change immediately if a write result is unexpected.",
             ],
-        }
+            metadata={"source_report": readiness.get("json_report", readiness)},
+            safety={"read_only": True, "requires_explicit_approval": bool(proposed_changes)},
+        )
 
     @mcp.tool(annotations={"title": "Project health overview", **_RO})
     def fl_project_health_overview() -> dict:
@@ -313,28 +398,44 @@ def register(mcp: FastMCP) -> None:
         )
         template_context = templates.classify_topology(mixer_tracks, routing, chans)
 
-        return {
-            "status": "Overview Generated",
-            "metrics": {
+        diagnostics = []
+        if unrouted:
+            diagnostics.append(
+                wr.diagnostic(
+                    id="unrouted_channels",
+                    severity="medium",
+                    message=f"{unrouted} channels are routed only to Master.",
+                    evidence={"count": unrouted},
+                    source="project_health_overview",
+                )
+            )
+        return wr.workflow_report(
+            workflow="project_health_overview",
+            title="Project Health Overview",
+            mode="diagnostic",
+            status="Overview generated",
+            summary={
                 "total_channels": len(chans),
                 "unrouted_channels": unrouted,
                 "total_patterns": len(patterns),
                 "total_mixer_tracks": len(mixer_tracks),
             },
-            "template_context": templates.compact_context(template_context),
-            "recommendations": [
+            diagnostics=diagnostics,
+            notes=[
                 "Run fl_analyze_project_organization to find unnamed/uncolored channels.",
                 "Run fl_review_routing to find structural routing issues.",
                 "Run fl_inspect_audio_clips to find loud audio clips.",
                 "Run fl_review_mix or Mix Review watch mode to find clipping and EQ masking.",
             ],
-            "kb_policy_refs": kb_policy.rule_refs(
+            kb_policy_refs=kb_policy.rule_refs(
                 [
                     "preserve_existing_structure_first",
                     "mastering_after_mix_readiness",
                 ]
             ),
-        }
+            metadata={"template_context": templates.compact_context(template_context)},
+            safety={"read_only": True, "requires_explicit_approval": False},
+        )
 
     @mcp.tool(annotations={"title": "Project preflight check", **_RO})
     def fl_check_project_preflight() -> dict:
@@ -348,10 +449,13 @@ def register(mcp: FastMCP) -> None:
         chans = fetch_all_pages(bridge, protocol.CMD_CHANNEL_ROUTING_SUMMARY, "channels").get(
             "channels", []
         )
+        mixer_tracks = fetch_all_pages(bridge, protocol.CMD_MIXER_LIST_TRACKS, "tracks").get(
+            "tracks", []
+        )
         routing = fetch_all_pages(bridge, protocol.CMD_MIXER_GET_ROUTING_ALL, "routing").get(
             "routing", []
         )
-        template_context = templates.classify_topology(routing, routing, chans)
+        template_context = templates.classify_topology(mixer_tracks, routing, chans)
         unrouted = [
             c
             for c in chans
@@ -366,40 +470,140 @@ def register(mcp: FastMCP) -> None:
         if wmax and 0 in wmax:
             master_peak_db = md.lin_to_db(wmax.get(0))
 
-        blockers = []
+        diagnostics = []
         if unrouted:
-            blockers.append(f"{len(unrouted)} channels are unrouted (go straight to Master).")
+            diagnostics.append(
+                wr.diagnostic(
+                    id="unrouted_channels",
+                    severity="medium",
+                    message=f"{len(unrouted)} channels are unrouted (go straight to Master).",
+                    evidence={"count": len(unrouted)},
+                    source="project_preflight",
+                )
+            )
         if master_peak_db is not None and master_peak_db >= 0.0:
-            blockers.append(
-                f"Master peak from Mix Review watch is {master_peak_db:.1f} dBFS (output/render clipping risk)."
+            diagnostics.append(
+                wr.diagnostic(
+                    id="master_output_clipping_risk",
+                    severity="high",
+                    message=(
+                        f"Master peak from Mix Review watch is {master_peak_db:.1f} dBFS "
+                        "(output/render clipping risk)."
+                    ),
+                    evidence={"master_peak_db": round(master_peak_db, 1)},
+                    source="project_preflight",
+                    kb_rule_ids=["master_peak_boundary", "mix_doctor_master_output_boundary"],
+                )
             )
 
-        advisories = []
         if loud_audio_clips:
-            advisories.append(f"{len(loud_audio_clips)} audio clips are very loud (>80% vol).")
+            diagnostics.append(
+                wr.diagnostic(
+                    id="loud_audio_clips",
+                    severity="low",
+                    message=f"{len(loud_audio_clips)} audio clips are very loud (>80% vol).",
+                    evidence={"count": len(loud_audio_clips)},
+                    source="project_preflight",
+                )
+            )
         if master_peak_db is not None and -1.0 < master_peak_db < 0.0:
-            advisories.append(
-                f"Master peak from Mix Review watch is {master_peak_db:.1f} dBFS; leave more headroom before mastering/export."
+            diagnostics.append(
+                wr.diagnostic(
+                    id="master_low_headroom",
+                    severity="medium",
+                    message=(
+                        f"Master peak from Mix Review watch is {master_peak_db:.1f} dBFS; "
+                        "leave more headroom before mastering/export."
+                    ),
+                    evidence={"master_peak_db": round(master_peak_db, 1)},
+                    source="project_preflight",
+                    kb_rule_ids=["master_peak_boundary", "mastering_after_mix_readiness"],
+                )
             )
 
-        manual_checklist = [
-            "Run Mix Review watch mode through the loudest section if Master peak data is missing.",
-            "Check Audio Clip Stretch Mode manually; automatic Stretch Pro read/write is API-limited.",
-            "Check Audio Clip Normalize manually; automatic Normalize read/write is API-limited.",
-            "Keep FL Cloud Mastering, render, save, and export workflows manual in this MCP.",
+        manual_checks = [
+            _manual_check(
+                "mix_watch",
+                "Run Mix Review watch mode through the loudest section if Master peak data is missing.",
+            ),
+            _manual_check(
+                "audio_clip_stretch_mode",
+                "Check Audio Clip Stretch Mode manually; automatic Stretch Pro read/write is API-limited.",
+            ),
+            _manual_check(
+                "audio_clip_normalize",
+                "Check Audio Clip Normalize manually; automatic Normalize read/write is API-limited.",
+            ),
+            _manual_check(
+                "manual_export_boundaries",
+                "Keep FL Cloud Mastering, render, save, and export workflows manual in this MCP.",
+            ),
         ]
-
-        return {
-            "status": "Ready for Export" if not blockers else "Export Blockers Found",
-            "blockers": blockers,
-            "advisories": advisories,
-            "mix_readiness": {
-                "master_peak_db": round(master_peak_db, 1) if master_peak_db is not None else None,
-                "master_peak_source": "mix_review_watch" if master_peak_db is not None else None,
+        proposed_changes = []
+        if unrouted:
+            proposed_changes.append(
+                wr.proposed_change(
+                    id="preflight_route_one_unrouted_channel",
+                    title="Route one unrouted channel to a free mixer track",
+                    reason="Project preflight found channels routed only to Master.",
+                    risk="low",
+                    tool="fl_apply_project_cleanup_step",
+                    params={
+                        "routing": [
+                            {"channel": int(unrouted[0].get("channel", 0)), "mode": "free"}
+                        ],
+                        "approved": True,
+                    },
+                    target={"channel": int(unrouted[0].get("channel", 0))},
+                    safety_basis=(
+                        "Single channel target write through the organizer apply wrapper "
+                        "and safety layer."
+                    ),
+                    readback="Channel target mixer track is read back after the write.",
+                    rollback="MCP changelog restores the prior channel target.",
+                )
+            )
+        if master_peak_db is not None and master_peak_db > -3.0:
+            proposed_changes.append(
+                wr.proposed_change(
+                    id="preflight_gain_stage_review",
+                    title="Run gain-stage review before export",
+                    reason="Master peak leaves little or no export headroom.",
+                    risk="read-only",
+                    tool="fl_gain_stage",
+                    params={},
+                    safety_basis="Read-only review; applies no FL changes.",
+                    readback="No write is performed.",
+                    rollback="No rollback needed for read-only review.",
+                    requires_explicit_approval=False,
+                )
+            )
+        ready = not any(d.get("severity") in {"high", "medium"} for d in diagnostics)
+        return wr.workflow_report(
+            workflow="project_preflight",
+            title="Project Preflight Report",
+            mode="diagnostic",
+            status="Ready for export" if ready else "Export blockers found",
+            summary={
+                "ready": ready,
+                "diagnostics": len(diagnostics),
+                "proposed_changes": len(proposed_changes),
             },
-            "template_context": templates.compact_context(template_context),
-            "manual_checklist": manual_checklist,
-            "kb_policy_refs": kb_policy.rule_refs(
+            diagnostics=diagnostics,
+            proposed_changes=proposed_changes,
+            manual_checks=manual_checks,
+            metadata={
+                "mix_readiness": {
+                    "master_peak_db": round(master_peak_db, 1)
+                    if master_peak_db is not None
+                    else None,
+                    "master_peak_source": "mix_review_watch"
+                    if master_peak_db is not None
+                    else None,
+                },
+                "template_context": templates.compact_context(template_context),
+            },
+            kb_policy_refs=kb_policy.rule_refs(
                 [
                     "master_peak_boundary",
                     "mix_doctor_master_output_boundary",
@@ -407,7 +611,8 @@ def register(mcp: FastMCP) -> None:
                     "fl_cloud_mastering_manual_only",
                 ]
             ),
-        }
+            safety={"read_only": True, "requires_explicit_approval": bool(proposed_changes)},
+        )
 
     @mcp.tool(annotations={"title": "Start guided cleanup assistant", **_RO})
     def fl_start_guided_cleanup() -> dict:
