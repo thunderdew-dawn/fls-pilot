@@ -62,9 +62,27 @@ For optional audio/melody analysis extras:
     - **Output list**: Click `FLStudioPilot TX`, tick **Enable**, and set **Port** to `42` (MUST match the input port).
 3. Go to **View > Script output**. It should show `[FLStudioPilot] Ready`.
 
-## 4. Run Setup Doctor
+## 4. Run Control Center
 
-Before starting write-capable workflows, run the read-only Setup Doctor:
+![Control Center](../assets/logo-control-center.png)
+
+Recommended first-run path: open the local Control Center and follow its guided
+setup:
+
+- **Windows (.venv)**: `.venv\Scripts\fls-pilot-control-center --open`
+- **macOS (.venv)**: `.venv/bin/fls-pilot-control-center --open`
+*(If you installed via pipx, simply run `fls-pilot-control-center --open`)*
+
+The Control Center stays read-only against the FL Studio project. It asks you to
+perform manual FL Studio actions, then reruns the relevant checks. It can also
+start/stop the local daemon and ChatGPT SSE server that it manages. When Python
+and the core dependencies are available, Control Center attempts to start the
+local daemon automatically. If the default daemon port is busy, it starts on the
+recommended fallback port and updates the snippets and setup report. When it
+starts the SSE server, it immediately runs an MCP connection test through the
+displayed SSE URL and shows the result in Guided Setup under MCP SSE.
+
+CLI fallback: before starting write-capable workflows, run the read-only Setup Doctor:
 
 - **Windows (.venv)**: `.venv\Scripts\fls-pilot-doctor`
 - **macOS (.venv)**: `.venv/bin/fls-pilot-doctor`
@@ -87,31 +105,36 @@ For release validation across both MCP transports:
 - **macOS (.venv)**: `.venv/bin/fls-pilot-doctor --all-transports`
 *(If you installed via pipx, simply run `fls-pilot-doctor --all-transports`)*
 
-## 5. Open the Local Dashboard
+## 5. Print the Local Status Summary
 
-Export the read-only local dashboard:
+Print the read-only local status data:
 
-- **Windows (.venv)**: `.venv\Scripts\fls-pilot-dashboard`
-- **macOS (.venv)**: `.venv/bin/fls-pilot-dashboard`
-*(If you installed via pipx, simply run `fls-pilot-dashboard`)*
+- **Windows (.venv)**: `.venv\Scripts\fls-pilot-status`
+- **macOS (.venv)**: `.venv/bin/fls-pilot-status`
+*(If you installed via pipx, simply run `fls-pilot-status`)*
 
-The dashboard uses existing read-only bridge and resource reads. It separates
-live bridge data from unavailable or API-limited signals and never applies FL
-Studio project changes. To serve it locally and open a browser:
+The status CLI tool prints bridge/project/resource state only, clearly marks unavailable or API-limited data, and does not modify FL Studio.
 
-- **Windows (.venv)**: `.venv\Scripts\fls-pilot-dashboard --serve --open`
-- **macOS (.venv)**: `.venv/bin/fls-pilot-dashboard --serve --open`
-*(If you installed via pipx, simply run `fls-pilot-dashboard --serve --open`)*
+Default local ports:
+
+| Component | Default | Fallback behavior |
+|---|---:|---|
+| Control Center | `8766` | Uses the next available port and opens/prints the actual URL. |
+| ChatGPT SSE server | `8080` | Control Center-managed SSE uses the next available port and updates snippets. |
+| TCP daemon | `9787` | Control Center detects a healthy external daemon, auto-starts its own daemon when possible, or uses a fallback port. |
 
 ## 6. Connect to your MCP Client
 
 ### Option A: Claude Desktop, Cursor, or other stdio clients
 
-1. Start the MIDI bridge daemon (recommended so MIDI ports are held by a stable background process):
+1. Recommended: open Control Center first. It attempts to start the MIDI bridge
+   daemon automatically after the environment checks pass.
+2. Terminal fallback: start the MIDI bridge daemon manually if Control Center
+   cannot manage it:
     - Windows (.venv): Run `.venv\Scripts\fls-pilot-daemon`
     - macOS (.venv): Run `.venv/bin/fls-pilot-daemon`
     *(If using pipx, run `fls-pilot-daemon`)*
-2. Configure your client (e.g., Claude Desktop). Add this to your configuration file (Windows: `%APPDATA%\Claude\claude_desktop_config.json`, macOS: `~/Library/Application Support/Claude/claude_desktop_config.json`):
+3. Configure your client (e.g., Claude Desktop). Add this to your configuration file (Windows: `%APPDATA%\Claude\claude_desktop_config.json`, macOS: `~/Library/Application Support/Claude/claude_desktop_config.json`):
     
     ```json
     {
@@ -132,16 +155,22 @@ Studio project changes. To serve it locally and open a browser:
 
 ChatGPT Desktop does not support local stdio subprocesses and requires a remote/SSE connection:
 
-1. Start the MIDI bridge daemon in a terminal:
+Recommended: start the SSE server from the Control Center and copy the displayed
+ChatGPT URL. It will reflect any fallback port selected because `8080` was busy.
+Guided Setup shows the SSE MCP connection test result after the server starts.
+
+1. Recommended: start the MIDI bridge daemon from Control Center. It will use
+   the configured port or a detected fallback port.
+2. Terminal fallback:
     - Windows (.venv): `.venv\Scripts\fls-pilot-daemon`
     - macOS (.venv): `.venv/bin/fls-pilot-daemon`
     *(If using pipx, run `fls-pilot-daemon`)*
-2. Start the MCP server with the SSE transport in another terminal:
+3. Start the MCP server with the SSE transport in another terminal:
     - Windows (.venv): `set FLS_PILOT_TRANSPORT=tcp && .venv\Scripts\fls-pilot --sse --port 8080`
     - macOS (.venv): `export FLS_PILOT_TRANSPORT=tcp && .venv/bin/fls-pilot --sse --port 8080`
     *(If using pipx, run `fls-pilot --sse --port 8080`)*
-3. Enable Developer Mode in ChatGPT Desktop (Settings > Developer).
-4. Go to **Settings > Developer > MCP**, click **Add New Server**:
+4. Enable Developer Mode in ChatGPT Desktop (Settings > Developer).
+5. Go to **Settings > Developer > MCP**, click **Add New Server**:
     - **Name**: `FL Studio`
     - **Type**: `sse`
     - **URL**: `http://localhost:8080/sse`
@@ -149,7 +178,7 @@ ChatGPT Desktop does not support local stdio subprocesses and requires a remote/
 
 ## 7. Arm the Note Bridge (Per Session)
 
-Open the FL Studio Piano Roll, click the arrow menu (top-left), and run **MCP_Apply** once from the **File > Script** menu. This arms the note bridge for composition tools.
+Open the FL Studio Piano Roll, click the arrow menu (top-left), and run **MCP_Apply** once from the **File > Script** menu. This arms the note bridge for composition tools only. It is not required for read-only Mix Review, Routing Review, Project Health, or other scan/report workflows.
 
 Verify the connection by asking your AI assistant to run `fl_transport(action="ping")`.
 

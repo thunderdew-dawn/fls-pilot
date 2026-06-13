@@ -21,10 +21,9 @@
 
 [![Documentation Status](https://readthedocs.org/projects/fl-studio-pilot/badge/?version=v3-alpha)](https://fl-studio-pilot.readthedocs.io/en/v3-alpha/)
 
+![FL Studio Pilot](../assets/fls-pilot-logo-with-text.png)
 
-**Rollback-first FL Studio control for MCP-compatible LLMs: AI mixing, composition, project cleanup, routing review, and production assistance through natural language.**
-
-*The LLM assistant diagnosing and fixing a mix in FL Studio through natural language.*
+**FL Studio control for MCP-compatible LLMs: AI mixing, composition, project cleanup, routing review, analysises and production assistance through natural language.**
 
 ## Overview
 
@@ -65,15 +64,25 @@ The highest-value entry points for day-to-day production work are:
 
 ```batchfile
 scripts\install_windows.bat        :: Windows: controller + server + note bridge
-.venv\Scripts\fls-pilot-daemon     :: start the bridge, keep it running
+.venv\Scripts\fls-pilot-control-center --open
 ```
 
 ```shell
 ./scripts/install_macos.sh         # macOS: controller + server + note bridge
-.venv/bin/fls-pilot-daemon         # start the bridge, keep it running
+.venv/bin/fls-pilot-control-center --open
 ```
 
-Wire the two virtual MIDI ports in FL (Options > MIDI Settings), arm `MCP_Apply` once in the piano roll, then ask the LLM assistant in plain language:
+Follow the local Control Center's guided setup. It stays read-only while it
+checks MIDI ports, FL Studio controller heartbeat, daemon/SSE status, MCP client
+snippets, and manual actions such as opening FL Studio or running `MCP_Apply`.
+After Python and the core dependencies pass, Control Center attempts to start
+the local daemon automatically and reports the selected port. When Control
+Center starts the SSE server, it immediately tests the MCP connection through
+that SSE URL and shows the result in Guided Setup.
+`MCP_Apply` is only required for note-writing/composition tools, not for
+read-only review workflows.
+
+After setup, ask the LLM assistant in plain language:
 
 > "Scan my mix and tell me what's wrong." / "Set up a vocal chain from my plugins." / "Export this arrangement to MIDI."
 
@@ -119,17 +128,26 @@ For release validation, smoke-test both MCP transports explicitly:
 - **macOS (.venv)**: `.venv/bin/fls-pilot-doctor --all-transports`
 *(If you installed via pipx, simply run `fls-pilot-doctor --all-transports`)*
 
-To export a local read-only dashboard page:
+To print a read-only local status summary:
 
-- **Windows (.venv)**: `.venv\Scripts\fls-pilot-dashboard`
-- **macOS (.venv)**: `.venv/bin/fls-pilot-dashboard`
-*(If you installed via pipx, simply run `fls-pilot-dashboard`)*
+- **Windows (.venv)**: `.venv\Scripts\fls-pilot-status`
+- **macOS (.venv)**: `.venv/bin/fls-pilot-status`
+*(If you installed via pipx, simply run `fls-pilot-status`)*
 
-The dashboard writes a static HTML/CSS/JS page under `scratch/dashboard/site`
-when run from this repository. It reads bridge/project/resource state only,
-clearly marks unavailable or API-limited data, and does not modify FL Studio.
-Use `.venv\Scripts\fls-pilot-dashboard --serve --open` (or `.venv/bin/fls-pilot-dashboard --serve --open` on macOS) to view it through a local browser
-server. *(If you installed via pipx, simply run `fls-pilot-dashboard --serve --open`)*
+The status CLI tool prints bridge/project/resource state only, clearly marks unavailable or API-limited data, and does not modify FL Studio.
+
+To open the guided first-run and runtime Control Center:
+
+- **Windows (.venv)**: `.venv\Scripts\fls-pilot-control-center --open`
+- **macOS (.venv)**: `.venv/bin/fls-pilot-control-center --open`
+*(If you installed via pipx, simply run `fls-pilot-control-center --open`)*
+
+Default local ports are: Control Center `8766`, ChatGPT/SSE
+`8080`, and TCP daemon `9787`. The Control Center detects conflicts and shows
+the actual selected fallback port in status, snippets, and setup reports. When
+the environment is ready, it attempts to start its own daemon automatically; a
+daemon started outside Control Center is detected but not stopped by Control
+Center.
 
 ## Documentation
 

@@ -353,6 +353,55 @@ def test_orchestration_tcp_fail_defers_fl_controller():
     mock_fl.assert_not_called()
 
 
+def test_orchestration_tcp_mode_uses_explicit_daemon_and_advisory_local_midi():
+    bridge = mock.Mock()
+    bridge.heartbeat_age.return_value = 0.1
+    bridge.is_alive.return_value = True
+    bridge.call.return_value = {"build_marker": "TCP_TEST"}
+
+    with (
+        _p("check_python_environment", return_value=[]),
+        _p("check_core_dependencies", return_value=_ok("Core Dependencies")),
+        _p("check_optional_dependencies", return_value=[]),
+        _p("check_mcp_client_hints", return_value=[]),
+        _p("check_mcp_server_entrypoint", return_value=_ok("MCP Server Entrypoint")),
+        _p("check_mcp_stdio_transport", return_value=[]),
+        _p(
+            "check_midi_ports",
+            return_value=[
+                doctor.Finding(
+                    "MIDI/IAC/loopMIDI Ports",
+                    "advisory",
+                    "manual_check",
+                    "local MIDI not visible",
+                    "",
+                    "test",
+                )
+            ],
+        ) as mock_midi,
+        _p("check_tcp_daemon", return_value=_ok("TCP Daemon / Bridge")) as mock_tcp,
+        _p("check_piano_roll_bridge", return_value=[]),
+        mock.patch("fls_pilot.doctor.connection.TCPBridge", return_value=bridge) as mock_bridge,
+    ):
+        findings = doctor.run_all_checks(
+            bridge_transport="tcp",
+            tcp_host="127.0.0.2",
+            tcp_port=9791,
+        )
+
+    statuses = {f.component: f.status for f in findings}
+    ping = next(f for f in findings if f.component == "Read-only Ping/Status")
+    tcp_config = mock_tcp.call_args.args[0]
+    mock_midi.assert_called_once_with(severity="advisory", failed_status="manual_check")
+    assert tcp_config.host == "127.0.0.2"
+    assert tcp_config.port == 9791
+    mock_bridge.assert_called_once_with("127.0.0.2", 9791)
+    assert statuses["MIDI/IAC/loopMIDI Ports"] == "manual_check"
+    assert statuses["FL Studio Controller Script"] == "ok"
+    assert ping.status == "ok"
+    assert "TCP_TEST" in ping.evidence
+
+
 def test_orchestration_all_ok_no_deferrals():
     with (
         _p("check_python_environment", return_value=_ok("Python Environment")),

@@ -1,0 +1,221 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>fls-pilot Control Center</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <div class="brand">
+        <span class="brand-mark-wrap">
+          <img src="assets/fls-pilot-logo-with-text.png" alt="fls-pilot logo" class="brand-mark" />
+        </span>
+        <span class="brand-subtitle">Control Center</span>
+      </div>
+      <div class="topbar-status" aria-label="Status">
+        <span class="pill pill-live" id="bridge-pill">Loading</span>
+        <span class="pill pill-version" id="version-pill">...</span>
+        <span class="divider"></span>
+        <span class="last-refresh">Last Refresh</span>
+        <span class="clock" id="refresh-time">--:--:--</span>
+        <button class="icon-button" id="refresh-button" type="button" title="Reload status data">
+          <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none">
+            <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
+            <path d="M3 3v5h5"></path>
+          </svg>
+          <span class="sr-only">Reload status data</span>
+        </button>
+      </div>
+    </header>
+
+    <aside class="sidebar" aria-label="Navigation">
+      <nav class="nav-list">
+        <button class="nav-item active" type="button" data-target="project_data">
+          <span aria-hidden="true">&#x25a4;</span><span>Live Data</span>
+        </button>
+        <button class="nav-item" type="button" data-target="runtime">
+          <span aria-hidden="true">&#x25b6;</span><span>Servers</span>
+        </button>
+        <button class="nav-item" type="button" data-target="clients">
+          <span aria-hidden="true">&#x25a2;</span><span>AI Clients</span>
+        </button>
+        <button class="nav-item" type="button" data-target="setup">
+          <span aria-hidden="true">&#x2699;</span><span>Setup</span>
+        </button>
+        <button class="nav-item" type="button" data-target="support">
+          <span aria-hidden="true">&#x26A0;</span><span>Support</span>
+        </button>
+
+      </nav>
+      <div class="connection-card">
+        <span class="shield" aria-hidden="true">&#x25c7;</span>
+        <div>
+          <span class="eyebrow">Connected To</span>
+          <strong id="connected-target">FL Studio</strong>
+          <span id="connected-version">Local daemon API</span>
+        </div>
+        <span class="connection-dot" id="connection-dot"></span>
+      </div>
+    </aside>
+
+    <main class="status-report" id="setup" style="display: none;">
+      <section class="hero">
+        <div>
+          <h1>Guided Setup</h1>
+          <p>Follow the next suggested action. Checks are read-only and do not modify FL Studio projects.</p>
+        </div>
+      </section>
+      <section class="grid" id="setup-steps"></section>
+    </main>
+
+    <main class="status-report" id="runtime" style="display: none;">
+      <section class="hero">
+        <div>
+          <h1>Servers</h1>
+          <p>Start and stop only processes launched by this Control Center.</p>
+        </div>
+      </section>
+
+      <section class="grid" id="runtime-status"></section>
+    </main>
+
+    <main class="status-report" id="clients" style="display: none;">
+      <section class="hero">
+        <div>
+          <h1>AI Clients</h1>
+          <p>Copy these values into your MCP client. Config files are not edited automatically.</p>
+        </div>
+      </section>
+      <section class="grid" id="client-snippets"></section>
+    </main>
+
+    <main class="status-report" id="support" style="display: none;">
+      <section class="hero">
+        <div>
+          <h1>Support Report</h1>
+          <p>Use this when reporting setup problems.</p>
+        </div>
+        <div style="display: flex; gap: 12px;">
+          <button class="ghost-button" id="copy-report" type="button">Copy setup report</button>
+          <button class="ghost-button" id="download-report" type="button">Download setup report</button>
+        </div>
+      </section>
+      <pre id="setup-report" class="panel"
+        style="padding: 16px; margin-top: 16px; color: #a5b4fc; white-space: pre-wrap; font-family: monospace;"></pre>
+    </main>
+
+    <main class="status-report" id="project_data" style="display: block; position: relative;">
+      <div id="disconnected-overlay" class="disconnected-overlay" style="display: none;">
+        <div class="disconnected-content">
+          <p>FL Studio data is currently unavailable. Run Setup diagnosis for the next safe check.</p>
+          <button class="ghost-button" id="disconnected-setup-button" type="button">Open Setup</button>
+        </div>
+      </div>
+      <section class="hero">
+        <div>
+          <h1>Live Data</h1>
+          <p>Live project metrics and evidence feed.</p>
+        </div>
+      </section>
+      <section class="grid" id="project-data-grid">
+        <article class="panel panel-project">
+          <div class="panel-heading">
+            <span class="panel-index">1</span>
+            <h2>Project Snapshot</h2>
+            <span class="panel-icon" aria-hidden="true">&#x25a4;</span>
+          </div>
+          <div class="counter-grid">
+            <div><strong id="tempo-value">N/A</strong><span>BPM</span></div>
+            <div><strong id="channel-count">N/A</strong><span>Channels</span></div>
+            <div><strong id="mixer-count">N/A</strong><span>Mixer</span></div>
+            <div><strong id="pattern-count">N/A</strong><span>Patterns</span></div>
+            <div><strong id="playlist-count">N/A</strong><span>Playlist Tracks</span></div>
+          </div>
+        </article>
+
+        <article class="panel transport-panel">
+          <div class="panel-heading">
+            <span class="panel-index">2</span>
+            <h2>Transport</h2>
+          </div>
+          <div class="transport-layout">
+            <dl class="transport-stats">
+              <div>
+                <dt>Position</dt>
+                <dd id="song-position">N/A</dd>
+              </div>
+              <div>
+                <dt>Record</dt>
+                <dd id="record-state" class="small-pill">N/A</dd>
+              </div>
+            </dl>
+            <div class="status-orb" id="status-orb" aria-hidden="true">
+              <span></span>
+            </div>
+          </div>
+          <div class="wave-bars" aria-hidden="true"></div>
+        </article>
+
+        <article class="panel" id="safety">
+          <div class="panel-heading">
+            <span class="panel-index">3</span>
+            <h2>Safety</h2>
+            <span class="panel-icon" aria-hidden="true">&#x2662;</span>
+          </div>
+          <ul class="safety-list">
+            <li><span>Read-only Status</span><strong id="read-only-state">YES</strong></li>
+            <li><span>Rollback Available</span><strong id="rollback-state">N/A</strong></li>
+            <li><span>Dry-run Available</span><strong id="dry-run-state">YES</strong></li>
+          </ul>
+        </article>
+
+        <article class="panel evidence-panel" id="evidence">
+          <div class="panel-heading">
+            <span class="panel-index">4</span>
+            <h2>Evidence Feed</h2>
+          </div>
+          <div class="evidence-table" id="evidence-table"></div>
+        </article>
+      </section>
+    </main>
+
+    <footer class="statusbar">
+      <div>
+        <span aria-hidden="true">&#x25a3;</span>
+        <strong>Mode: CONTROL CENTER</strong>
+        <span>Manage your FL Studio pilot infrastructure.</span>
+      </div>
+      <div id="footer-cc-port" style="margin-left: auto; font-size: 11px; opacity: 0.8;"></div>
+    </footer>
+  </div>
+
+  <div id="success-overlay" class="loading-overlay" style="display: none; z-index: 10000; backdrop-filter: blur(8px);">
+    <article class="panel setup-success-layer" style="max-width: 480px; margin: 20px; box-shadow: 0 40px 100px rgba(0,0,0,0.6);">
+      <div class="panel-heading">
+        <h2 style="font-size: 18px;">Congratulations, setup is up and running.</h2>
+        <span class="evidence-state" style="margin-left: auto; font-size: 11px; color: #70fba0; background: rgba(27, 228, 126, 0.14); border: 1px solid rgba(54, 244, 152, 0.44); border-radius: 8px; padding: 2px 10px;">OK</span>
+      </div>
+      <p class="panel-note" style="margin: 20px 26px; white-space: pre-wrap; line-height: 1.5;">FL Studio values are readable. Check out Live Data for live information and AI Clients to set up LLM agents to use FL Studio Pilot.</p>
+      <div style="padding: 0 26px 20px; display: flex; gap: 8px;">
+        <button class="ghost-button" onclick="document.getElementById('success-overlay').style.display='none'; selectPanel('project_data')">Live Data</button>
+        <button class="ghost-button" onclick="document.getElementById('success-overlay').style.display='none'; selectPanel('clients')">AI Clients</button>
+      </div>
+    </article>
+  </div>
+
+  <div id="loading-overlay" class="loading-overlay" style="display: none;">
+    <div class="loading-content">
+      <div class="spinner"></div>
+      <p id="loading-text">performing tests ...</p>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+
+</html>
