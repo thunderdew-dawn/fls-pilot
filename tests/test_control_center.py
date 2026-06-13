@@ -49,13 +49,13 @@ def test_status_groups_doctor_findings(monkeypatch):
     assert status["readiness"]["read_only_review_ready"] is True
 
 
-def test_status_uses_selected_tcp_endpoint_for_doctor_and_dashboard(monkeypatch):
+def test_status_uses_selected_tcp_endpoint_for_doctor_and_status(monkeypatch):
     findings = [
         _finding("TCP Daemon / Bridge"),
         _finding("FL Studio Controller Script"),
     ]
     doctor_calls = []
-    dashboard_calls = []
+    status_calls = []
 
     class FakeTCPBridge:
         def __init__(self, host, port):  # noqa: ANN001
@@ -66,13 +66,13 @@ def test_status_uses_selected_tcp_endpoint_for_doctor_and_dashboard(monkeypatch)
         doctor_calls.append(kwargs)
         return findings
 
-    def fake_dashboard_snapshot(**kwargs):  # noqa: ANN003, ANN202
+    def fake_status_snapshot(**kwargs):  # noqa: ANN003, ANN202
         bridge = kwargs["bridge_factory"]()
-        dashboard_calls.append((bridge.host, bridge.port))
+        status_calls.append((bridge.host, bridge.port))
         return {"bridge": {"state": "live"}, "project": {}}
 
     monkeypatch.setattr(control_center.doctor, "run_all_checks", fake_run_all_checks)
-    monkeypatch.setattr(control_center, "collect_dashboard_snapshot", fake_dashboard_snapshot)
+    monkeypatch.setattr(control_center, "collect_status_report", fake_status_snapshot)
     monkeypatch.setattr(control_center, "TCPBridge", FakeTCPBridge)
     state = _state()
     state.daemon_fallback_port = 9788
@@ -82,7 +82,7 @@ def test_status_uses_selected_tcp_endpoint_for_doctor_and_dashboard(monkeypatch)
     assert doctor_calls[0]["bridge_transport"] == "tcp"
     assert doctor_calls[0]["tcp_host"] == "127.0.0.1"
     assert doctor_calls[0]["tcp_port"] == 9788
-    assert dashboard_calls == [("127.0.0.1", 9788)]
+    assert status_calls == [("127.0.0.1", 9788)]
 
 
 def test_status_autostarts_daemon_when_environment_is_ready(monkeypatch):
@@ -129,7 +129,7 @@ def test_status_autostarts_daemon_when_environment_is_ready(monkeypatch):
     monkeypatch.setattr(control_center, "_spawn", fake_spawn)
     monkeypatch.setattr(
         control_center,
-        "collect_dashboard_snapshot",
+        "collect_status_report",
         lambda **_: {"bridge": {"state": "unavailable"}, "project": {}},
     )
     state = _state()
@@ -177,7 +177,7 @@ def test_setup_guidance_prioritizes_midi_manual_action(monkeypatch):
     monkeypatch.setattr(control_center, "_daemon_health", lambda host, port: {"reachable": True})
     monkeypatch.setattr(
         control_center,
-        "collect_dashboard_snapshot",
+        "collect_status_report",
         lambda **_: {"bridge": {"state": "unavailable"}, "project": {}},
     )
     state = _state()
@@ -226,7 +226,7 @@ def test_status_visualizes_running_sse_probe_in_guided_setup(monkeypatch):
     monkeypatch.setattr(control_center, "_probe_sse_connection", fake_probe)
     monkeypatch.setattr(
         control_center,
-        "collect_dashboard_snapshot",
+        "collect_status_report",
         lambda **_: {"bridge": {"state": "unavailable"}, "project": {}},
     )
 

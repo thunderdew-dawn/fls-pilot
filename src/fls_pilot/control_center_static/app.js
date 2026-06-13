@@ -61,7 +61,7 @@ async function refresh() {
 function render() {
   if (!state.status) return;
   
-  const bridge = state.status.dashboard?.bridge || {};
+  const bridge = state.status.status_report?.bridge || {};
   const live = bridge.state === "live";
 
   // Topbar readiness
@@ -193,9 +193,9 @@ function groupText(group) {
 }
 
 function hasLiveFlData() {
-  const dashboard = state.status?.dashboard || {};
-  const bridge = dashboard.bridge || {};
-  const project = dashboard.project || {};
+  const status_report = state.status?.status_report || {};
+  const bridge = status_report.bridge || {};
+  const project = status_report.project || {};
   return bridge.state === "live" && project.state === "live";
 }
 
@@ -398,9 +398,9 @@ function renderRuntime() {
 }
 
 function renderConnection() {
-  if (!state.status || !state.status.dashboard) return;
-  const bridge = state.status.dashboard.bridge || {};
-  const project = state.status.dashboard.project || {};
+  if (!state.status || !state.status.status_report) return;
+  const bridge = state.status.status_report.bridge || {};
+  const project = state.status.status_report.project || {};
   const live = bridge.state === "live";
   
   const card = document.querySelector(".connection-card");
@@ -654,11 +654,11 @@ function formatPosition(value) {
 // Project Data rendering
 function renderProjectData() {
   const disconnectedOverlay = document.getElementById("disconnected-overlay");
-  if (!state.status || !state.status.dashboard) {
+  if (!state.status || !state.status.status_report) {
     if (disconnectedOverlay) disconnectedOverlay.style.display = "flex";
     return;
   }
-  const data = state.status.dashboard;
+  const data = state.status.status_report;
   const bridge = data.bridge || {};
   const live = bridge.state === "live";
 
@@ -759,7 +759,7 @@ function selectDashboard(targetId) {
   document.querySelectorAll(".nav-item").forEach((el) => {
     el.classList.toggle("active", el.dataset.target === targetId);
   });
-  document.querySelectorAll(".dashboard").forEach((el) => {
+  document.querySelectorAll(".status-report").forEach((el) => {
     el.classList.toggle("active", el.id === targetId);
     el.style.display = el.id === targetId ? "block" : "none";
   });

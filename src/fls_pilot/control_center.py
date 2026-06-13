@@ -24,7 +24,7 @@ from typing import Any
 
 from . import doctor
 from .connection import DEFAULT_TCP_HOST, DEFAULT_TCP_PORT, TCPBridge
-from .dashboard import collect_dashboard_snapshot
+from .status import collect_status as collect_status_report
 from .runtime_config import (
     DEFAULT_CONTROL_CENTER_HOST,
     DEFAULT_CONTROL_CENTER_PORT,
@@ -141,7 +141,7 @@ def collect_status(state: ControlCenterState, *, refresh: bool = True) -> dict[s
         _sync_sse_probe_state(state, refresh=refresh)
         process_state = _process_status(state)
         ports = _port_state(state)
-        dashboard_data = collect_dashboard_snapshot(
+        status_report_data = collect_status_report(
             offline=False,
             bridge_factory=lambda: TCPBridge(daemon_host, daemon_port),
         )
@@ -177,7 +177,7 @@ def collect_status(state: ControlCenterState, *, refresh: bool = True) -> dict[s
                 sse_probe=state.sse_probe,
             ),
             "snippets": client_snippets(state),
-            "dashboard": dashboard_data,
+            "status_report": status_report_data,
         }
 
 
@@ -908,7 +908,7 @@ def _port_state(state: ControlCenterState) -> dict[str, dict[str, Any]]:
             "selected_port": daemon_selected,
             "fallback_port": state.daemon_fallback_port,
         },
-        "dashboard": tcp_port_status(DEFAULT_CONTROL_CENTER_HOST, 8765),
+        "status": tcp_port_status(DEFAULT_CONTROL_CENTER_HOST, 8765),
     }
 
 

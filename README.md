@@ -129,17 +129,13 @@ For release validation, smoke-test both MCP transports explicitly:
 - **macOS (.venv)**: `.venv/bin/fls-pilot-doctor --all-transports`
 *(If you installed via pipx, simply run `fls-pilot-doctor --all-transports`)*
 
-To export a local read-only dashboard page:
+To print a read-only local status summary:
 
-- **Windows (.venv)**: `.venv\Scripts\fls-pilot-dashboard`
-- **macOS (.venv)**: `.venv/bin/fls-pilot-dashboard`
-*(If you installed via pipx, simply run `fls-pilot-dashboard`)*
+- **Windows (.venv)**: `.venv\Scripts\fls-pilot-status`
+- **macOS (.venv)**: `.venv/bin/fls-pilot-status`
+*(If you installed via pipx, simply run `fls-pilot-status`)*
 
-The dashboard writes a static HTML/CSS/JS page under `scratch/dashboard/site`
-when run from this repository. It reads bridge/project/resource state only,
-clearly marks unavailable or API-limited data, and does not modify FL Studio.
-Use `.venv\Scripts\fls-pilot-dashboard --serve --open` (or `.venv/bin/fls-pilot-dashboard --serve --open` on macOS) to view it through a local browser
-server. *(If you installed via pipx, simply run `fls-pilot-dashboard --serve --open`)*
+The status CLI tool prints bridge/project/resource state only, clearly marks unavailable or API-limited data, and does not modify FL Studio.
 
 To open the guided first-run and runtime Control Center:
 
@@ -147,7 +143,7 @@ To open the guided first-run and runtime Control Center:
 - **macOS (.venv)**: `.venv/bin/fls-pilot-control-center --open`
 *(If you installed via pipx, simply run `fls-pilot-control-center --open`)*
 
-Default local ports are: Control Center `8766`, dashboard `8765`, ChatGPT/SSE
+Default local ports are: Control Center `8766`, ChatGPT/SSE
 `8080`, and TCP daemon `9787`. The Control Center detects conflicts and shows
 the actual selected fallback port in status, snippets, and setup reports. When
 the environment is ready, it attempts to start its own daemon automatically; a

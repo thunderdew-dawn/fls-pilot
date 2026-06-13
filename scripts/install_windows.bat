@@ -141,10 +141,12 @@ echo   6. Each session: open the Piano roll, and from its Scripting menu run "MC
 echo        once (this arms note-writing). Then ask your AI assistant to call fl_transport(action="ping").
 echo        MCP_Apply is not required for read-only review workflows.
 echo.
-echo  Default ports: Control Center 8766, dashboard 8765, ChatGPT SSE 8080, daemon 9787.
+echo  Default ports: Control Center 8766, ChatGPT SSE 8080, daemon 9787.
 echo  The Control Center detects conflicts and shows the actual or recommended fallback.
 echo.
 echo  Optional audio features:   !CMD_OPT! ".[audio]"      (tempo/key + melody)
 echo                             !CMD_OPT! ".[audio,audio-accurate]"  (+ CREPE)
 echo.
+echo Starting Control Center in browser...
+!CMD_CONTROL! --open
 endlocal

@@ -103,28 +103,21 @@ For release validation across both MCP transports:
 - **macOS (.venv)**: `.venv/bin/fls-pilot-doctor --all-transports`
 *(If you installed via pipx, simply run `fls-pilot-doctor --all-transports`)*
 
-## 5. Open the Local Dashboard
+## 5. Print the Local Status Summary
 
-Export the read-only local dashboard:
+Print the read-only local status data:
 
-- **Windows (.venv)**: `.venv\Scripts\fls-pilot-dashboard`
-- **macOS (.venv)**: `.venv/bin/fls-pilot-dashboard`
-*(If you installed via pipx, simply run `fls-pilot-dashboard`)*
+- **Windows (.venv)**: `.venv\Scripts\fls-pilot-status`
+- **macOS (.venv)**: `.venv/bin/fls-pilot-status`
+*(If you installed via pipx, simply run `fls-pilot-status`)*
 
-The dashboard uses existing read-only bridge and resource reads. It separates
-live bridge data from unavailable or API-limited signals and never applies FL
-Studio project changes. To serve it locally and open a browser:
-
-- **Windows (.venv)**: `.venv\Scripts\fls-pilot-dashboard --serve --open`
-- **macOS (.venv)**: `.venv/bin/fls-pilot-dashboard --serve --open`
-*(If you installed via pipx, simply run `fls-pilot-dashboard --serve --open`)*
+The status CLI tool prints bridge/project/resource state only, clearly marks unavailable or API-limited data, and does not modify FL Studio.
 
 Default local ports:
 
 | Component | Default | Fallback behavior |
 |---|---:|---|
 | Control Center | `8766` | Uses the next available port and opens/prints the actual URL. |
-| Dashboard | `8765` | Uses the next available port and prints the actual URL. |
 | ChatGPT SSE server | `8080` | Control Center-managed SSE uses the next available port and updates snippets. |
 | TCP daemon | `9787` | Control Center detects a healthy external daemon, auto-starts its own daemon when possible, or uses a fallback port. |
 

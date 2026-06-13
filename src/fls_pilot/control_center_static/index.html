@@ -23,9 +23,12 @@
         <span class="divider"></span>
         <span class="last-refresh">Last Refresh</span>
         <span class="clock" id="refresh-time">--:--:--</span>
-        <button class="icon-button" id="refresh-button" type="button" title="Reload dashboard data">
-          <span aria-hidden="true">&#x21bb;</span>
-          <span class="sr-only">Reload dashboard data</span>
+        <button class="icon-button" id="refresh-button" type="button" title="Reload status data">
+          <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none">
+            <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
+            <path d="M3 3v5h5"></path>
+          </svg>
+          <span class="sr-only">Reload status data</span>
         </button>
       </div>
     </header>
@@ -60,7 +63,7 @@
       </div>
     </aside>
 
-    <main class="dashboard" id="setup" style="display: none;">
+    <main class="status-report" id="setup" style="display: none;">
       <section class="hero">
         <div>
           <h1>Guided Setup</h1>
@@ -70,7 +73,7 @@
       <section class="grid" id="setup-steps"></section>
     </main>
 
-    <main class="dashboard" id="runtime" style="display: none;">
+    <main class="status-report" id="runtime" style="display: none;">
       <section class="hero">
         <div>
           <h1>Servers</h1>
@@ -81,7 +84,7 @@
       <section class="grid" id="runtime-status"></section>
     </main>
 
-    <main class="dashboard" id="clients" style="display: none;">
+    <main class="status-report" id="clients" style="display: none;">
       <section class="hero">
         <div>
           <h1>AI Clients</h1>
@@ -91,7 +94,7 @@
       <section class="grid" id="client-snippets"></section>
     </main>
 
-    <main class="dashboard" id="support" style="display: none;">
+    <main class="status-report" id="support" style="display: none;">
       <section class="hero">
         <div>
           <h1>Support Report</h1>
@@ -106,7 +109,7 @@
         style="padding: 16px; margin-top: 16px; color: #a5b4fc; white-space: pre-wrap; font-family: monospace;"></pre>
     </main>
 
-    <main class="dashboard" id="project_data" style="display: block; position: relative;">
+    <main class="status-report" id="project_data" style="display: block; position: relative;">
       <div id="disconnected-overlay" class="disconnected-overlay" style="display: none;">
         <div class="disconnected-content">
           <p>FL Studio data is currently unavailable. Run Setup diagnosis for the next safe check.</p>

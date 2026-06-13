@@ -327,7 +327,7 @@ button {
   box-shadow: 0 0 14px rgba(85, 239, 135, 0.65);
 }
 
-.dashboard {
+.status-report {
   z-index: 1;
   min-width: 0;
   padding: 28px 34px 26px;
@@ -965,7 +965,7 @@ dd {
     display: none;
   }
 
-  .dashboard {
+  .status-report {
     padding: 20px 14px 86px;
   }
 

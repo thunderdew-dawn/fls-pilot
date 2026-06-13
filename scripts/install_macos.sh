@@ -180,7 +180,7 @@ To use with ChatGPT Desktop (SSE):
      - URL: http://localhost:8080/sse
 
 Default ports:
-  Control Center 8766, dashboard 8765, ChatGPT SSE 8080, daemon 9787.
+  Control Center 8766, ChatGPT SSE 8080, daemon 9787.
   The Control Center detects conflicts and shows the actual or recommended fallback.
 
 IMPORTANT (macOS Accessibility):
@@ -190,3 +190,7 @@ IMPORTANT (macOS Accessibility):
   Go to System Settings > Privacy & Security > Accessibility and ensure your terminal
   (e.g., Terminal, iTerm, Warp) or your MCP Client app (Claude/ChatGPT/Cursor) is checked/enabled.
 EOF
+
+echo
+echo "Starting Control Center in browser..."
+$CMD_CONTROL --open
