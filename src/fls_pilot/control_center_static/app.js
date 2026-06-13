@@ -1,4 +1,4 @@
-const state = { status: null, report: "", setupFeedback: {}, actionFeedback: {} };
+const state = { status: null, report: "", setupFeedback: {}, actionFeedback: {}, evidenceKeys: new Set() };
 
 const setupLayers = [
   { group: "environment", title: "Environment" },
@@ -465,7 +465,16 @@ function addSnippet(container, title, text) {
   button.type = "button";
   button.className = "ghost-button";
   button.textContent = "Copy";
-  button.addEventListener("click", () => navigator.clipboard.writeText(text));
+  button.addEventListener("click", async () => {
+    await navigator.clipboard.writeText(text);
+    button.textContent = "Copied!";
+    button.classList.add("copied");
+
+    setTimeout(() => {
+      button.textContent = "Copy";
+      button.classList.remove("copied");
+    }, 1400);
+  });
   btnRow.appendChild(button);
   
   node.append(heading, preContainer, btnRow);
@@ -732,6 +741,13 @@ function renderProjectData() {
     evidence.forEach(entry => {
       const row = document.createElement("div");
       row.className = "evidence-row";
+
+      const key = String(entry.label) + String(entry.value) + String(entry.detail) + String(entry.state);
+      if (!state.evidenceKeys.has(key)) {
+        row.classList.add("new");
+        state.evidenceKeys.add(key);
+      }
+
       row.dataset.state = entry.state || "unavailable";
 
       const stateSpan = document.createElement("span");
@@ -782,6 +798,12 @@ function wireEvents() {
     copyReport.addEventListener("click", async () => {
       await loadReport();
       await navigator.clipboard.writeText(state.report);
+      copyReport.textContent = "Copied!";
+      copyReport.classList.add("copied");
+      setTimeout(() => {
+        copyReport.textContent = "Copy setup report";
+        copyReport.classList.remove("copied");
+      }, 1400);
     });
   }
 

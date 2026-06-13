@@ -34,9 +34,16 @@ body {
     radial-gradient(circle at 78% 12%, rgba(100, 71, 220, 0.2), transparent 28rem),
     radial-gradient(circle at 38% 24%, rgba(23, 165, 255, 0.18), transparent 28rem),
     linear-gradient(145deg, #02040b 0%, #061023 46%, #030713 100%);
+  background-size: 180% 180%;
+  animation: bgDrift 18s ease-in-out infinite;
   color: var(--text);
   font-family:
     Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+@keyframes bgDrift {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
 }
 
 button {
@@ -170,6 +177,12 @@ button {
   background: rgba(27, 228, 126, 0.14);
   border: 1px solid rgba(54, 244, 152, 0.44);
   box-shadow: 0 0 26px rgba(22, 225, 139, 0.18);
+  animation: livePulse 2.4s ease-in-out infinite;
+}
+
+@keyframes livePulse {
+  0%, 100% { box-shadow: 0 0 8px rgba(0,255,180,.25); }
+  50% { box-shadow: 0 0 22px rgba(0,255,180,.55); }
 }
 
 .pill-offline,
@@ -325,6 +338,12 @@ button {
 .connection-dot.live {
   background: var(--green);
   box-shadow: 0 0 14px rgba(85, 239, 135, 0.65);
+  animation: heartbeat 1.8s ease-in-out infinite;
+}
+
+@keyframes heartbeat {
+  0%, 100% { transform: scale(1); opacity: .8; }
+  40% { transform: scale(1.45); opacity: 1; }
 }
 
 .status-report {
@@ -369,6 +388,49 @@ button {
   border: 1px solid var(--line);
   border-radius: 8px;
   box-shadow: var(--shadow);
+  transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease;
+  transform-style: preserve-3d;
+}
+
+.panel:hover {
+  transform: translateY(-3px) perspective(900px) rotateX(1.2deg);
+  box-shadow: 0 18px 45px rgba(0,0,0,.35);
+}
+
+#setup-steps .panel {
+  opacity: 0;
+  transform: translateY(10px);
+  animation: cardIn .35s ease forwards;
+}
+
+#setup-steps .panel:nth-child(1) { animation-delay: .04s; }
+#setup-steps .panel:nth-child(2) { animation-delay: .08s; }
+#setup-steps .panel:nth-child(3) { animation-delay: .12s; }
+#setup-steps .panel:nth-child(4) { animation-delay: .16s; }
+#setup-steps .panel:nth-child(5) { animation-delay: .20s; }
+#setup-steps .panel:nth-child(6) { animation-delay: .24s; }
+#setup-steps .panel:nth-child(7) { animation-delay: .28s; }
+#setup-steps .panel:nth-child(8) { animation-delay: .32s; }
+
+@keyframes cardIn {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.evidence-row.new {
+  animation: feedFlash 1.2s ease-out;
+}
+
+@keyframes feedFlash {
+  0% { background: rgba(0,255,255,.16); }
+  100% { background: transparent; }
+}
+
+.copied {
+  border-color: rgba(0,255,255,.8) !important;
+  box-shadow: 0 0 18px rgba(0,255,255,.35) !important;
 }
 
 .panel::after {
@@ -643,6 +705,7 @@ dd {
   box-shadow:
     0 0 34px rgba(39, 215, 255, 0.42),
     inset 0 0 28px rgba(39, 215, 255, 0.17);
+  animation: orbBreath 3s ease-in-out infinite;
 }
 
 .status-orb.is-playing span {
@@ -680,6 +743,12 @@ dd {
   box-shadow:
     0 0 34px rgba(255, 95, 114, 0.42),
     inset 0 0 28px rgba(255, 95, 114, 0.17);
+  animation: orbBreath 3s ease-in-out infinite;
+}
+
+@keyframes orbBreath {
+  0%, 100% { transform: scale(1); filter: brightness(1); }
+  50% { transform: scale(1.04); filter: brightness(1.25); }
 }
 
 .status-orb.is-recording span {
