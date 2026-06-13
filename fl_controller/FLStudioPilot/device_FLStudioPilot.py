@@ -362,6 +362,12 @@ def _h_stop(params):
     return {"playing": False, "recording": _is_recording()}
 
 
+def _h_pause(params):
+    if _is_playing():
+        transport.globalTransport(midi.FPT_Pause, 1)
+    return {"playing": _is_playing(), "recording": _is_recording()}
+
+
 def _h_toggle_play(params):
     transport.start()
     return {"playing": _is_playing(), "recording": _is_recording()}
@@ -2163,6 +2169,7 @@ _HANDLERS = {
     "general_undo": _h_general_undo,
     "play": _h_play,
     "stop": _h_stop,
+    "pause": _h_pause,
     "toggle_play": _h_toggle_play,
     "record": _h_record,
     "get_play_state": _h_get_play_state,

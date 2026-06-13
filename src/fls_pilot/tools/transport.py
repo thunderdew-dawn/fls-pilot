@@ -54,9 +54,9 @@ def register(mcp: FastMCP) -> None:
             str,
             Field(
                 description=(
-                    "Transport action: ping, get_tempo, set_tempo, get_play_state, "
-                    "play, stop, toggle_play, record, get_song_position, set_song_position, "
-                    "get_time_signature, or set_time_signature."
+                "Transport action: ping, get_tempo, set_tempo, get_play_state, "
+                "play, stop, pause, toggle_play, record, get_song_position, set_song_position, "
+                "get_time_signature, or set_time_signature."
                 )
             ),
         ],
@@ -179,6 +179,23 @@ def register(mcp: FastMCP) -> None:
         Safety: Transient Runtime Control.
         """
         return _safe_call(protocol.CMD_STOP)
+
+    @mcp.tool(
+        annotations={
+            "title": "Pause",
+            "readOnlyHint": False,
+            "destructiveHint": False,
+            "idempotentHint": True,
+            "openWorldHint": True,
+            "safetyClass": "transient",
+        },
+    )
+    def fl_pause() -> dict:
+        """Pause playback (marker stays at current position).
+
+        Safety: Transient Runtime Control.
+        """
+        return _safe_call(protocol.CMD_PAUSE)
 
     @mcp.tool(
         annotations={

@@ -1561,6 +1561,12 @@ _DEFAULT_SPECS = (
     ),
     _transient_spec(
         domain="transport",
+        action="pause",
+        validator=_validate_empty,
+        command=protocol.CMD_PAUSE,
+    ),
+    _transient_spec(
+        domain="transport",
         action="toggle_play",
         validator=_validate_empty,
         command=protocol.CMD_TOGGLE_PLAY,
